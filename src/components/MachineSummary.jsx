@@ -58,7 +58,7 @@ const MachineSummary = () => {
 
   const handleCardClick = (title, value, unit) => {
     openModal(
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 rounded-lg">
+      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
         <div className="text-center">
           <h2 className="text-6xl font-bold text-gray-800 mb-12">{title}</h2>
           {value && (

@@ -4,11 +4,15 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } fro
 const OverviewChart = ({ title, data, color = "#8884d8", yAxisDomain = [0, 100], onClick }) => {
   return (
     <div 
-      className={`bg-gray-800 text-white p-4 rounded-lg h-64 ${onClick ? 'cursor-pointer hover:bg-gray-700 transition-colors' : ''}`}
+      className={`
+        bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-64
+        backdrop-blur-sm bg-opacity-90
+        ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
+      `}
       onClick={onClick}
     >
-      <h3 className="text-lg font-semibold mb-4 text-center">{title}</h3>
-      <div className="h-48">
+      <h3 className="absolute z-50 text-lg w-full font-semibold my-4 text-center text-white">{title}</h3>
+      <div className="h-64 bg-gray-800 rounded-lg p-2">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={data}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />

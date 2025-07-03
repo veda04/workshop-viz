@@ -10,15 +10,21 @@ const DataCard = ({ title, value, unit = "", size = "medium", onClick }) => {
 
   return (
     <div 
-      className={`bg-gray-300 rounded-lg flex flex-col justify-center items-center ${sizeClasses[size]} ${onClick ? 'cursor-pointer hover:bg-gray-400 transition-colors' : ''}`}
+      className={`
+        bg-white rounded-xl shadow-lg border border-gray-200 
+        flex flex-col justify-center items-center 
+        ${sizeClasses[size]} 
+        ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
+        backdrop-blur-sm bg-opacity-90
+      `}
       onClick={onClick}
     >
-      <h3 className="text-gray-800 font-semibold text-center mb-2 text-sm leading-tight">
+      <h3 className="text-gray-700 font-semibold text-center mb-2 text-base leading-tight">
         {title}
       </h3>
       {value && (
-        <div className="text-gray-900 font-bold text-xl">
-          {value} {unit}
+        <div className="text-gray-900 font-bold text-6xl">
+          {value} <span className="text-lg font-medium text-gray-600">{unit}</span>
         </div>
       )}
     </div>

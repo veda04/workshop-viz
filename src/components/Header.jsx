@@ -16,13 +16,13 @@ const Header = () => {
   });
 
   return (
-    <div className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+    <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-8">
           <h1 className="text-4xl font-bold text-gray-900 tracking-wider">
             HURCO
           </h1>
-          <div className="bg-green-600 px-4 py-2 rounded-lg">
+          <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-lg shadow-md">
             <span className="text-white font-medium">TEST RUNNING</span>
           </div>
         </div>
