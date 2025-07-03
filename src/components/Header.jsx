@@ -22,13 +22,13 @@ const Header = () => {
           <h1 className="text-4xl font-bold text-gray-900 tracking-wider">
             HURCO
           </h1>
-          <div className="bg-gray-300 px-4 py-2 rounded-lg">
-            <span className="text-gray-800 font-medium">TEST RUNNING</span>
+          <div className="bg-green-600 px-4 py-2 rounded-lg">
+            <span className="text-white font-medium">TEST RUNNING</span>
           </div>
         </div>
         
         <div className="text-right">
-          <div className="text-sm text-gray-600 uppercase tracking-wide">
+          <div className="text-xl text-gray-600 uppercase tracking-wide">
             {currentDate} | {currentTime}
           </div>
         </div>
