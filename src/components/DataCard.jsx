@@ -1,8 +1,9 @@
 import React from 'react';
 
-const DataCard = ({ title, value, unit = "", size = "medium", onClick }) => {
+const DataCard = ({ title, value, textColor="", unit = "", size = "medium", onClick }) => {
   const sizeClasses = {
     small: "p-4 h-24",
+    semiMedium: 'p-4 h-28',
     medium: "p-6 h-32",
     large: "p-8 h-40",
     extraLarge: "p-10 h-52"
@@ -18,12 +19,12 @@ const DataCard = ({ title, value, unit = "", size = "medium", onClick }) => {
         backdrop-blur-sm bg-opacity-90
       `}
       onClick={onClick}
-    >
-      <h3 className="text-gray-700 font-semibold text-center mb-2 text-base leading-tight">
+    >                                                     
+      <h3 className="text-gray-700 text-lg font-semibold text-center mb-2 text-base leading-tight">
         {title}
       </h3>
       {value && (
-        <div className="text-gray-900 font-bold text-6xl">
+        <div className={`${textColor} font-bold text-4xl`}>
           {value} <span className="text-lg font-medium text-gray-600">{unit}</span>
         </div>
       )}

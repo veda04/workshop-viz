@@ -5,6 +5,8 @@ import OverviewChart from './OverviewChart';
 import DataCard from './DataCard';
 import Modal from './Modal';
 import { temperatureData, accelerometerData, currentData, coolantData } from '../data/sampleData';
+import Sensors from './Sensors';
+import UsageChart from './UsageChart';
 
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
@@ -97,81 +99,60 @@ const MachineSummary = () => {
             yAxisDomain={[10, 40]}
             onClick={() => handleChartClick("Current Overview", currentData, "#32CD32", [10, 40])}
           />
-        </div>        {/* Coolant Data Cards */}
+        </div>        
+        {/* Coolant Data Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {coolantData.map((item, index) => (
             <DataCard 
               key={index}
               title={item.title} 
               value={item.value} 
-              unit={item.unit} 
+              textColor={item.textColor} 
+              unit={item.unit}
               onClick={() => handleCardClick(item.title, item.value, item.unit)}
             />
           ))}
         </div>
 
         {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* DropDown/Probing Overview - Large card */}
-          <div className="lg:col-span-2">
-            <DataCard 
+          <div className="">
+            <OverviewChart 
               title="DropDown_ / Probing Overview" 
-              size="extraLarge" 
-              onClick={() => handleCardClick("DropDown_ / Probing Overview")}
+              data={temperatureData}
+              color="#FFA500"
+              yAxisDomain={[15, 60]}
+              onClick={() => handleChartClick("DropDown_ / Probing Overview", temperatureData, "#FFA500", [15, 60])}
             />
           </div>
           
           {/* Machine Usage */}
           <div>
-            <DataCard 
+            <UsageChart
               title="Machine Usage" 
-              size="extraLarge" 
-              onClick={() => handleCardClick("Machine Usage")}
+              onClick={() => handleChartClick("Machine Usage Overview")}
             />
           </div>
           
           {/* Additional cards */}
           <div className="space-y-4">
             <DataCard 
-              title="Sensor Data" 
-              size="small" 
-              onClick={() => handleCardClick("Sensor Data")}
+              title="Air Flow" 
+              size="medium" 
+              onClick={() => handleCardClick("Air Flow")}
             />
             <DataCard 
-              title="Performance" 
-              size="small" 
-              onClick={() => handleCardClick("Performance")}
+              title="Supply Voltage/ Current" 
+              size="semiMedium" 
+              onClick={() => handleCardClick("Supply Voltage/ Current")}
             />
           </div>
         </div>
 
-        {/* Additional bottom cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <DataCard 
-            title="Status A" 
-            size="small" 
-            onClick={() => handleCardClick("Status A")}
-          />
-          <DataCard 
-            title="Status B" 
-            size="small" 
-            onClick={() => handleCardClick("Status B")}
-          />
-          <DataCard 
-            title="Status C" 
-            size="small" 
-            onClick={() => handleCardClick("Status C")}
-          />
-          <DataCard 
-            title="Status D" 
-            size="small" 
-            onClick={() => handleCardClick("Status D")}
-          />
-        </div>
-
         {/* Sensors Section */}
-        <div className="bg-gray-400 text-center py-8 rounded-lg">
-          <h2 className="text-2xl font-bold text-gray-800">SENSORS</h2>        
+        <div className="">
+          <Sensors />
         </div>
       </div>
 
