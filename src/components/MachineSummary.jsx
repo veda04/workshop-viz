@@ -140,6 +140,7 @@ const MachineSummary = () => {
             <DataCard 
               title="Air Flow" 
               size="medium" 
+              value ="Air Valve Open"
               onClick={() => handleCardClick("Air Flow")}
             />
             <DataCard 
@@ -154,10 +155,6 @@ const MachineSummary = () => {
         <div className="">
           <Sensors />
         </div>
-
-        {/* <div>
-          <iframe src="http://10.101.23.23:3000/d/aee1ih2m2wv7ka/hurco-overview?orgId=1&from=now-6h&to=now&timezone=browser&var-Machine=HUR&var-getNodes=A1-HUR&var-getNodes=A2-HUR&var-getNodes=A3-HUR&var-getNodes=C1-HUR&var-getNodes=T1-HUR&refresh=1m&panelId=9&__feature.dashboardSceneSolo" width="450" height="200" frameborder="0"></iframe>
-        </div> */}
       </div>
 
       {/* Modal */}

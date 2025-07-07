@@ -54,6 +54,13 @@ export const coolantData = [
   { title: "Coolant Concentration", value: "5.2", unit: "Brix(%)", textColor: "text-purple-600" },
 ];
 
+export const airSupplyData = [
+  { title: "Air Pressure", value: "1.2", unit: "bar", textColor: "text-red-600" },
+  { title: "Air Flow Rate", value: "15.5", unit: "L/min", textColor: "text-teal-600" },
+  { title: "Air Quality Index", value: "75", unit: "%", textColor: "text-yellow-600" },
+  { title: "Air Temperature", value: "22.5", unit: "°C", textColor: "text-gray-600" },
+]
+
 export const sensorData = [
   { name: "Temperature Sensor 1", value: "25.4", unit: "°C", status: "Active" },
   { name: "Temperature Sensor 2", value: "26.1", unit: "°C", status: "Active" },

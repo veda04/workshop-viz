@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarC
 const UsageChart = ({title, onClick}) => {
   const usageData = [
     { name: 'Probing', value: 45, color: '#0088FE' },
-    { name: 'Machiing', value: 25, color: '#00C49F' },
+    { name: 'Maching', value: 25, color: '#00C49F' },
     { name: 'Idle', value: 10, color: '#FF8042' },
   ];
 

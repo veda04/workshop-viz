@@ -1,6 +1,17 @@
-.text-gradient {
-  background: linear-gradient(90deg,  #425dd3, #64c1ff);
+.txt-gradient-green {
+  background: linear-gradient(180deg, #3a7e12, #bcff64);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+.txt-gradient-blue {
+  background: linear-gradient(180deg, #7e1212, #ff6464);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.txt-gradient-gray {
+  background: linear-gradient(180deg, #5e5e5e, #e7e7e7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}

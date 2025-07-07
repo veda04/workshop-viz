@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DataCard = ({ title, value, textColor="", unit = "", size = "medium", onClick }) => {
+const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", size = "medium", onClick }) => {
   const sizeClasses = {
     small: "p-4 h-24",
     semiMedium: 'p-4 h-28',
