@@ -49,9 +49,9 @@ export const currentData = [
 
 export const coolantData = [
   { title: "Coolant Temperature", value: "25.4", unit: "°C", textColor: "text-blue-600" },
-  { title: "Coolant Level", value: "78", unit: "%", textColor: "text-green-600" },
+  { title: "Coolant Level", value: "78.40", unit: "mm", textColor: "text-green-600" },
   { title: "Coolant Flow", value: "12.5", unit: "L/min", textColor: "text-orange-600" },
-  { title: "Coolant Concentration", value: "5.2", unit: "%", textColor: "text-purple-600" },
+  { title: "Coolant Concentration", value: "5.2", unit: "Brix(%)", textColor: "text-purple-600" },
 ];
 
 export const sensorData = [

@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import MachineSummary from './components/MachineSummary';
 import SensorDetails from './components/SensorDetails';
 import Analytics from './components/Analytics';
+import './App.css';
 
 function App() {
   return (
