@@ -1,6 +1,5 @@
 import logging
-from influxdb_client import InfluxDBClient, Point
-from influxdb_client.client.write_api import SYNCHRONOUS
+from influxdb_client import InfluxDBClient
 from django.conf import settings
 from datetime import datetime
 
@@ -13,7 +12,6 @@ class InfluxDBService:
             token=settings.INFLUX_TOKEN,
             org=settings.INFLUX_ORG
         )
-        self.write_api = self.client.write_api(write_options=SYNCHRONOUS)
         self.query_api = self.client.query_api()
 
     def test_connection(self):
@@ -33,25 +31,6 @@ class InfluxDBService:
                 'status': 'error',
                 'message': f'Failed to connect to InfluxDB: {str(e)}'
             }
-
-    def write_machine_data(self, machine_id, temperature, pressure, vibration, timestamp=None):
-        """Write machine sensor data to InfluxDB"""
-        try:
-            if timestamp is None:
-                timestamp = datetime.utcnow()
-            
-            point = Point("machine_sensors") \
-                .tag("machine_id", machine_id) \
-                .field("temperature", float(temperature)) \
-                .field("pressure", float(pressure)) \
-                .field("vibration", float(vibration)) \
-                .time(timestamp)
-            
-            self.write_api.write(bucket=settings.MACHINE_DATA_BUCKET, record=point)
-            return {'status': 'success', 'message': 'Data written successfully'}
-        except Exception as e:
-            logger.error(f"Error writing machine data: {str(e)}")
-            return {'status': 'error', 'message': str(e)}
 
     def get_machine_data(self, machine_id=None, limit=100):
         """Query machine data from InfluxDB"""

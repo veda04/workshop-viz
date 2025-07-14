@@ -31,43 +31,6 @@ def test_influx_connection(request):
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['POST'])
-def write_machine_data(request):
-    """API endpoint to write machine sensor data"""
-    try:
-        data = request.data
-        required_fields = ['machine_id', 'temperature', 'pressure', 'vibration']
-        
-        # Validate required fields
-        for field in required_fields:
-            if field not in data:
-                return Response({
-                    'status': 'error',
-                    'message': f'Missing required field: {field}'
-                }, status=status.HTTP_400_BAD_REQUEST)
-        
-        influx_service = InfluxDBService()
-        result = influx_service.write_machine_data(
-            machine_id=data['machine_id'],
-            temperature=data['temperature'],
-            pressure=data['pressure'],
-            vibration=data['vibration'],
-            timestamp=data.get('timestamp')
-        )
-        influx_service.close()
-        
-        if result['status'] == 'success':
-            return Response(result, status=status.HTTP_201_CREATED)
-        else:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-    except Exception as e:
-        logger.error(f"Error writing machine data: {str(e)}")
-        return Response({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 @api_view(['GET'])
 def get_machine_data(request):
     """API endpoint to retrieve machine sensor data"""

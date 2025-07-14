@@ -6,7 +6,6 @@ const InfluxDBTest = () => {
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [loading, setLoading] = useState(false);
   const [machineData, setMachineData] = useState([]);
-  const [testWriteStatus, setTestWriteStatus] = useState(null);
 
   // Test InfluxDB connection
   const testConnection = async () => {
@@ -19,40 +18,6 @@ const InfluxDBTest = () => {
       setConnectionStatus({
         status: 'error',
         message: `Failed to connect to API: ${error.message}`
-      });
-    }
-    setLoading(false);
-  };
-
-  // Write test data to InfluxDB
-  const writeTestData = async () => {
-    setLoading(true);
-    const testData = {
-      machine_id: 'MACHINE_001',
-      temperature: 75.5 + Math.random() * 10,
-      pressure: 50.0 + Math.random() * 5,
-      vibration: 0.5 + Math.random() * 0.3
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/machine-data/write/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(testData)
-      });
-      const data = await response.json();
-      setTestWriteStatus(data);
-      
-      if (data.status === 'success') {
-        // Refresh machine data after successful write
-        setTimeout(() => fetchMachineData(), 1000);
-      }
-    } catch (error) {
-      setTestWriteStatus({
-        status: 'error',
-        message: `Failed to write data: ${error.message}`
       });
     }
     setLoading(false);
@@ -183,7 +148,7 @@ const InfluxDBTest = () => {
           </div>
         ) : (
           <div className="text-center text-gray-500 py-8">
-            No data available. Try writing some test data first.
+            No data available.
           </div>
         )}
       </div>
@@ -195,7 +160,6 @@ const InfluxDBTest = () => {
           <div><strong>GET</strong> <code>/api/health/</code> - Health check</div>
           <div><strong>GET</strong> <code>/api/test-connection/</code> - Test InfluxDB connection</div>
           <div><strong>GET</strong> <code>/api/machine-data/</code> - Get machine sensor data</div>
-          <div><strong>POST</strong> <code>/api/machine-data/write/</code> - Write machine sensor data</div>
           <div><strong>GET</strong> <code>/api/machine-summary/</code> - Get machine summary data</div>
         </div>
       </div>
