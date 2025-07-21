@@ -7,10 +7,139 @@ from .influx_service import InfluxDBService
 import json
 from datetime import datetime
 import logging
+from django.conf import settings
+import os
 
 logger = logging.getLogger(__name__)
 
 # Create your views here.
+
+# this function loads dashboard config
+@api_view(['GET'])
+def debug_config_path(request):
+    """Debug endpoint to check config file path"""
+    try:
+        from django.conf import settings
+        import os
+        
+        config_path = os.path.join(settings.BASE_DIR, 'config', 'HurcoDashboard2.json')
+        alt_config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'HurcoDashboard2.json')
+        
+        debug_info = {
+            'BASE_DIR': str(settings.BASE_DIR),
+            'config_path': config_path,
+            'config_exists': os.path.exists(config_path),
+            'alt_config_path': alt_config_path,
+            'alt_config_exists': os.path.exists(alt_config_path),
+            'current_dir': os.path.dirname(__file__),
+            'files_in_current_dir': os.listdir(os.path.dirname(__file__)),
+        }
+        
+        # Check what files exist in the config directory
+        config_dir = os.path.join(settings.BASE_DIR, 'config')
+        if os.path.exists(config_dir):
+            debug_info['files_in_config_dir'] = os.listdir(config_dir)
+        else:
+            debug_info['files_in_config_dir'] = 'Config directory does not exist'
+            
+        # Check parent directory
+        parent_dir = os.path.join(os.path.dirname(__file__), '..')
+        if os.path.exists(parent_dir):
+            debug_info['files_in_parent_dir'] = os.listdir(parent_dir)
+        
+        return Response({
+            'status': 'debug',
+            'data': debug_info
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response({
+            'status': 'error',
+            'message': f'Debug error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# this function loads dashboard config
+def load_dashboard_config():
+    """Load dashboard configuration from JSON file"""
+    try:
+        # Use the path that we know works from debug
+        config_path = os.path.join(settings.BASE_DIR, 'config', 'HurcoDashboard2.json')
+        
+        # Add debug logging to see the actual path
+        logger.info(f"Looking for config file at: {config_path}")
+        
+        if not os.path.exists(config_path):
+            logger.error(f"File does not exist at: {config_path}")
+            # Try alternative path
+            alt_config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'HurcoDashboard2.json')
+            logger.info(f"Trying alternative path: {alt_config_path}")
+            if os.path.exists(alt_config_path):
+                config_path = alt_config_path
+            else:
+                logger.error(f"Alternative path also not found: {alt_config_path}")
+                return {}
+        
+        with open(config_path, 'r', encoding='utf-8') as file:
+            config_data = json.load(file)
+            logger.info(f"Successfully loaded config with {len(config_data)} items")
+            return config_data
+            
+    except FileNotFoundError:
+        logger.error(f"Dashboard config file not found at {config_path}")
+        return {}
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in dashboard config: {e}")
+        return {}
+    except Exception as e:
+        logger.error(f"Error loading dashboard config: {e}")
+        return {}
+
+    
+@api_view(['GET'])
+def get_dashboard_config(request):
+    """API endpoint to retrieve dashboard configuration"""
+    try:
+        config = load_dashboard_config()
+        if config:
+            return Response({
+                'status': 'success',
+                'data': config
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'status': 'error',
+                'message': 'Dashboard configuration not found or invalid'
+            }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error retrieving dashboard config: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def get_widget_config(request, widget_id):
+    """API endpoint to retrieve specific widget configuration"""
+    try:
+        config = load_dashboard_config()
+        widget = config.get(widget_id)
+        
+        if widget:
+            return Response({
+                'status': 'success',
+                'data': widget
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'status': 'error',
+                'message': f'Widget {widget_id} not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        logger.error(f"Error retrieving widget config: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def test_influx_connection(request):
