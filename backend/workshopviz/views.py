@@ -105,7 +105,7 @@ def get_dashboard_config(request):
                 'status': 'error',
                 'message': 'Dashboard configuration not found or invalid'
             }, status=status.HTTP_404_NOT_FOUND)
-
+        
         # Get time range parameters from request
         time_range = request.GET.get('range', '3h')  # Default to 3h
         
@@ -114,79 +114,80 @@ def get_dashboard_config(request):
         
         # Process each widget in the configuration
         processed_config = {}
+
         for widget_id, widget_config in config.items():
-        #     # Copy all original configuration
+            # Copy all original configuration
             processed_widget = widget_config.copy()
-            print(processed_widget)
             
-        #     # If widget has queries, execute them
-        #     if 'Queries' in widget_config and widget_config['Queries']:
-        #         query_results = []
+            # If widget has queries, execute them
+            if 'Queries' in widget_config and widget_config['Queries']:
+                query_results = []
                 
-        #         for query_info in widget_config['Queries']:
-        #             if 'Flux' in query_info:
-        #                 try:
-        #                     # Replace time range variables in the query
-        #                     flux_query = query_info['Flux']
-        #                     # You might need to replace v.timeRangeStart, v.timeRangeStop, v.windowPeriod
-        #                     # based on your InfluxDB service implementation
+                for query_info in widget_config['Queries']:
+                    if 'Flux' in query_info:
+                        try:
+                            # Replace time range variables in the query
+                            flux_query = query_info['Flux']
+                            # You might need to replace v.timeRangeStart, v.timeRangeStop, v.windowPeriod
+                            # based on your InfluxDB service implementation
                             
-        #                     # Execute the query
-        #                     result = influx_service.execute_flux_query(
-        #                         query=flux_query,
-        #                         time_range=time_range
-        #                     )
+                            # Execute the query
+                            result = influx_service.execute_flux_query(
+                                query=flux_query
+                            )
+
+                            print(result)
                             
-        #                     if result['status'] == 'success':
-        #                         query_result = {
-        #                             'units': query_info.get('Units', ''),
-        #                             'pivot': query_info.get('Pivot', ''),
-        #                             'data': result.get('data', []),
-        #                             'query': flux_query
-        #                         }
-        #                     else:
-        #                         query_result = {
-        #                             'units': query_info.get('Units', ''),
-        #                             'pivot': query_info.get('Pivot', ''),
-        #                             'data': [],
-        #                             'error': result.get('message', 'Query execution failed'),
-        #                             'query': flux_query
-        #                         }
+                            if result['status'] == 'success':
+                                query_result = {
+                                    'units': query_info.get('Units', ''),
+                                    'pivot': query_info.get('Pivot', ''),
+                                    'data': result.get('data', []),
+                                    'query': flux_query
+                                }
+                            else:
+                                query_result = {
+                                    'units': query_info.get('Units', ''),
+                                    'pivot': query_info.get('Pivot', ''),
+                                    'data': [],
+                                    'error': result.get('message', 'Query execution failed'),
+                                    'query': flux_query
+                                }
                             
-        #                     query_results.append(query_result)
+                            query_results.append(query_result)
                             
-        #                     return Response({
-        #                         'status': 'error',
-        #                         'results': query_results
-        #                     }, status=status.HTTP_404_NOT_FOUND)
+                            return Response({
+                                'status': 'error',
+                                'results': query_results
+                            }, status=status.HTTP_404_NOT_FOUND)
                         
-        #                 except Exception as query_error:
-        #                     logger.error(f"Error executing query for widget {widget_id}: {str(query_error)}")
-        #                     query_results.append({
-        #                         'units': query_info.get('Units', ''),
-        #                         'pivot': query_info.get('Pivot', ''),
-        #                         'data': [],
-        #                         'error': str(query_error),
-        #                         'query': query_info.get('Flux', '')
-        #                     })
+                        except Exception as query_error:
+                            logger.error(f"Error executing query for widget {widget_id}: {str(query_error)}")
+                            query_results.append({
+                                'units': query_info.get('Units', ''),
+                                'pivot': query_info.get('Pivot', ''),
+                                'data': [],
+                                'error': str(query_error),
+                                'query': query_info.get('Flux', '')
+                            })
                 
-        #         # Add query results to the widget configuration
-        #         processed_widget['QueryResults'] = query_results
+                # Add query results to the widget configuration
+                processed_widget['QueryResults'] = query_results
             
-        #     processed_config[widget_id] = processed_widget
+            processed_config[widget_id] = processed_widget
         
-        # # Close InfluxDB connection
-        # influx_service.close()
+        # Close InfluxDB connection
+        influx_service.close()
         
-        # return Response({
-        #     'status': 'success',
-        #     'data': processed_config,
-        #     'metadata': {
-        #         'total_widgets': len(processed_config),
-        #         'time_range': time_range,
-        #         'timestamp': datetime.now().isoformat()
-        #     }
-        # }, status=status.HTTP_200_OK)
+        return Response({
+            'status': 'success',
+            'data': processed_config,
+            'metadata': {
+                'total_widgets': len(processed_config),
+                'time_range': time_range,
+                'timestamp': datetime.now().isoformat()
+            }
+        }, status=status.HTTP_200_OK)
         
     except Exception as e:
         logger.error(f"Error retrieving dashboard config: {str(e)}")
@@ -238,50 +239,7 @@ def test_influx_connection(request):
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def get_machine_data(request):
-    """API endpoint to retrieve machine sensor data"""
-    try:
-        machine_id = request.GET.get('machine_id')
-        limit = int(request.GET.get('limit', 100))
-        
-        influx_service = InfluxDBService()
-        result = influx_service.get_machine_data(machine_id=machine_id, limit=limit)
-        influx_service.close()
-        
-        if result['status'] == 'success':
-            return Response(result, status=status.HTTP_200_OK)
-        else:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-    except Exception as e:
-        logger.error(f"Error retrieving machine data: {str(e)}")
-        return Response({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def get_machine_summary(request):
-    """API endpoint to retrieve machine summary data"""
-    try:
-        machine_id = request.GET.get('machine_id')
-        
-        influx_service = InfluxDBService()
-        result = influx_service.get_machine_summary(machine_id=machine_id)
-        influx_service.close()
-        
-        if result['status'] == 'success':
-            return Response(result, status=status.HTTP_200_OK)
-        else:
-            return Response(result, status=status.HTTP_400_BAD_REQUEST)
-            
-    except Exception as e:
-        logger.error(f"Error retrieving machine summary: {str(e)}")
-        return Response({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
 def health_check(request):

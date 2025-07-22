@@ -31,78 +31,22 @@ class InfluxDBService:
                 'status': 'error',
                 'message': f'Failed to connect to InfluxDB: {str(e)}'
             }
-
-    def get_machine_data(self, machine_id=None, limit=100):
-        """Query machine data from InfluxDB"""
+        
+    def execute_flux_query(self, query):
+        """Execute a Flux query against InfluxDB"""
         try:
-            if machine_id:
-                query = f'''
-                from(bucket: "{settings.MACHINE_DATA_BUCKET}")
-                |> range(start: -1h)
-                |> filter(fn: (r) => r._measurement == "machine_sensors")
-                |> filter(fn: (r) => r.machine_id == "{machine_id}")
-                |> limit(n: {limit})
-                '''
-            else:
-                query = f'''
-                from(bucket: "{settings.MACHINE_DATA_BUCKET}")
-                |> range(start: -1h)
-                |> filter(fn: (r) => r._measurement == "machine_sensors")
-                |> limit(n: {limit})
-                '''
-            
             result = self.query_api.query(query)
-            
             data = []
             for table in result:
                 for record in table.records:
                     data.append({
                         'time': record.get_time().isoformat(),
-                        'machine_id': record.values.get('machine_id'),
                         'field': record.get_field(),
                         'value': record.get_value()
                     })
-            
             return {'status': 'success', 'data': data}
         except Exception as e:
-            logger.error(f"Error querying machine data: {str(e)}")
-            return {'status': 'error', 'message': str(e)}
-
-    def get_machine_summary(self, machine_id=None):
-        """Get machine summary data"""
-        try:
-            if machine_id:
-                query = f'''
-                from(bucket: "{settings.MACHINE_SUMMARY_DATA_BUCKET}")
-                |> range(start: -24h)
-                |> filter(fn: (r) => r._measurement == "machine_summary")
-                |> filter(fn: (r) => r.machine_id == "{machine_id}")
-                |> last()
-                '''
-            else:
-                query = f'''
-                from(bucket: "{settings.MACHINE_SUMMARY_DATA_BUCKET}")
-                |> range(start: -24h)
-                |> filter(fn: (r) => r._measurement == "machine_summary")
-                |> group(columns: ["machine_id"])
-                |> last()
-                '''
-            
-            result = self.query_api.query(query)
-            
-            data = []
-            for table in result:
-                for record in table.records:
-                    data.append({
-                        'time': record.get_time().isoformat(),
-                        'machine_id': record.values.get('machine_id'),
-                        'field': record.get_field(),
-                        'value': record.get_value()
-                    })
-            
-            return {'status': 'success', 'data': data}
-        except Exception as e:
-            logger.error(f"Error querying machine summary: {str(e)}")
+            logger.error(f"Error executing Flux query: {str(e)}")
             return {'status': 'error', 'message': str(e)}
 
     def close(self):
