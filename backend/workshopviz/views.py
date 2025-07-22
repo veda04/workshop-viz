@@ -130,11 +130,13 @@ def get_dashboard_config(request):
                             flux_query = query_info['Flux']
                             # You might need to replace v.timeRangeStart, v.timeRangeStop, v.windowPeriod
                             # based on your InfluxDB service implementation
+                            # Replace the undefined variables with actual time values
+                            flux_query = flux_query.replace('v.timeRangeStart', f'-{time_range}')
+                            flux_query = flux_query.replace('v.timeRangeStop', 'now()')
+                            flux_query = flux_query.replace('v.windowPeriod', '1m')  # Default window period
                             
                             # Execute the query
-                            result = influx_service.execute_flux_query(
-                                query=flux_query
-                            )
+                            result = influx_service.execute_flux_query(query=flux_query)
 
                             print(result)
                             
@@ -155,11 +157,6 @@ def get_dashboard_config(request):
                                 }
                             
                             query_results.append(query_result)
-                            
-                            return Response({
-                                'status': 'error',
-                                'results': query_results
-                            }, status=status.HTTP_404_NOT_FOUND)
                         
                         except Exception as query_error:
                             logger.error(f"Error executing query for widget {widget_id}: {str(query_error)}")
@@ -203,16 +200,79 @@ def get_widget_config(request, widget_id):
         config = load_dashboard_config()
         widget = config.get(widget_id)
         
-        if widget:
-            return Response({
-                'status': 'success',
-                'data': widget
-            }, status=status.HTTP_200_OK)
-        else:
+        if not widget:
             return Response({
                 'status': 'error',
                 'message': f'Widget {widget_id} not found'
             }, status=status.HTTP_404_NOT_FOUND)
+
+        # get time range parameter from request
+        time_range = request.GET.get('range', '3h')
+
+        # initialize InfluxDB service
+        influx_service = InfluxDBService()
+
+        # process the widget configuration
+        if 'Queries' in widget:
+            query_results = []
+
+            for query_info in widget['Queries']:
+                if 'Flux' in query_info:
+                    try:
+                        flux_query = query_info['Flux']
+
+                        flux_query = flux_query.replace('v.timeRangeStart', f'-{time_range}')
+                        flux_query = flux_query.replace('v.timeRangeStop', 'now()')
+                        flux_query = flux_query.replace('v.windowPeriod', '1m')  # Default window period
+
+                        # Execute the query
+                        result = influx_service.execute_flux_query(flux_query)
+
+                        if result['status'] == 'success':
+                            query_result = {
+                                'units': query_info.get('Units', ''),
+                                'pivot': query_info.get('Pivot', ''),
+                                'data': result.get('data', []),
+                                'success': True,
+                                'query': flux_query
+                            }
+                        else:
+                            query_result = {
+                                'units': query_info.get('Units', ''),
+                                'pivot': query_info.get('Pivot', ''),
+                                'data': [],
+                                'error': result.get('message', 'Query execution failed'),
+                                'query': flux_query
+                            }
+
+                        query_results.append(query_result)
+                    
+                    except Exception as query_error:
+                        logger.error(f"Error execuuting query for widget {widget_id}: {str(query_error)}")
+                        query_results.append({
+                            'units': query_info.get('Units', ''),
+                            'pivot': query_info.get('Pivot', ''),
+                            'data': [],
+                            'error': str(query_error),
+                            'query': query_info.get('Flux', '')
+                        })
+
+            # Add query results to the widget configuration
+            widget['QueryResults'] = query_results
+
+        # Close InfluxDB connection
+        influx_service.close()
+
+        return Response({
+            'status': 'success',
+            'data': widget,
+            'metadata': {
+                'widget_id': widget_id,
+                'time_range': time_range,
+                'timestamp': datetime.now().isoformat()
+            }
+        }, status=status.HTTP_200_OK)
+
     except Exception as e:
         logger.error(f"Error retrieving widget config: {str(e)}")
         return Response({
@@ -238,8 +298,6 @@ def test_influx_connection(request):
             'status': 'error',
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 
 @api_view(['GET'])
 def health_check(request):
