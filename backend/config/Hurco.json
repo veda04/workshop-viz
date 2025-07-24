@@ -113,6 +113,14 @@
         "RefreshRate": "1m",
         "Queries": [
             {
+                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] == \"T1-HUR\")    |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\")  |> drop(columns: [\"SensorID\",\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
+                "Units": "°C",
+                "Pivot": "Name",
+                "Axis": 0,
+                "Limit": 5,
+                "LimitType": "Max"
+            },
+            {
                 "Flux": "initialQuery = from(bucket: \"Machines\")    |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] =~ /T[0-9]-HUR/)  |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\" and r[\"Name\"] !~ /Elec/ and r[\"Name\"] !~ /Reference/)   |> last()  |> group()  |> sort(columns: [\"_value\"], desc: true)  |> limit(n: 5) |> findColumn(fn: (key) => true, column: \"SensorID\") secondQuery = from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => contains(value: r[\"SensorID\"], set: initialQuery))  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)  |> drop(columns: [\"SensorID\",\"Node\"])  |> yield(name: \"secondQuery\")",
                 "Units": "°C",
                 "Pivot": "Name",

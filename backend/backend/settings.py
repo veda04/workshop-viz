@@ -132,10 +132,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # InfluxDB Configuration
 INFLUX_TOKEN = os.getenv('INFLUX_TOKEN')
-MACHINE_DATA_BUCKET = os.getenv('MACHINE_DATA_BUCKET')
-MACHINE_SUMMARY_DATA_BUCKET = os.getenv('MACHINE_SUMMARY_DATA_BUCKET')
-INFLUX_URL = os.getenv('DB_LINK')
-INFLUX_ORG = os.getenv('DB_ORG')
+DB_LINK = os.getenv('DB_LINK')
+DB_ORG = os.getenv('DB_ORG')
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
