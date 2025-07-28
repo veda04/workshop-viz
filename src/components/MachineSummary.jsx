@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import React, { useState, useEffect } from 'react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Layout from './Layout';
 import OverviewChart from './OverviewChart';
 import DataCard from './DataCard';
@@ -11,6 +11,39 @@ import UsageChart from './UsageChart';
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [dashboardData, setDashboardData] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // fetch the dashboard configuration data
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('http://localhost:8000/api/dashboard-config/?machine_name=Hurco')
+
+        if(!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        setDashboardData(result.data);
+        console.log('Dashboard data loaded:', result.data);
+      }
+      else {
+        throw new Error(result.message || 'Failed to load dashboard data');
+      }
+    } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDashboardData();
+  }, []);  
 
   const openModal = (content) => {
     setModalContent(content);
@@ -22,6 +55,7 @@ const MachineSummary = () => {
     setModalContent(null);
   };
 
+  // handles for chart clicks
   const handleChartClick = (title, data, color, yAxisDomain) => {
     openModal(
       <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
@@ -57,7 +91,8 @@ const MachineSummary = () => {
       </div>
     );
   };
-
+  
+  // handles for card clicks
   const handleCardClick = (title, value, unit) => {
     openModal(
       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
@@ -117,7 +152,7 @@ const MachineSummary = () => {
         {/* Bottom Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* DropDown/Probing Overview - Large card */}
-          <div className="">
+          {/* <div className="">
             <OverviewChart 
               title="DropDown_ / Probing Overview" 
               data={temperatureData}
@@ -125,18 +160,18 @@ const MachineSummary = () => {
               yAxisDomain={[15, 60]}
               onClick={() => handleChartClick("DropDown_ / Probing Overview", temperatureData, "#FFA500", [15, 60])}
             />
-          </div>
+          </div> */}
           
           {/* Machine Usage */}
-          <div>
+          {/* <div>
             <UsageChart
               title="Machine Usage" 
               onClick={() => handleChartClick("Machine Usage")}
             />
-          </div>
+          </div> */}
           
           {/* Additional cards */}
-          <div className="space-y-4">
+          {/* <div className="space-y-4">
             <DataCard 
               title="Air Flow" 
               size="medium" 
@@ -148,13 +183,13 @@ const MachineSummary = () => {
               size="semiMedium" 
               onClick={() => handleCardClick("Supply Voltage/ Current")}
             />
-          </div>
+          </div> */}
         </div>
 
         {/* Sensors Section */}
-        <div className="">
+        {/* <div className="">
           <Sensors />
-        </div>
+        </div> */}
       </div>
 
       {/* Modal */}

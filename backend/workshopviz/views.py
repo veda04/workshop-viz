@@ -20,12 +20,13 @@ logger = logging.getLogger(__name__)
 def get_dashboard_config(request):
     machine_name = request.GET.get('machine_name', 'Hurco')
     
-    file_path = f"E:\\ECPMG\\workshop-viz\\backend\\config\\{machine_name}.json"
+    file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
     machine_data = getInfluxData(file_path)
 
     return JsonResponse({
         'status': 'success',
         'message': 'Dashboard configuration loaded successfully',
+        'data': machine_data
     }, status=status.HTTP_200_OK)
 
 @api_view(['GET'])

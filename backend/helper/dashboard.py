@@ -298,15 +298,38 @@ def getInfluxData(filePath):
 		configFile = f.read()
 
 	jsonQuery = json.loads(configFile)
+	results = {}
 	
 	for i in range(1,9):
-		start = perf_counter()
-		print(f"Running query {i}...")
-		print("Query: ",jsonQuery[str(i)])
-		data = runJSONQuery(jsonQuery[str(i)])
-		end = perf_counter()
-		# print(f"{i} = {end-start}")
-		print(data)
+		query_key = str(i)
+		print(query_key)
+		if query_key in jsonQuery:
+			start = perf_counter()
+			#print(f"Running query {i}...")
+			#print("Query: ",jsonQuery[str(i)])
+			data = runJSONQuery(jsonQuery[str(i)])
+			end = perf_counter()
+			# print(f"{i} = {end-start}")
+			#print(data)
+
+			serializable_data = []
+			if data:
+				for df in data:
+					if df is not None:
+						# Reset index to include time as a column before converting to dictionary
+						df_with_time = df.reset_index()
+						#convert Dataframe to dictionary format
+						serializable_data.append(df_with_time.to_dict(orient='records'))
+					else:
+						serializable_data.append(None)
+			
+			config_without_queries = {k: v for k, v in jsonQuery[str(i)].items() if k != "Queries"}
+			results[query_key] = {
+				'config': config_without_queries,
+				'data': serializable_data,
+				'ExecutionTime': end-start
+			}
+	return results
 
 	# dummy json
 	# jsonQuery = {
@@ -314,8 +337,6 @@ def getInfluxData(filePath):
 	# 	"DefaultRange": "1h",
 	# 	"Minimised": False,
 	# }
-	
-	# return jsonQuery
 
 """
 if __name__ == "__main__":
