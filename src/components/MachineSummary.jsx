@@ -134,35 +134,40 @@ const MachineSummary = () => {
 
   return (
     <Layout>
-      <div className="p-6 space-y-6">
-        {dashboardData && dashboardData.map((item, index) => (
-          <div
-            key={index}
-            className="mb-6"
-            data-graph-type={item.config?.Type}
-            data-graph-title={item.config?.Title}
-          >
-            {item.config?.Type === 'Graph' ? (
-              <OverviewChart
-                title={item.config?.Title || `Graph ${index + 1}`}
-                series={item.config?.Series || []}
-                data={item.data || []}
-                color={item.config?.Color || getRandomColors(5)}
-                yAxisDomain={item.config?.YAxisDomain || [0, 100]}
-                onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
-              />
-            ) : item.config?.Type === 'Stat' ? (
-              <DataCard
-                title={item.config?.Title || `Stat ${index + 1}`}
-                value={item.data?.value || 'N/A'}
-                textColor={item.config?.TextColor || '#000'}
-                unit={item.config?.Unit || ''}
-                onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || '')}
-              />
-            ) : null}
-          </div>
-        ))}
-
+      <div className="dash-cover p-6 space-y-6">
+        <div className="flex flex-wrap gap-4">
+          {dashboardData && dashboardData.map((item, index) => (
+            <div
+              key={index}
+              className={`sub-blocks ${
+                item.config?.Type === 'Graph' ? 'w-full md:w-[calc(33.333%-1rem)] lg:w-[calc(33.333%-1rem)]' : 
+                item.config?.Type === 'Stat' ? 'w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]' : 
+                'w-full md:w-[calc(33.333%-1rem)]'
+              } mb-4`}
+              data-graph-type={item.config?.Type}
+              data-graph-title={item.config?.Title}
+            >
+              {item.config?.Type === 'Graph' ? (
+                <OverviewChart
+                  title={item.config?.Title || `Graph ${index + 1}`}
+                  series={item.config?.Series || []}
+                  data={item.data || []}
+                  color={item.config?.Color || getRandomColors(5)}
+                  yAxisDomain={item.config?.YAxisDomain || [0, 100]}
+                  onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
+                />
+              ) : item.config?.Type === 'Stat' ? (
+                <DataCard
+                  title={item.config?.Title || `Stat ${index + 1}`}
+                  value={item.data?.value || 'N/A'}
+                  textColor={item.config?.TextColor || '#000'}
+                  unit={item.config?.Unit || ''}
+                  onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || '')}
+                />
+              ) : null}
+            </div>
+          ))}
+        </div>
 
         {/* Overview Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
