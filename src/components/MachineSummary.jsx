@@ -11,7 +11,7 @@ import UsageChart from './UsageChart';
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dashboardData, setDashboardData] = useState({});
+  const [dashboardData, setDashboardData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -56,7 +56,7 @@ const MachineSummary = () => {
   };
 
   // handles for chart clicks
-  const handleChartClick = (title, data, color, yAxisDomain) => {
+  const handleChartClick = (title, data, series = [], color, yAxisDomain) => {
     openModal(
       <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
         <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
@@ -72,18 +72,23 @@ const MachineSummary = () => {
                   tick={{ fontSize: 14, fill: '#9CA3AF' }}
                 />
                 <YAxis 
-                  domain={yAxisDomain}
+                  // domain={yAxisDomain}
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 14, fill: '#9CA3AF' }}
                 />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke={color} 
-                  strokeWidth={3}
-                  dot={false}
-                />
+
+                {series.map((s, index) => (
+                  <Line
+                    key={index}
+                    type="monotone"
+                    dataKey={s}
+                    stroke={color[index % color.length]}
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -108,9 +113,57 @@ const MachineSummary = () => {
     );
   };
 
+  // series of random colors for the charts
+  const getRandomColor = () => {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+      color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+  }
+
+  // get x number of random colors
+  const getRandomColors = (num) => {
+    const colors = [];
+    for (let i = 0; i < num; i++) {
+      colors.push(getRandomColor());
+    }
+    return colors;
+  }
+
   return (
     <Layout>
       <div className="p-6 space-y-6">
+        {dashboardData && dashboardData.map((item, index) => (
+          <div
+            key={index}
+            className="mb-6"
+            data-graph-type={item.config?.Type}
+            data-graph-title={item.config?.Title}
+          >
+            {item.config?.Type === 'Graph' ? (
+              <OverviewChart
+                title={item.config?.Title || `Graph ${index + 1}`}
+                series={item.config?.Series || []}
+                data={item.data || []}
+                color={item.config?.Color || getRandomColors(5)}
+                yAxisDomain={item.config?.YAxisDomain || [0, 100]}
+                onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
+              />
+            ) : item.config?.Type === 'Stat' ? (
+              <DataCard
+                title={item.config?.Title || `Stat ${index + 1}`}
+                value={item.data?.value || 'N/A'}
+                textColor={item.config?.TextColor || '#000'}
+                unit={item.config?.Unit || ''}
+                onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || '')}
+              />
+            ) : null}
+          </div>
+        ))}
+
+
         {/* Overview Charts */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <OverviewChart 

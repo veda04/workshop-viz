@@ -20,6 +20,7 @@ import json
 import pandas as pd
 from time import perf_counter
 from time import sleep
+import random
 
 INFLUX_TOKEN = "pRoemIh7JfC7cn1HG2VyZcx1BSIguLN-gqhQyKl8775tpvDV4o9NNf1FuLMDKKvKaVEj1wDKiPouKsbvSS6s5Q=="
 DB_LINK = "http://10.101.23.23:8086"
@@ -298,7 +299,7 @@ def getInfluxData(filePath):
 		configFile = f.read()
 
 	jsonQuery = json.loads(configFile)
-	results = {}
+	results = []
 	
 	for i in range(1,9):
 		query_key = str(i)
@@ -307,28 +308,35 @@ def getInfluxData(filePath):
 			start = perf_counter()
 			#print(f"Running query {i}...")
 			#print("Query: ",jsonQuery[str(i)])
-			data = runJSONQuery(jsonQuery[str(i)])
+			# data = runJSONQuery(jsonQuery[str(i)])
+			serializable_data = generate_random_data(50, start_time="2025-07-28T11:15:00Z", interval_minutes=1)  # Replace with actual query function
 			end = perf_counter()
 			# print(f"{i} = {end-start}")
 			#print(data)
 
-			serializable_data = []
-			if data:
-				for df in data:
-					if df is not None:
-						# Reset index to include time as a column before converting to dictionary
-						df_with_time = df.reset_index()
-						#convert Dataframe to dictionary format
-						serializable_data.append(df_with_time.to_dict(orient='records'))
-					else:
-						serializable_data.append(None)
+			# serializable_data = []
+			# if data:
+			# 	for df in data:
+			# 		if df is not None:
+			# 			# Reset index to include time as a column before converting to dictionary
+			# 			df_with_time = df.reset_index()
+			# 			#convert Dataframe to dictionary format
+			# 			serializable_data.append(df_with_time.to_dict(orient='records'))
+			# 		else:
+			# 			serializable_data.append(None)
 			
 			config_without_queries = {k: v for k, v in jsonQuery[str(i)].items() if k != "Queries"}
-			results[query_key] = {
+
+			# add new key to config_without_queries
+			seriesExtracted = ["A-Axis_Motor", "C-Axis_Motor", "Spindle", "X-Axis_Motor_Bearing", "Y-Axis_Motor_Bearing", "Z-Axis_Motor_Bearing"]
+			config_without_queries['Series'] = seriesExtracted
+
+			results.append({
 				'config': config_without_queries,
 				'data': serializable_data,
 				'ExecutionTime': end-start
-			}
+			})
+	print(results)
 	return results
 
 	# dummy json
@@ -337,6 +345,25 @@ def getInfluxData(filePath):
 	# 	"DefaultRange": "1h",
 	# 	"Minimised": False,
 	# }
+
+def generate_random_data(num_records: int, start_time: str = "2025-07-28T11:15:00Z", interval_minutes: int = 1):
+    data = []
+    base_time = datetime.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
+
+    for i in range(num_records):
+        timestamp = base_time + timedelta(minutes=i * interval_minutes)
+        record = {
+            "time": timestamp.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "A-Axis_Motor": round(random.uniform(0.01, 0.05), 7),
+            "C-Axis_Motor": round(random.uniform(0.01, 0.05), 6),
+            "Spindle": round(random.uniform(0.1, 0.2), 7),
+            "X-Axis_Motor_Bearing": round(random.uniform(0.01, 0.02), 13),
+            "Y-Axis_Motor_Bearing": round(random.uniform(0.01, 0.02), 7),
+            "Z-Axis_Motor_Bearing": round(random.uniform(-0.001, 0.001), 7),
+        }
+        data.append(record)
+
+    return data
 
 """
 if __name__ == "__main__":
