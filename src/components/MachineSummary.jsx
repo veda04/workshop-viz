@@ -60,7 +60,7 @@ const MachineSummary = () => {
     openModal(
       <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
         <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
-        <div className="flex-1 px-8 pb-8">
+        <div className="flex-1 px-8 pb-4">
           <div className="h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
@@ -93,6 +93,27 @@ const MachineSummary = () => {
             </ResponsiveContainer>
           </div>
         </div>
+        
+        {/* Legend Section */}
+        {series && series.length > 0 && (
+          <div className="px-8 pb-6">
+            <div className="border-t border-gray-600 pt-4">
+              <div className="flex flex-wrap justify-center gap-4">
+                {series.map((seriesName, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: color[index % color.length] }}
+                    ></div>
+                    <span className="text-sm font-medium text-gray-300">
+                      {seriesName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -151,16 +172,16 @@ const MachineSummary = () => {
                 <OverviewChart
                   title={item.config?.Title || `Graph ${index + 1}`}
                   series={item.config?.Series || []}
-                  data={item.data || []}
+                  data={item.data && item.data.length > 0 ? item.data[0] : []}
                   color={item.config?.Color || getRandomColors(5)}
                   yAxisDomain={item.config?.YAxisDomain || [0, 100]}
-                  onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
+                  onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data[0] || item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
                 />
               ) : item.config?.Type === 'Stat' ? (
                 <DataCard
                   title={item.config?.Title || `Stat ${index + 1}`}
-                  value={item.data?.value || 'N/A'}
-                  textColor={item.config?.TextColor || '#000'}
+                  value = {item.data?.[0]?.[0]?.value || 'N/A'}
+                  textColor={item.config?.TextColor || getRandomColors(5)}
                   unit={item.config?.Unit || ''}
                   onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || '')}
                 />
@@ -210,7 +231,7 @@ const MachineSummary = () => {
         {/* Bottom Section */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* DropDown/Probing Overview - Large card */}
-          {/* <div className="">
+          <div className="">
             <OverviewChart 
               title="DropDown_ / Probing Overview" 
               data={temperatureData}
@@ -218,18 +239,18 @@ const MachineSummary = () => {
               yAxisDomain={[15, 60]}
               onClick={() => handleChartClick("DropDown_ / Probing Overview", temperatureData, "#FFA500", [15, 60])}
             />
-          </div> */}
+          </div>
           
           {/* Machine Usage */}
-          {/* <div>
+          <div>
             <UsageChart
               title="Machine Usage" 
               onClick={() => handleChartClick("Machine Usage")}
             />
-          </div> */}
+          </div>
           
           {/* Additional cards */}
-          {/* <div className="space-y-4">
+          <div className="space-y-4">
             <DataCard 
               title="Air Flow" 
               size="medium" 
@@ -241,13 +262,13 @@ const MachineSummary = () => {
               size="semiMedium" 
               onClick={() => handleCardClick("Supply Voltage/ Current")}
             />
-          </div> */}
+          </div>
         </div>
 
         {/* Sensors Section */}
-        {/* <div className="">
+        <div className="">
           <Sensors />
-        </div> */}
+        </div>
       </div>
 
       {/* Modal */}

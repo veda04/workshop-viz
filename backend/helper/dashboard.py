@@ -308,27 +308,38 @@ def getInfluxData(filePath):
 			start = perf_counter()
 			#print(f"Running query {i}...")
 			#print("Query: ",jsonQuery[str(i)])
-			# data = runJSONQuery(jsonQuery[str(i)])
-			serializable_data = generate_random_data(50, start_time="2025-07-28T11:15:00Z", interval_minutes=1)  # Replace with actual query function
+			data = runJSONQuery(jsonQuery[str(i)])
+			#serializable_data = generate_random_data(50, start_time="2025-07-28T11:15:00Z", interval_minutes=1)  # Replace with actual query function
 			end = perf_counter()
 			# print(f"{i} = {end-start}")
 			#print(data)
 
-			# serializable_data = []
-			# if data:
-			# 	for df in data:
-			# 		if df is not None:
-			# 			# Reset index to include time as a column before converting to dictionary
-			# 			df_with_time = df.reset_index()
-			# 			#convert Dataframe to dictionary format
-			# 			serializable_data.append(df_with_time.to_dict(orient='records'))
-			# 		else:
-			# 			serializable_data.append(None)
-			
+			serializable_data = []
+			if data:
+				for df in data:
+					if df is not None:
+						# Reset index to include time as a column before converting to dictionary
+						df_with_time = df.reset_index()
+						#convert Dataframe to dictionary format
+						serializable_data.append(df_with_time.to_dict(orient='records'))
+					else:
+						serializable_data.append(None)
+
+			# add new key to config_without_queries which exclues # the Queries key from the jsonQuery
 			config_without_queries = {k: v for k, v in jsonQuery[str(i)].items() if k != "Queries"}
 
-			# add new key to config_without_queries
-			seriesExtracted = ["A-Axis_Motor", "C-Axis_Motor", "Spindle", "X-Axis_Motor_Bearing", "Y-Axis_Motor_Bearing", "Z-Axis_Motor_Bearing"]
+			#seriesExtracted = ["A-Axis_Motor", "C-Axis_Motor", "Spindle", "X-Axis_Motor_Bearing", "Y-Axis_Motor_Bearing", "Z-Axis_Motor_Bearing"]
+
+			# Extract series names from the data
+			seriesExtracted = []
+			if serializable_data:
+				for df_data in serializable_data:
+					if df_data and len(df_data) > 0:
+						# Get all columns except 'time'
+						columns = [col for col in df_data[0].keys() if col != 'time']
+						seriesExtracted.extend(columns)
+				# Remove duplicates while preserving order
+				seriesExtracted = list(dict.fromkeys(seriesExtracted))
 			config_without_queries['Series'] = seriesExtracted
 
 			results.append({
@@ -336,7 +347,7 @@ def getInfluxData(filePath):
 				'data': serializable_data,
 				'ExecutionTime': end-start
 			})
-	print(results)
+	#print(results)
 	return results
 
 	# dummy json
