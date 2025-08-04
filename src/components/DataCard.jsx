@@ -9,6 +9,13 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
     extraLarge: "p-10 h-52"
   };
 
+  const unitMap = {
+    "Coolant Temperature": "°C",
+    "Coolant Level": "RPM",
+    "Coolant Flow": "mm/min",
+    "Coolant Concentration": "Brix(%)"
+  };
+
   return (
     <div 
       className={`
@@ -24,7 +31,7 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
         {title}
       </h3>
       {value && (
-        <div className={`${textColor} font-bold text-4xl`}>
+        <div style={{color: textColor}} className="font-bold text-4xl">
           {value} <span className="text-lg font-medium text-gray-600">{unit}</span>
         </div>
       )}

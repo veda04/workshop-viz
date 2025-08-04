@@ -6,7 +6,6 @@
         "Minimised": true,
         "Maximisable": true,
         "RefreshRate": "1m",
-        "widgetClass": "w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-64 backdrop-blur-sm bg-opacity-90 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300",
         "Queries": [
             {
                 "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] == \"T1-HUR\")  |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\" and r[\"Name\"] !~ /Elec/ and r[\"Name\"] !~ /Reference/)  |> drop(columns: [\"SensorID\",\"Node\"])",
@@ -22,7 +21,6 @@
         "Minimised": true,
         "Maximisable": true,
         "RefreshRate": "1m",
-        "widgetClass": "w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-64 backdrop-blur-sm bg-opacity-90 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300",
         "Queries": [
             {
                 "Flux": "from(bucket: \"Machines_Summary\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Acceleration\")  |> filter(fn: (r) => r[\"Node\"] =~ /A[0-9]-HUR/)  |> filter(fn: (r) => r[\"_field\"] == \"Max\")  |>drop(columns: [\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: true)  |> map(fn: (r) => ({r with _value: float(v: r._value) / 10000.0}))",
@@ -38,7 +36,6 @@
         "Minimised": true,
         "Maximisable": true,
         "RefreshRate": "1m",
-        "widgetClass": "w-1/2 bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-64 backdrop-blur-sm bg-opacity-90 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300",
         "Queries": [
             {
                 "Flux": "from(bucket: \"Machines_Summary\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Current\")  |> filter(fn: (r) => r[\"Node\"] =~ /C[0-9]-HUR/)  |> filter(fn: (r) => r[\"_field\"] == \"Max\")  |>drop(columns: [\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: true)  |> map(fn: (r) => ({r with _value: float(v: r._value) / 1000.0}))",
@@ -55,7 +52,6 @@
         "Minimised": true,
         "Maximisable": true,
         "RefreshRate": "1m",
-        "widgetClass": "col-6 bg-white rounded-xl shadow-lg border border-gray-200 flex flex-col justify-center items-center p-6 h-32 cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 backdrop-blur-sm bg-opacity-90",
         "Queries": [
             {
                 "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Coolant\")  |> filter(fn: (r) => r[\"Machine\"] == \"Hurco\")  |> filter(fn: (r) => r[\"_field\"] == \"Temperature\")  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> map(fn: (r) => ({r with _value: float(v: r._value) / 10.0}))",

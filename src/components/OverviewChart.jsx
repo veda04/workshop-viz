@@ -13,46 +13,52 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   return (
     <div 
       className={`
-        bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-64
-        backdrop-blur-sm bg-opacity-90
+        bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-72
+        backdrop-blur-sm bg-opacity-90 overflow-hidden
         ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
       `}
       onClick={onClick}
     >
-      <h3 className="absolute z-50 text-lg w-full font-semibold my-4 text-center text-white">{title}</h3>
-      <div className="h-56 bg-gray-800 rounded-lg p-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis 
-              dataKey="time" 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: '#9CA3AF' }}
-            />
-            <YAxis 
-              axisLine={false}
-              tickLine={false}
-              tick={{ fontSize: 10, fill: '#9CA3AF' }}
-            />
-            {actualSeries.map((s, index) => (
-              <Line
-                key={index}
-                type="monotone"
-                dataKey={s}
-                stroke={Array.isArray(color) ? color[index % color.length] : color}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 4 }}
+      <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black">{title}</h3>
+      <div className="h-56 bg-gray-800 p-2 relative">
+        {chartData.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-gray-400 text-lg">No data available</p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis 
+                dataKey="time" 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9CA3AF' }}
               />
-            ))}
-          </LineChart>
-        </ResponsiveContainer>
+              <YAxis 
+                axisLine={false}
+                tickLine={false}
+                tick={{ fontSize: 10, fill: '#9CA3AF' }}
+              />
+              {actualSeries.map((s, index) => (
+                <Line
+                  key={index}
+                  type="monotone"
+                  dataKey={s}
+                  stroke={Array.isArray(color) ? color[index % color.length] : color}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
+        )}
       </div>
       
       {/* Mini Legend for the card view */}
-      {actualSeries.length > 0 && (
-        <div className="px-2 pb-2">
+      {actualSeries.length > 0 && chartData.length > 0 && (
+        <div className="px-2 py-1">
           <div className="flex  gap-2 justify-center flex-wrap">
             {actualSeries.map((seriesName, index) => (
               <div key={index} className="flex items-center gap-1">
@@ -61,7 +67,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
                 ></div>
                 <p className="text-xs text-gray-600">
-                  {seriesName.length > 8 ? seriesName.substring(0, 8) + '...' : seriesName}
+                  {seriesName}
                 </p>
               </div>
             ))}

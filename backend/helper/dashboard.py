@@ -300,10 +300,17 @@ def getInfluxData(filePath):
 
 	jsonQuery = json.loads(configFile)
 	results = []
-	
-	for i in range(1,9):
+
+	# Check if SensorList exists in the JSON and capture its values
+	sensor_list = []
+	if 'SensorList' in jsonQuery:
+		sensor_list = jsonQuery['SensorList']
+	else:
+		print("No SensorList found in JSON configuration")
+
+	for i in range(1, 10):
 		query_key = str(i)
-		print(query_key)
+		#print(query_key)
 		if query_key in jsonQuery:
 			start = perf_counter()
 			#print(f"Running query {i}...")
@@ -347,6 +354,10 @@ def getInfluxData(filePath):
 				'data': serializable_data,
 				'ExecutionTime': end-start
 			})
+	
+	results.append({
+		'sensor_list': sensor_list,
+	})
 	#print(results)
 	return results
 

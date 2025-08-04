@@ -153,10 +153,88 @@ const MachineSummary = () => {
     return colors;
   }
 
+  // Function to get appropriate unit based on title for coolant values
+  const getUnitByTitle = (title) => {
+    const titleLower = title.toLowerCase();
+    
+    // Temperature related
+    if (titleLower.includes('temperature') || titleLower.includes('temp')) {
+      return '°C';
+    }
+    
+    // Pressure related
+    if (titleLower.includes('pressure')) {
+      return 'bar';
+    }
+    
+    // Flow related
+    if (titleLower.includes('flow')) {
+      return 'L/min';
+    }
+    
+    // Level related
+    if (titleLower.includes('level')) {
+      return 'mm';
+    }
+    
+    // Concentration related
+    if (titleLower.includes('concentration') || titleLower.includes('brix')) {
+      return 'Brix(%)';
+    }
+    
+    // Voltage related
+    if (titleLower.includes('voltage')) {
+      return 'V';
+    }
+    
+    // Current related
+    if (titleLower.includes('current')) {
+      return 'A';
+    }
+    
+    // Speed/RPM related
+    if (titleLower.includes('speed') || titleLower.includes('rpm')) {
+      return 'RPM';
+    }
+    
+    // Vibration/acceleration related
+    if (titleLower.includes('vibration') || titleLower.includes('acceleration')) {
+      return 'g';
+    }
+    
+    // Air related
+    if (titleLower.includes('air flow') || titleLower.includes('airflow')) {
+      return 'L/min';
+    }
+    
+    // Percentage related
+    if (titleLower.includes('usage') || titleLower.includes('efficiency') || titleLower.includes('quality')) {
+      return '%';
+    }
+    
+    // Power related
+    if (titleLower.includes('power')) {
+      return 'kW';
+    }
+    
+    // Default fallback
+    return '';
+  }
+
   return (
     <Layout>
       <div className="dash-cover p-6 space-y-6">
         <div className="flex flex-wrap gap-4">
+          {loading && (
+            <div className="w-full flex justify-center items-center py-8">
+              <div className="text-xl text-gray-600 font-bold">Loading content...</div>
+            </div>
+          )}
+          {error && (
+            <div className="w-full flex justify-center items-center py-8">
+              <div className="text-xl text-red-600">Error: {error}</div>
+            </div>
+          )}
           {dashboardData && dashboardData.map((item, index) => (
             <div
               key={index}
@@ -181,94 +259,36 @@ const MachineSummary = () => {
                 <DataCard
                   title={item.config?.Title || `Stat ${index + 1}`}
                   value = {item.data?.[0]?.[0]?.value || 'N/A'}
-                  textColor={item.config?.TextColor || getRandomColors(5)}
-                  unit={item.config?.Unit || ''}
-                  onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || '')}
+                  textColor={item.config?.TextColor || getRandomColors(1)}
+                  unit={item.data?.[0]?.[0]?.value ? item.config?.Unit || getUnitByTitle(item.config?.Title || '') : ''}
+                  onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || ''))}
+                />
+              ) : item.config?.Type === 'Usage' ? (
+                <UsageChart
+                  title={item.config?.Title || `Usage ${index + 1}`}
+                  onClick={() => handleChartClick(item.config?.Title || `Usage ${index + 1}`, item.data[0] || item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
+                />
+              ) : item.config?.Type === 'Info' ? (  
+                <DataCard
+                  title={item.config?.Title || `Info ${index + 1}`}
+                  value = {item.data?.[0]?.[0]?.value || 'N/A'}
+                  textColor={item.config?.TextColor || getRandomColors(1)}
+                  onClick={() => handleCardClick(item.config?.Title || `Info ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || ''))}
                 />
               ) : null}
             </div>
           ))}
-        </div>
 
-        {/* Overview Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <OverviewChart 
-            title="Temperature Overview" 
-            data={temperatureData}
-            color="#FFA500"
-            yAxisDomain={[15, 60]}
-            onClick={() => handleChartClick("Temperature Overview", temperatureData, "#FFA500", [15, 60])}
-          />
-          <OverviewChart 
-            title="Accelerometer Overview" 
-            data={accelerometerData}
-            color="#00BFFF"
-            yAxisDomain={[0, 2]}
-            onClick={() => handleChartClick("Accelerometer Overview", accelerometerData, "#00BFFF", [0, 2])}
-          />
-          <OverviewChart 
-            title="Current Overview" 
-            data={currentData}
-            color="#32CD32"
-            yAxisDomain={[10, 40]}
-            onClick={() => handleChartClick("Current Overview", currentData, "#32CD32", [10, 40])}
-          />
-        </div>        
-        {/* Coolant Data Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {coolantData.map((item, index) => (
-            <DataCard 
-              key={index}
-              title={item.title} 
-              value={item.value} 
-              textColor={item.textColor} 
-              unit={item.unit}
-              onClick={() => handleCardClick(item.title, item.value, item.unit)}
-            />
-          ))}
-        </div>
-
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* DropDown/Probing Overview - Large card */}
-          <div className="">
-            <OverviewChart 
-              title="DropDown_ / Probing Overview" 
-              data={temperatureData}
-              color="#FFA500"
-              yAxisDomain={[15, 60]}
-              onClick={() => handleChartClick("DropDown_ / Probing Overview", temperatureData, "#FFA500", [15, 60])}
-            />
-          </div>
-          
-          {/* Machine Usage */}
-          <div>
-            <UsageChart
-              title="Machine Usage" 
-              onClick={() => handleChartClick("Machine Usage")}
-            />
-          </div>
-          
-          {/* Additional cards */}
-          <div className="space-y-4">
-            <DataCard 
-              title="Air Flow" 
-              size="medium" 
-              value ="Air Valve Open"
-              onClick={() => handleCardClick("Air Flow")}
-            />
-            <DataCard 
-              title="Supply Voltage/ Current" 
-              size="semiMedium" 
-              onClick={() => handleCardClick("Supply Voltage/ Current")}
-            />
-          </div>
         </div>
 
         {/* Sensors Section */}
-        <div className="">
-          <Sensors />
-        </div>
+        {dashboardData && dashboardData.map((item, index) => (
+          item.sensor_list? (
+            <div className="-mt-10 p-0 gap-0 space-y-0" key={index}>
+              <Sensors sensorData={item.sensor_list} />
+            </div>
+          ) : null
+        ))}
       </div>
 
       {/* Modal */}
