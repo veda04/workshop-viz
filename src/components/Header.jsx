@@ -1,6 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Header = () => {
+  const [bookingData, setBookingData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -15,15 +19,71 @@ const Header = () => {
     second: '2-digit'
   });
 
+  // get the current machine name from the URL or use a default
+  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';
+
+  // Fetch the current booking data from the backend
+  useEffect(() => {
+    const fetchCurrentBooking = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await fetch(`http://localhost:8000/api/current-booking/?machine_name=${machineName}`);
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const result = await response.json();
+        console.log('Machine booking details:', result);
+        
+        // Set the booking data from the response
+        if (result.status === 'success' && result.data && result.data.length > 0) {
+          setBookingData(result.data[0]); // Get the first booking
+        } else {
+          setBookingData(null);
+        }
+      } catch (error) {
+        console.error('Error fetching current booking:', error);
+        setError(error.message);
+        setBookingData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrentBooking();
+  }, [machineName]);
+
+  // Helper function to format timings
+  const formatTimings = (booking) => {
+    if (!booking) return 'Available';
+    
+    const startDate = booking.dStart ? new Date(booking.dStart).toLocaleDateString() : '';
+    const endDate = booking.dEnd ? new Date(booking.dEnd).toLocaleDateString() : '';
+    const startTime = booking.tStart ? new Date(`1970-01-01T${booking.tStart}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const endTime = booking.tEnd ? new Date(`1970-01-01T${booking.tEnd}`).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    
+    if (startDate && endDate) {
+      if (startDate === endDate) {
+        return `${startDate}`;
+      } else {
+        return `${startDate} - ${endDate}`;
+      }
+    }
+    
+    return 'N/A';
+  };
+
   return (
     <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-8">
           <h1 className="text-4xl font-bold text-gray-900 tracking-wider">
-            HURCO
+            {machineName}
           </h1>
           <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-lg shadow-md">
-            <span className="text-white font-medium">TEST RUNNING</span>
+            <span className="text-white font-medium">
+              {loading ? 'LOADING...' : bookingData ? 'BOOKED' : 'AVAILABLE'}
+            </span>
           </div>
           <div className="relative mr-0 ml-0">
             <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -53,7 +113,7 @@ const Header = () => {
             {currentDate} | {currentTime} 
           </div>
           <div className="bg-indigo-500 px-4 py-2 rounded-lg shadow-md flex items-center space-x-2">
-            <button className="text-white font-medium" title="Refresh" onClick={() =>window.location.reload()}>
+            <button className="text-white font-medium" title="Refresh" onClick={() => window.location.reload()}>
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
@@ -65,12 +125,20 @@ const Header = () => {
       <div className="flex justify-between items-center mt-4">
         <div>
           <div className="text-sm text-gray-600">BOOKED BY:</div>
-          <div className="text-xl font-semibold text-gray-900">Veda Salkar</div>
+          <div className="text-xl font-semibold text-gray-900">
+            {loading ? 'Loading...' : 
+             error ? 'Error loading' :
+             bookingData?.vbooked_by || 'No Current Booking'}
+          </div>
         </div>
         
         <div className="text-right">
-          <div className="text-sm text-gray-600">TIMINGS:</div>
-          <div className="text-xl font-semibold text-gray-900">12:00 PM - 1:00 PM</div>
+          <div className="text-sm text-gray-600">Duration:</div>
+          <div className="text-xl font-semibold text-gray-900">
+            {loading ? 'Loading...' : 
+             error ? 'Error loading' :
+             formatTimings(bookingData)}
+          </div>
         </div>
       </div>
     </div>

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.http import JsonResponse
 from .influx_service import InfluxDBService
+from .mysql_service import MySQLService
 import json
 from datetime import datetime
 import logging
@@ -60,18 +61,95 @@ def get_dashboard_config(request):
     file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
     #file_path = f"E:\\ECPMG\\workshop-viz\\backend\\config\\{machine_name}.json"
     machine_data = getInfluxData(file_path)
-    print("Machine Data:")
-    pprint.pprint(machine_data, indent=2, width=120)
+    #print("Machine Data:")
+    #pprint.pprint(machine_data, indent=2, width=120)
 
     #format timestamps in the machine data
     formatted_data = format_timestamps_in_data(machine_data)
-    pprint.pprint(formatted_data, indent=2, width=120)
+    #pprint.pprint(formatted_data, indent=2, width=120)
 
     return JsonResponse({
         'status': 'success',
         'message': 'Dashboard configuration loaded successfully',
         'data': formatted_data
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def get_current_booking(request):
+    """Get current booking information for a machine"""
+    try:
+        machine_name = request.GET.get('machine_name', 'Hurco')
+
+        mysql_service = MySQLService()
+        asset_id = mysql_service.get_machine_id(machine_name)
+
+        if asset_id:
+            machine_related_booking_ids = mysql_service.get_machine_related_bookings(asset_id['iAsset_id'])
+
+            if machine_related_booking_ids:
+                booking_ids_str = ",".join(str(booking['iBooking_id']) for booking in machine_related_booking_ids)
+                today_date = datetime.now().strftime('%Y-%m-%d')
+                current_bookings = mysql_service.get_booking_list(
+                    f" AND iBooking_id IN ({booking_ids_str}) AND ('{today_date}' >= dStart AND '{today_date}' <= dEnd) AND cStatus IN('A', 'CO', 'IP') ORDER BY dStart DESC LIMIT 5"
+                )
+
+                # process the current booking to replace the iUser_id_req to the user 
+                for booking in current_bookings:
+                    if booking['iUser_id_req']:
+                        booking['vbooked_by'] = mysql_service.get_booked_by_user(booking['iUser_id_req'])
+
+                if current_bookings:
+                    return JsonResponse({
+                        'status': 'success',
+                        'message': 'Booking list retrieved successfully',
+                        'data': current_bookings
+                    }, status=status.HTTP_200_OK)
+                else: 
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'No booking list found for the specified machine',
+                        'data': {}
+                    }, status=status.HTTP_404_NOT_FOUND)
+            else: 
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'No machine related bookings found for the specified machine',
+                    'data': {}
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine id not found in the database',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving current booking: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET'])
+def test_mysql_connection(request):
+    """Test API endpoint to check MySQL connection"""
+    try:
+        mysql_service = MySQLService()
+        result = mysql_service.test_connection()
+        
+        if result['status'] == 'success':
+            return JsonResponse(result, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+    except Exception as e:
+        logger.error(f"Error testing MySQL connection: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 @api_view(['GET'])
 def test_influx_connection(request):
