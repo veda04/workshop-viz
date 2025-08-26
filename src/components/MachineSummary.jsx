@@ -261,7 +261,7 @@ const MachineSummary = () => {
                   value = {item.data?.[0]?.[0]?.value || 'N/A'}
                   textColor={item.config?.TextColor || getRandomColors(1)}
                   unit={item.data?.[0]?.[0]?.value ? item.config?.Unit || getUnitByTitle(item.config?.Title || '') : ''}
-                  onClick={() => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || ''))}
+                  onClick={item.config?.Maximisable ? () => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || '')) : undefined}
                 />
               ) : item.config?.Type === 'Usage' ? (
                 <UsageChart
@@ -273,7 +273,7 @@ const MachineSummary = () => {
                   title={item.config?.Title || `Info ${index + 1}`}
                   value = {item.data?.[0]?.[0]?.value || 'N/A'}
                   textColor={item.config?.TextColor || getRandomColors(1)}
-                  onClick={() => handleCardClick(item.config?.Title || `Info ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || ''))}
+                  onClick={item.config?.Maximisable ? () => handleCardClick(item.config?.Title || `Info ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || '')) : undefined}
                 />
               ) : null}
             </div>
