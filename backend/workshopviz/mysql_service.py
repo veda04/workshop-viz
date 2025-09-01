@@ -132,6 +132,41 @@ class MySQLService:
         except Exception as e:
             logger.error(f"Error getting booked by user: {str(e)}")
             return None
+        
+    def get_user_list(self):
+        """Get the list of users"""
+        try:
+            if not self.connect():
+                return None
+            cursor = self.connection.cursor(dictionary=True)
+            query = "SELECT iUser_id, vName FROM users"
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            logger.error(f"Error getting user list: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def add_notes(self, description, category, startDate, endDate, user ):
+        """Add note to a booking"""
+        print(f"Adding note with description: {description}, category: {category}, startDate: {startDate}, endDate: {endDate}, user: {user}")
+        try:
+            if not self.connect():
+                return False
+            cursor = self.connection.cursor()
+            query = "INSERT INTO machine_notes (vDesc, vCategory, dStart, dEnd, vUser) VALUES (%s, %s, %s, %s, %s)"
+
+            print(f"Executing query: {query} with values: ({description}, {category}, {startDate}, {endDate}, {user})")
+            cursor.execute(query, (description, category, startDate, endDate, user))
+            self.connection.commit()
+            cursor.close()
+            return True
+        except Exception as e:
+            logger.error(f"Error adding note to booking: {str(e)}")
+            return False
 
     def close(self):
         """Close the MySQL connection"""

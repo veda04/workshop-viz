@@ -20,9 +20,7 @@ const Header = () => {
   });
 
   // get the current machine name from the URL or use a default
-  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';
-
-  // Fetch the current booking data from the backend
+  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';  // Fetch the current booking data from the backend
   useEffect(() => {
     const fetchCurrentBooking = async () => {
       try {
@@ -108,11 +106,11 @@ const Header = () => {
           </div>
         </div>
         
-        <div className="text-right flex items-center space-x-2">
+        <div className="text-right flex items-center space-x-2 pr-6">
           <div className="text-xl text-gray-600 uppercase tracking-wide">
             {currentDate} | {currentTime} 
           </div>
-          <div className="bg-indigo-500 px-4 py-2 rounded-lg shadow-md flex items-center space-x-2">
+          <div className="bg-indigo-500 px-2 py-2 rounded-lg shadow-md flex items-center space-x-2">
             <button className="text-white font-medium" title="Refresh" onClick={() => window.location.reload()}>
               <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -124,7 +122,7 @@ const Header = () => {
       
       <div className="flex justify-between items-center mt-4">
         <div>
-          <div className="text-sm text-gray-600">BOOKED BY:</div>
+          <div className="text-sm text-gray-600 uppercase">Booked By:</div>
           <div className="text-xl font-semibold text-gray-900">
             {loading ? 'Loading...' : 
              error ? 'Error loading' :
@@ -133,11 +131,14 @@ const Header = () => {
         </div>
         
         <div className="text-right">
-          <div className="text-sm text-gray-600">Duration:</div>
+          <div className="text-sm text-gray-600 uppercase">Duration:</div>
           <div className="text-xl font-semibold text-gray-900">
             {loading ? 'Loading...' : 
              error ? 'Error loading' :
-             formatTimings(bookingData)}
+             bookingData
+               ? `${bookingData.dStart ? new Date(bookingData.dStart).toLocaleDateString() : '-'} (${bookingData.tStart ? bookingData.tStart : '-'}) - ${bookingData.dEnd ? new Date(bookingData.dEnd).toLocaleDateString() : '-'} (${bookingData.tEnd ? bookingData.tEnd : '-'})`
+               : '-'
+            }
           </div>
         </div>
       </div>

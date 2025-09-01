@@ -1,4 +1,6 @@
+from urllib import response
 from django.shortcuts import render
+from reactivex import catch
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
@@ -15,6 +17,59 @@ from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG
 from helper.dashboard import getInfluxData
 import pprint
 import pandas as pd
+
+@api_view(['GET'])
+def test_mysql_connection(request):
+    """Test API endpoint to check MySQL connection"""
+    try:
+        mysql_service = MySQLService()
+        result = mysql_service.test_connection()
+        
+        if result['status'] == 'success':
+            return JsonResponse(result, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            
+    except Exception as e:
+        logger.error(f"Error testing MySQL connection: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def test_influx_connection(request):
+    """Test API endpoint to check InfluxDB connection"""
+    try:
+        client = InfluxDBClient(url=DB_LINK, token=INFLUX_TOKEN, org=DB_ORG, timeout=10_000)
+        health = client.health()
+
+        if health.status == "pass":
+            return Response({
+                'status': 'success',
+                'message': 'Connection Successful',
+                'data': {
+                    'influxdb_version': health.version,
+                    'server_time': datetime.now(datetime.timezone.utc).isoformat()
+                }
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'status': 'error',
+                'message': health.message,
+                'data': {
+                    'status': health.status,
+                    'message': health.message,
+                    'version': health.version
+                }
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except Exception as e:
+        logger.error(f"Error testing InfluxDB connection: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 logger = logging.getLogger(__name__)
 def format_timestamp_for_display(timestamp):
@@ -98,7 +153,12 @@ def get_current_booking(request):
                 for booking in current_bookings:
                     if booking['iUser_id_req']:
                         booking['vbooked_by'] = mysql_service.get_booked_by_user(booking['iUser_id_req'])
+                    
+                    if booking['tStart']:
+                        booking['tStart'] = format_timestamp_for_display(booking['tStart'])
 
+                    if booking['tEnd']:
+                        booking['tEnd'] = format_timestamp_for_display(booking['tEnd'])#
                 if current_bookings:
                     return JsonResponse({
                         'status': 'success',
@@ -132,54 +192,70 @@ def get_current_booking(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def test_mysql_connection(request):
-    """Test API endpoint to check MySQL connection"""
+def get_user_list(request):
+    """Get user list from MySQL database"""
     try:
         mysql_service = MySQLService()
-        result = mysql_service.test_connection()
+        user_list = mysql_service.get_user_list()
         
-        if result['status'] == 'success':
-            return JsonResponse(result, status=status.HTTP_200_OK)
+        if user_list is not None:
+            return JsonResponse({
+                'status': 'success',    
+                'message': 'User list retrieved successfully',
+                'data': user_list
+            }, status=status.HTTP_200_OK)
         else:
-            return JsonResponse(result, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-            
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No user list found in the database',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+
     except Exception as e:
-        logger.error(f"Error testing MySQL connection: {str(e)}")
+        logger.error(f"Error retrieving user list: {str(e)}")
         return JsonResponse({
             'status': 'error',
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-def test_influx_connection(request):
-    """Test API endpoint to check InfluxDB connection"""
+    
+@api_view(['POST'])
+def add_notes(request):
+    """Add notes to a booking"""
     try:
-        client = InfluxDBClient(url=DB_LINK, token=INFLUX_TOKEN, org=DB_ORG, timeout=10_000)
-        health = client.health()
+        # Get the data from the request body
+        data = request.data
+        description = data.get('description', '')
+        category = data.get('category', '')
+        startDate = data.get('startDate', '')
+        endDate = data.get('endDate', '')
+        user = data.get('user', '')
 
-        if health.status == "pass":
-            return Response({
-                'status': 'success',
-                'message': 'Connection Successful',
-                'data': {
-                    'influxdb_version': health.version,
-                    'server_time': datetime.now(datetime.timezone.utc).isoformat()
-                }
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
+        if not all([description, category, startDate, endDate, user]):
+            return JsonResponse({
                 'status': 'error',
-                'message': health.message,
-                'data': {
-                    'status': health.status,
-                    'message': health.message,
-                    'version': health.version
-                }
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                'message': 'Missing required fields in the request body',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        mysql_service = MySQLService()
+        success = mysql_service.add_notes(description, category, startDate, endDate, user)
+        print("Add notes success:", success)
+        if success:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Notes added successfully',
+                'data': {}
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to add notes to the database',
+                'data': {}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     except Exception as e:
-        logger.error(f"Error testing InfluxDB connection: {str(e)}")
-        return Response({
+        logger.error(f"Error adding notes: {str(e)}")
+        return JsonResponse({
             'status': 'error',
-            'message': f'Internal server error: {str(e)}'
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
