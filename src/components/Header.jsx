@@ -12,12 +12,25 @@ const Header = () => {
     day: 'numeric'
   });
   
-  const currentTime = new Date().toLocaleTimeString('en-US', {
+  // Digital clock state and effect
+  const [currentTime, setCurrentTime] = useState(() => new Date().toLocaleTimeString('en-US', {
     hour12: false,
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit'
-  });
+  }));
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date().toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   // get the current machine name from the URL or use a default
   const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';  // Fetch the current booking data from the backend
@@ -74,11 +87,19 @@ const Header = () => {
   return (
     <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-8">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-wider">
+        <div className="flex items-center space-x-3">
+          <h1 className="text-4xl font-bold text-gray-900 tracking-wider pr-2">
             {machineName}
           </h1>
-          <div className="bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-lg shadow-md">
+          <div
+            className={
+              loading
+                ? "bg-gradient-to-r from-gray-400 to-gray-500 px-4 py-2 rounded-lg shadow-md"
+                : bookingData
+                ? "bg-gradient-to-r from-orange-400 to-orange-600 px-4 py-2 rounded-lg shadow-md"
+                : "bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-lg shadow-md"
+            }
+          >
             <span className="text-white font-medium">
               {loading ? 'LOADING...' : bookingData ? 'BOOKED' : 'AVAILABLE'}
             </span>
@@ -106,7 +127,7 @@ const Header = () => {
           </div>
         </div>
         
-        <div className="text-right flex items-center space-x-2 pr-6">
+        <div className="text-right flex items-center space-x-2 pr-10">
           <div className="text-xl text-gray-600 uppercase tracking-wide">
             {currentDate} | {currentTime} 
           </div>
@@ -119,28 +140,37 @@ const Header = () => {
           </div>
         </div>
       </div>
-      
-      <div className="flex justify-between items-center mt-4">
-        <div>
-          <div className="text-sm text-gray-600 uppercase">Booked By:</div>
-          <div className="text-xl font-semibold text-gray-900">
-            {loading ? 'Loading...' : 
-             error ? 'Error loading' :
-             bookingData?.vbooked_by || 'No Current Booking'}
+      {/* check if bookingData is available */}
+      <div className="mt-4 current-booking">
+        {(!bookingData) ? (
+          <div className="w-full text-center py-3 text-lg text-gray-700 font-semibold bg-yellow-100 rounded-lg shadow">
+            There are no bookings for this machine today 
           </div>
-        </div>
-        
-        <div className="text-right">
-          <div className="text-sm text-gray-600 uppercase">Duration:</div>
-          <div className="text-xl font-semibold text-gray-900">
-            {loading ? 'Loading...' : 
-             error ? 'Error loading' :
-             bookingData
-               ? `${bookingData.dStart ? new Date(bookingData.dStart).toLocaleDateString() : '-'} (${bookingData.tStart ? bookingData.tStart : '-'}) - ${bookingData.dEnd ? new Date(bookingData.dEnd).toLocaleDateString() : '-'} (${bookingData.tEnd ? bookingData.tEnd : '-'})`
-               : '-'
-            }
+        ) : (
+          <>
+          <div className="flex justify-between items-center px-3 py-2 bg-yellow-100 rounded-lg shadow">
+            <div>
+              <div className="text-sm text-gray-600 uppercase">Booked By:</div>
+              <div className="text-xl font-semibold text-gray-900">
+                {loading ? 'Loading...' : 
+                 error ? 'Error loading' :
+                 bookingData?.vbooked_by || 'No Current Booking'}
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm text-gray-600 uppercase">Duration:</div>
+              <div className="text-xl font-semibold text-gray-900">
+                {loading ? 'Loading...' : 
+                 error ? 'Error loading' :
+                 bookingData
+                   ? `${bookingData.dStart ? new Date(bookingData.dStart).toLocaleDateString() : '-'} (${bookingData.tStart ? bookingData.tStart : '-'}) - ${bookingData.dEnd ? new Date(bookingData.dEnd).toLocaleDateString() : '-'} (${bookingData.tEnd ? bookingData.tEnd : '-'})`
+                   : '-'
+                }
+              </div>
+            </div>
           </div>
-        </div>
+          </>
+        )}
       </div>
     </div>
   );
