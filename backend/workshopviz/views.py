@@ -226,11 +226,15 @@ def add_notes(request):
         data = request.data
         description = data.get('description', '')
         category = data.get('category', '')
-        startDate = data.get('startDate', '')
-        endDate = data.get('endDate', '')
+        startDateTime = data.get('startDate', '')
+        startDate = startDateTime.split("T")[0] if "T" in startDateTime else startDateTime
+        startTime = startDateTime.split("T")[1] if "T" in startDateTime else ''
+        endDateTime = data.get('endDate', '')
+        endDate = endDateTime.split("T")[0] if "T" in endDateTime else endDateTime
+        endTime = endDateTime.split("T")[1] if "T" in endDateTime else ''
         user = data.get('user', '')
 
-        if not all([description, category, startDate, endDate, user]):
+        if not all([description, category, startDate, startTime, endDate, endTime, user]):
             return JsonResponse({
                 'status': 'error',
                 'message': 'Missing required fields in the request body',
@@ -238,7 +242,7 @@ def add_notes(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         mysql_service = MySQLService()
-        success = mysql_service.add_notes(description, category, startDate, endDate, user)
+        success = mysql_service.add_notes(description, category, startDate, startTime, endDate, endTime, user)
         print("Add notes success:", success)
         if success:
             return JsonResponse({

@@ -150,17 +150,14 @@ class MySQLService:
         finally:
             self.close()
 
-    def add_notes(self, description, category, startDate, endDate, user ):
+    def add_notes(self, description, category, startDate, startTime, endDate, endTime, user ):
         """Add note to a booking"""
-        print(f"Adding note with description: {description}, category: {category}, startDate: {startDate}, endDate: {endDate}, user: {user}")
         try:
             if not self.connect():
                 return False
             cursor = self.connection.cursor()
-            query = "INSERT INTO machine_notes (vDesc, vCategory, dStart, dEnd, vUser) VALUES (%s, %s, %s, %s, %s)"
-
-            print(f"Executing query: {query} with values: ({description}, {category}, {startDate}, {endDate}, {user})")
-            cursor.execute(query, (description, category, startDate, endDate, user))
+            query = "INSERT INTO machine_notes (vDesc, vCategory, dStart, tStart, dEnd, tEnd, vUser) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (description, category, startDate, startTime, endDate, endTime, user))
             self.connection.commit()
             cursor.close()
             return True

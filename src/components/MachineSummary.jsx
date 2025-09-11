@@ -19,7 +19,7 @@ const MachineSummary = () => {
   // Handle form submission
   const handleNotesSubmit = async (e) => {
 
-    console.log('Submitting note:', notesData);
+    // console.log('Submitting note:', notesData);
     e.preventDefault();
     
     // Validate required fields
