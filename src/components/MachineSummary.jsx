@@ -198,19 +198,61 @@ const MachineSummary = () => {
   };
   
   // handles for card clicks
-  const handleCardClick = (title, value, unit) => {
-    openModal(
-      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
-        <div className="text-center">
-          <h2 className="text-6xl font-bold text-gray-800 mb-12">{title}</h2>
-          {value && (
-            <div className="text-gray-900 font-bold text-8xl">
-              {value} {unit}
-            </div>
-          )}
+  const handleCardClick = (item) => {
+    const { config, data } = item;
+    const value = data?.[0]?.[0]?.value || 'N/A';
+    const unit = config?.Unit || getUnitByTitle(config?.Title || '');
+
+    if (config?.Minimised) {
+      // Show single value
+      openModal(
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+          <div className="text-center">
+            <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
+            {value && (
+              <div className="text-gray-900 font-bold text-8xl">
+                {value} {unit}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-    );
+      );
+    } else {
+      // Show chart with all data points
+      openModal(
+        <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+          <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{config?.Title}</h2>
+          <div className="flex-1 px-8 pb-4">
+            <div className="h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data?.[0] || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="time" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke="#3B82F6"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      );
+    }
   };
 
   // series of random colors for the charts
@@ -346,10 +388,10 @@ const MachineSummary = () => {
               ) : item.config?.Type === 'Stat' ? (
                 <DataCard
                   title={item.config?.Title || `Stat ${index + 1}`}
-                  value = {item.data?.[0]?.[0]?.value || 'N/A'}
+                  value={item.data?.[0]?.[0]?.value || 'N/A'}
                   textColor={item.config?.TextColor || getRandomColors(1)}
                   unit={item.data?.[0]?.[0]?.value ? item.config?.Unit || getUnitByTitle(item.config?.Title || '') : ''}
-                  onClick={item.config?.Maximisable ? () => handleCardClick(item.config?.Title || `Stat ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || '')) : undefined}
+                  onClick={item.config?.Maximisable ? () => handleCardClick(item) : undefined}
                 />
               ) : item.config?.Type === 'Usage' ? (
                 <UsageChart
