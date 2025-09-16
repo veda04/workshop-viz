@@ -15,9 +15,9 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
       className={`
         bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-72
         backdrop-blur-sm bg-opacity-90 overflow-hidden
-        ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
+        ${onClick && chartData.length > 0 ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
       `}
-      onClick={onClick}
+      onClick={chartData.length > 0 ? onClick : undefined}
     >
       <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black">{title}</h3>
       <div className="h-56 bg-gray-800 p-2 relative">
