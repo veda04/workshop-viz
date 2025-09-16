@@ -346,7 +346,7 @@ const MachineSummary = () => {
     <Layout>
       <div className="dash-cover p-6 space-y-6">
         <button
-          className="absolute top-5 right-6 z-10 p-1 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
+          className="fixed top-5 right-6 z-50 p-1 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
           title="Add Note"
           onClick={() => setIsNotesModalOpen(true)}
         >

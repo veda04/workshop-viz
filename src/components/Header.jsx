@@ -85,7 +85,7 @@ const Header = () => {
   };
 
   return (
-    <div className="bg-white/80 backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4">
+    <div className="bg-white backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4 fixed top-0 left-0 right-0 z-40">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
           <h1 className="text-4xl font-bold text-gray-900 tracking-wider pr-2">
@@ -143,12 +143,12 @@ const Header = () => {
       {/* check if bookingData is available */}
       <div className="mt-4 current-booking">
         {(!bookingData) ? (
-          <div className="w-full text-center py-3 text-lg text-gray-700 font-semibold bg-yellow-100 rounded-lg shadow">
+          <div className="w-full text-center py-3 text-lg text-gray-700 font-semibold yellow-gradient-bg rounded-lg shadow">
             There are no bookings for this machine today 
           </div>
         ) : (
           <>
-          <div className="flex justify-between items-center px-3 py-2 bg-yellow-100 rounded-lg shadow">
+          <div className="flex justify-between items-center px-3 py-2 yellow-gradient-bg rounded-lg shadow">
             <div>
               <div className="text-sm text-gray-600 uppercase">Booked By:</div>
               <div className="text-xl font-semibold text-gray-900">
