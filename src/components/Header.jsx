@@ -20,6 +20,16 @@ const Header = () => {
     second: '2-digit'
   }));
 
+  // Auto-refresh every 20 seconds to fetch latest booking data
+  useEffect(() => {
+    const interval = setInterval(() => {
+      //console.log('Page reloaded to fetch latest booking data');
+      window.location.reload();
+    }, 60000); // 60000 ms = 60 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date().toLocaleTimeString('en-US', {
