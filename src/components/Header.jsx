@@ -4,6 +4,7 @@ const Header = () => {
   const [bookingData, setBookingData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [airValveOpen, setAirValveOpen] = useState(false);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -21,14 +22,14 @@ const Header = () => {
   }));
 
   // Auto-refresh every 20 seconds to fetch latest booking data
-  useEffect(() => {
-    const interval = setInterval(() => {
-      //console.log('Page reloaded to fetch latest booking data');
-      window.location.reload();
-    }, 60000); // 60000 ms = 60 seconds
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     //console.log('Page reloaded to fetch latest booking data');
+  //     window.location.reload();
+  //   }, 60000); // 60000 ms = 60 seconds
 
-    return () => clearInterval(interval);
-  }, []);
+  //   return () => clearInterval(interval);
+  // }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -134,6 +135,43 @@ const Header = () => {
               <option value="6 months">6 Months</option>
               <option value="1 year">1 Year</option>
             </select>
+          </div>
+        </div>
+
+        <div className="text-center border-l border-r border-gray-300 px-20">
+          <h5 className="relative border-b border-gray-300 pb-5">
+            <p className="text-lg font-semibold text-gray-800 bg-white absolute inset-0 flex items-center justify-center uppercase">Air Valve</p>
+          </h5>
+          <div className="mt-2">
+          {/* Toggle Switch */}
+          <div className="flex justify-center mt-1">
+            <label className="flex items-center cursor-pointer">
+              <span className="mr-2 uppercase text-red-600 font-semibold">Close</span>
+              <input
+                type="checkbox"
+                className="sr-only"
+                checked={airValveOpen}
+                onChange={() => setAirValveOpen((prev) => !prev)}
+              />
+              <div
+                className={`w-12 h-6 rounded-full relative transition-colors duration-200 ${
+                  airValveOpen ? 'bg-green-500' : 'bg-red-500'
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200 ${
+                    airValveOpen ? 'translate-x-6 left-1' : 'left-1'
+                  }`}
+                  style={{
+                    transform: airValveOpen
+                      ? 'translateX(24px)'
+                      : 'translateX(0px)',
+                  }}
+                ></div>
+              </div>
+              <span className="ml-2 uppercase text-green-600 font-semibold">Open</span>
+            </label>
+          </div>
           </div>
         </div>
         
