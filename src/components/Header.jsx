@@ -139,8 +139,8 @@ const Header = () => {
         </div>
 
         <div className="text-center border-l border-r border-gray-300 px-20">
-          <h5 className="relative border-b border-gray-300 pb-5">
-            <p className="text-lg font-semibold text-gray-800 bg-white absolute inset-0 flex items-center justify-center uppercase">Air Valve</p>
+          <h5 className="relative border-b border-gray-300 pb-5 bottom-2">
+            <p className="text-lg font-semibold text-gray-800 bg-white absolute mx-auto left-0 right-0 top-1 uppercase w-32">Air Flow</p>
           </h5>
           <div className="mt-2">
           {/* Toggle Switch */}

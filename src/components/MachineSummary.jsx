@@ -7,6 +7,7 @@ import Modal from './Modal';
 import { temperatureData, accelerometerData, currentData, coolantData } from '../data/sampleData';
 import Sensors from './Sensors';
 import UsageChart from './UsageChart';
+import DashboardBlock from './DashboardBlock';
 
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
@@ -376,36 +377,16 @@ const MachineSummary = () => {
               data-graph-type={item.config?.Type}
               data-graph-title={item.config?.Title}
             >
-              {item.config?.Type === 'Graph' ? (
-                <OverviewChart
-                  title={item.config?.Title || `Graph ${index + 1}`}
-                  series={item.config?.Series || []}
-                  data={item.data && item.data.length > 0 ? item.data[0] : []}
-                  color={item.config?.Color || getRandomColors(5)}
-                  yAxisDomain={item.config?.YAxisDomain || [0, 100]}
-                  onClick={() => handleChartClick(item.config?.Title || `Graph ${index + 1}`, item.data[0] || item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
-                />
-              ) : item.config?.Type === 'Stat' ? (
-                <DataCard
-                  title={item.config?.Title || `Stat ${index + 1}`}
-                  value={item.data?.[0]?.[0]?.value || 'N/A'}
-                  textColor={item.config?.TextColor || getRandomColors(1)}
-                  unit={item.data?.[0]?.[0]?.value ? item.config?.Unit || getUnitByTitle(item.config?.Title || '') : ''}
-                  onClick={item.config?.Maximisable ? () => handleCardClick(item) : undefined}
-                />
-              ) : item.config?.Type === 'Usage' ? (
-                <UsageChart
-                  title={item.config?.Title || `Usage ${index + 1}`}
-                  onClick={() => handleChartClick(item.config?.Title || `Usage ${index + 1}`, item.data[0] || item.data, item.config?.Series, item.config?.Color || getRandomColors(5), item.config?.YAxisDomain || [0, 100])}
-                />
-              ) : item.config?.Type === 'Info' ? (  
-                <DataCard
-                  title={item.config?.Title || `Info ${index + 1}`}
-                  value = {item.data?.[0]?.[0]?.value || 'N/A'}
-                  textColor={item.config?.TextColor || getRandomColors(1)}
-                  onClick={item.config?.Maximisable ? () => handleCardClick(item.config?.Title || `Info ${index + 1}`, item.data?.value, item.config?.Unit || getUnitByTitle(item.config?.Title || '')) : undefined}
-                />
-              ) : null}
+              <DashboardBlock
+                config={item.config}
+                initialData={item.data}
+                blockIndex={index}
+                getUnitByTitle={getUnitByTitle}
+                handleCardClick={handleCardClick}
+                handleChartClick={handleChartClick}
+                getRandomColors={getRandomColors}
+                reloadInterval={30000} // 30 seconds, adjust as needed
+              />
             </div>
           ))}
 
