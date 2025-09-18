@@ -5,6 +5,10 @@ const Header = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [airValveOpen, setAirValveOpen] = useState(false);
+  const [selectedRange, setSelectedRange] = useState('1 hour');
+  const [showCustomRange, setShowCustomRange] = useState(false);
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -30,6 +34,32 @@ const Header = () => {
 
   //   return () => clearInterval(interval);
   // }, []);
+
+  const handleApplyRange = (type, value) => {
+    if(type === 'custom') {
+      console.log('Submitting custom range:', value); // value = { from, to }
+      // API call or logic for custom range
+
+      const response = fetch('http://localhost:8000/api/apply-time-range/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ from: customFrom, to: customTo }),
+      });
+    } else {
+      console.log('Submitting predefined range:', value); // value = '1 hour', '2 hours', etc.
+      // Add your API call or state update here
+
+      const response = fetch('http://localhost:8000/api/apply-predefined-range/', {
+        method: 'POST',
+        headers: {  
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ range: value }),
+      }); 
+    }
+  };
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -120,22 +150,63 @@ const Header = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <select 
-              className="bg-white border border-gray-300 rounded-lg py-2 pr-3 pl-10 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="bg-white border border-gray-300 rounded-lg py-2 pr-3 pl-10 text-gray-700 font-medium focus:outline-none focus:ring-2"
               defaultValue="1 hour"
+              value={selectedRange}
+              onChange={e => {
+                const value = e.target.value;
+                setShowCustomRange(value === 'custom');
+                setSelectedRange(value);
+                if (value !== 'custom') {
+                  handleApplyRange('predefined', value);
+                }
+              }}
             >
-              <option value="1 hour">1 Hour</option>
-              <option value="2 hours">2 Hours</option>
-              <option value="4 hours">4 Hours</option>
-              <option value="8 hours">8 Hours</option>
-              <option value="1 day">1 Day</option>
-              <option value="2 days">2 Days</option>
-              <option value="1 week">1 Week</option>
-              <option value="1 month">1 Month</option>
-              <option value="3 months">3 Months</option>
-              <option value="6 months">6 Months</option>
-              <option value="1 year">1 Year</option>
+              <option value="1h">1 Hour</option>
+              <option value="3h">3 Hours</option>
+              <option value="6h">6 Hours</option>
+              <option value="12h">12 Hours</option>
+              <option value="24h">24 Hours</option>
+              <option value="2d">2 Days</option>
+              <option value="7d">7 Days</option>
+              <option value="30d">30 Days</option>
+              <option value="90d">90 Days</option>
+              <option value="6m">6 Months</option>
+              <option value="1y">1 Year</option>
+              <option value="custom">Custom</option>
             </select>
           </div>
+          {showCustomRange && (
+            <div className="absolute top-14 left-64 mt-2 w-96 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-4 items-center">
+                  <label className="font-medium text-gray-700 w-16">From</label>
+                  <input
+                    type="datetime-local"
+                    className="border border-gray-300 rounded px-2 py-1 flex-1"
+                    value={customFrom}
+                    onChange={e => setCustomFrom(e.target.value)}
+                  />
+                </div>
+                <div className="flex gap-4 items-center">
+                  <label className="font-medium text-gray-700 w-16">To</label>
+                  <input
+                    type="datetime-local"
+                    className="border border-gray-300 rounded px-2 py-1 flex-1"
+                    value={customTo}
+                    onChange={e => setCustomTo(e.target.value)}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="bg-blue-600 text-white font-semibold rounded px-4 py-2 mt-2 hover:bg-blue-700 transition"
+                  onClick={() => handleApplyRange('custom', { from: customFrom, to: customTo })}
+                >
+                  Apply time range
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="text-center border-l border-r border-gray-300 px-20">
