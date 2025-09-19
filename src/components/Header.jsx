@@ -38,26 +38,22 @@ const Header = () => {
   const handleApplyRange = (type, value) => {
     if(type === 'custom') {
       console.log('Submitting custom range:', value); // value = { from, to }
-      // API call or logic for custom range
 
-      const response = fetch('http://localhost:8000/api/apply-time-range/', {
-        method: 'POST',
+      fetch(`http://localhost:8000/api/dashboard-config/?from=${encodeURIComponent(customFrom)}&to=${encodeURIComponent(customTo)}&machine_name=Hurco`, {
+        method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ from: customFrom, to: customTo }),
       });
     } else {
       console.log('Submitting predefined range:', value); // value = '1 hour', '2 hours', etc.
-      // Add your API call or state update here
 
-      const response = fetch('http://localhost:8000/api/apply-predefined-range/', {
-        method: 'POST',
+      fetch(`http://localhost:8000/api/dashboard-config/?range=${encodeURIComponent(value)}&machine_name=Hurco`, {
+        method: 'GET',
         headers: {  
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ range: value }),
-      }); 
+      });
     }
   };
 

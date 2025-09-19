@@ -63,7 +63,7 @@
         "Type": "Stat",
         "Title": "Coolant Level",
         "DefaultRange": "24h",
-        "Minimised": true,
+        "Minimised": false,
         "Maximisable": true,
         "RefreshRate": "1m",
         "Queries": [

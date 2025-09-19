@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from .influx_service import InfluxDBService
 from .mysql_service import MySQLService
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from django.conf import settings
 import os
@@ -108,14 +108,60 @@ def format_timestamps_in_data(data):
     
     else:
         return data
+
+# to get timedelta from range string like '1h', '30m', '2d'
+def parse_range_to_timedelta(range_str):
+    num = int(range_str[:-1])
+    unit = range_str[-1]
+    if unit == 'h':
+        return timedelta(hours=num)
+    elif unit == 'm':
+        return timedelta(minutes=num)
+    elif unit == 'd':
+        return timedelta(days=num)
+    elif unit == 's':
+        return timedelta(seconds=num)
+    else:
+        raise ValueError("Unsupported time unit in range")
+
     
 @api_view(['GET'])
 def get_dashboard_config(request):
     machine_name = request.GET.get('machine_name', 'Hurco')
-    
+    selected_range = request.GET.get('range', None)
+    custom_from = request.GET.get('from', None)
+    custom_to = request.GET.get('to', None) 
+
+    if selected_range:
+        delta = parse_range_to_timedelta (selected_range)
+        custom_date_from  = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+        custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+    else:
+        # Ensure custom_from and custom_to are in 'YYYY-MM-DDTHH:MM:SSZ' format
+        def ensure_iso8601_z(dt_str):
+            try:
+                # Try parsing with seconds
+                dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
+            except ValueError:
+                try:
+                    # Try parsing without seconds
+                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    # If already has 'Z', try parsing with 'Z'
+                    try:
+                        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+                    except ValueError:
+                        return dt_str  # Return as is if parsing fails
+            else:
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+        custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
+        custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
+
     file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
     #file_path = f"E:\\ECPMG\\workshop-viz\\backend\\config\\{machine_name}.json"
-    machine_data = getInfluxData(file_path)
+    machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
     #print("Machine Data:")
     #pprint.pprint(machine_data, indent=2, width=120)
 
