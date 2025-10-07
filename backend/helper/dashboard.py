@@ -15,6 +15,7 @@
 
 from datetime import datetime, timedelta, date,timezone
 import os
+import pprint
 from influxdb_client import InfluxDBClient
 import json
 import pandas as pd
@@ -283,7 +284,11 @@ def runJSONQuery(jsonQuery):
 		pivotedData.append(data)
 	return pivotedData
 
-def getInfluxData(filePath):
+def getInfluxData(filePath, custom_date_from=None, custom_date_to=None):
+
+	custom_date_from = custom_date_from
+	custom_date_to = custom_date_to
+
 	if not filePath:
 		raise ValueError("File path cannot be empty or None")
 	if not isinstance(filePath, str):
@@ -299,6 +304,18 @@ def getInfluxData(filePath):
 		configFile = f.read()
 
 	jsonQuery = json.loads(configFile)
+
+	# inject custom date range into each query
+	if custom_date_from or custom_date_to:
+		print ("Injecting custom date range into queries")
+		for query in jsonQuery.values():
+			if isinstance(query, dict):
+				query['RequestedRange'] = {
+					'from': custom_date_from,
+					'to': custom_date_to
+				}
+	#pprint.pprint(jsonQuery, indent=2, width=120)
+
 	results = []
 
 	# Check if SensorList exists in the JSON and capture its values
@@ -313,8 +330,8 @@ def getInfluxData(filePath):
 		#print(query_key)
 		if query_key in jsonQuery:
 			start = perf_counter()
-			#print(f"Running query {i}...")
-			#print("Query: ",jsonQuery[str(i)])
+			# print(f"Running query {i}...")
+			# print("Query: ",jsonQuery[str(i)])
 			data = runJSONQuery(jsonQuery[str(i)])
 			#serializable_data = generate_random_data(50, start_time="2025-07-28T11:15:00Z", interval_minutes=1)  # Replace with actual query function
 			end = perf_counter()
