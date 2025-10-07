@@ -16,6 +16,14 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
     "Coolant Concentration": "Brix(%)"
   };
 
+  // Helper to round value to 2 decimal places if it's a number
+  const formatValue = (val) => {
+    if (typeof val === 'number') {
+      return val.toFixed(2);
+    }
+    return val;
+  };
+
   return (
     <div 
       className={`
@@ -32,7 +40,7 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
       </h3>
       {value && (
         <div style={{color: textColor}} className="font-bold text-4xl">
-          {value} <span className="text-lg font-medium text-gray-600">{unit}</span>
+          {formatValue(value)} <span className="text-lg font-medium text-gray-600">{unit}</span>
         </div>
       )}
     </div>
