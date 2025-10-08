@@ -56,17 +56,20 @@ const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handl
       />
     );
   }
-  if (config?.Type === 'Info') {
-    return (
-        <DataCard 
-            title={config?.Title}
-            value={data?.[0]?.[0]?.value || 'N/A'}
-            textColor={config?.TextColor || getRandomColors(1)}
-            onClick={config?.Maximisable ? () => handleCardClick({ config, data }) : undefined}
-        />
-    );
-  }
-  // ...other types as needed
+  /*
+   * commented as the air flow will be displayed in the header
+   * if (config?.Type === 'Info') {
+   *   return (
+   *       <DataCard 
+   *           title={config?.Title}
+   *           value={data?.[0]?.[0]?.value || 'N/A'}
+   *           textColor={config?.TextColor || getRandomColors(1)}
+   *           onClick={config?.Maximisable ? () => handleCardClick({ config, data }) : undefined}
+   *       />
+   *   );
+   * }
+   * ...other types as needed
+   */
   return null;
 };
 

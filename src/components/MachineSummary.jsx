@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import Layout from './Layout';
-import OverviewChart from './OverviewChart';
-import DataCard from './DataCard';
 import Modal from './Modal';
-import { temperatureData, accelerometerData, currentData, coolantData } from '../data/sampleData';
 import Sensors from './Sensors';
-import UsageChart from './UsageChart';
 import DashboardBlock from './DashboardBlock';
 
 const MachineSummary = () => {

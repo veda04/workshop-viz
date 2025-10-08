@@ -88,27 +88,6 @@ def format_timestamp_for_display(timestamp):
         logger.warning(f"Error formatting timestamp {timestamp}: {e}")
         return str(timestamp)
 
-def format_timestamps_in_data(data):
-    """Format all timestamps in the data structure to HH:MM format."""
-    if isinstance(data, dict):
-        formatted_data = {}
-        for key, value in data.items():
-            if key.lower() in ['time', 'timestamp', '_time'] and (isinstance(value, (str, pd.Timestamp))):
-                # This is likely a timestamp field
-                formatted_data[key] = format_timestamp_for_display(value)
-            elif isinstance(value, (dict, list)):
-                # Recursively format nested structures
-                formatted_data[key] = format_timestamps_in_data(value)
-            else:
-                formatted_data[key] = value
-        return formatted_data
-    
-    elif isinstance(data, list):
-        return [format_timestamps_in_data(item) for item in data]
-    
-    else:
-        return data
-
 # to get timedelta from range string like '1h', '30m', '2d'
 def parse_range_to_timedelta(range_str):
     num = int(range_str[:-1])
@@ -165,17 +144,14 @@ def get_dashboard_config(request):
     #print("Machine Data:")
     #pprint.pprint(machine_data, indent=2, width=120)
 
-    #format timestamps in the machine data
-    formatted_data = format_timestamps_in_data(machine_data)
-    #pprint.pprint(formatted_data, indent=2, width=120)
-
     return JsonResponse({
         'status': 'success',
         'message': 'Dashboard configuration loaded successfully',
-        'data': formatted_data
+        'data': machine_data,
     }, status=status.HTTP_200_OK)
 
 
+# get the current booking for a machine
 @api_view(['GET'])
 def get_current_booking(request):
     """Get current booking information for a machine"""
@@ -204,7 +180,7 @@ def get_current_booking(request):
                         booking['tStart'] = format_timestamp_for_display(booking['tStart'])
 
                     if booking['tEnd']:
-                        booking['tEnd'] = format_timestamp_for_display(booking['tEnd'])#
+                        booking['tEnd'] = format_timestamp_for_display(booking['tEnd'])
                 if current_bookings:
                     return JsonResponse({
                         'status': 'success',

@@ -13,7 +13,7 @@
 ##################################################
 
 
-from datetime import datetime, timedelta, date,timezone
+from datetime import datetime, timedelta, date
 import os
 import pprint
 from influxdb_client import InfluxDBClient
@@ -22,6 +22,8 @@ import pandas as pd
 from time import perf_counter
 from time import sleep
 import random
+import pprint
+import pytz
 
 INFLUX_TOKEN = "pRoemIh7JfC7cn1HG2VyZcx1BSIguLN-gqhQyKl8775tpvDV4o9NNf1FuLMDKKvKaVEj1wDKiPouKsbvSS6s5Q=="
 DB_LINK = "http://10.101.23.23:8086"
@@ -284,7 +286,7 @@ def runJSONQuery(jsonQuery):
 		pivotedData.append(data)
 	return pivotedData
 
-def getInfluxData(filePath, custom_date_from=None, custom_date_to=None):
+def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone='Europe/London'):
 
 	custom_date_from = custom_date_from
 	custom_date_to = custom_date_to
@@ -345,7 +347,20 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None):
 						# Reset index to include time as a column before converting to dictionary
 						df_with_time = df.reset_index()
 						#convert Dataframe to dictionary format
-						serializable_data.append(df_with_time.to_dict(orient='records'))
+						df_dict = df_with_time.to_dict(orient='records')
+
+						# Format timestamps in the data to 'HH:MM' format in GMT/BST timezone
+						formatted_records = []
+						for record in df_dict:
+							formatted_record = {}
+							for key, value in record.items():
+								if key.lower() in ['time', 'timestamp', '_time'] and isinstance(value, (str, pd.Timestamp)):  # checks if key is time and if its in desired format
+									formatted_record[key] = format_timestamp(value, timezone)
+								else:
+									formatted_record[key] = value
+							formatted_records.append(formatted_record)
+
+						serializable_data.append(formatted_records)
 					else:
 						serializable_data.append(None)
 
@@ -384,6 +399,45 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None):
 	# 	"DefaultRange": "1h",
 	# 	"Minimised": False,
 	# }
+
+# this helper function to get the timezone adjusted time in HH:MM format
+def format_timestamp(timestamp, timezone='Europe/London'):
+    """Convert pandas Timestamp to HH:MM format in specific timezone"""
+    try:
+        target_tz = pytz.timezone(timezone)  # Use pytz to get the timezone object
+        
+        if isinstance(timestamp, pd.Timestamp):  # handles if timestamp is a pandas Timestamp eg: Timestamp('2025-07-28 11:15:00+0000', tz='UTC')
+            # Handle pandas Timestamp - ensure it's UTC first
+            if timestamp.tz is None:
+                utc_timestamp = timestamp.tz_localize('UTC')
+            else:
+                utc_timestamp = timestamp.tz_convert('UTC')
+            
+            # Convert to target timezone (GMT/BST automatically handled)
+            local_timestamp = utc_timestamp.tz_convert(target_tz)
+            return local_timestamp.strftime('%H:%M')   # Return in HH:MM format
+            
+        elif isinstance(timestamp, str): # handles if timestamp is a string eg: '2025-07-28T11:15:00Z'
+            # Handle ISO string format
+            if timestamp.endswith('Z'):
+                timestamp = timestamp[:-1] + '+00:00'
+            
+            dt = datetime.fromisoformat(timestamp)
+            
+            # Ensure it's in UTC
+            if dt.tzinfo is None:
+                dt = pytz.UTC.localize(dt)
+            else:
+                dt = dt.astimezone(pytz.UTC)
+            
+            # Convert to target timezone
+            local_dt = dt.astimezone(target_tz)
+            return local_dt.strftime('%H:%M')
+        else:
+            return str(timestamp)
+    except Exception as e:
+        print(f"Error formatting timestamp {timestamp}: {e}")
+        return str(timestamp)
 
 def generate_random_data(num_records: int, start_time: str = "2025-07-28T11:15:00Z", interval_minutes: int = 1):
     data = []
