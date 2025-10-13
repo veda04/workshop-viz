@@ -49,7 +49,7 @@ def _connect_influxDB(timeout=30_000):
 		sleep(5)
 		
 
-def calculateAggregation(range,maxPoints):
+def calculateAggregation(range,maxPoints, endDatetime):
 	"""
 	Calculates an appropriate aggregation interval for downsampling time-series data 
 	based on the total time range and the maximum number of data points desired.
@@ -65,7 +65,6 @@ def calculateAggregation(range,maxPoints):
 			 chosen from a predefined list (`INTERVAL_POINTS`) to match the 
 			 rough interval needed.
 	"""
-	endDatetime = datetime.now()
 	if not isinstance(range, str) or len(range) < 2 or not range[:-1].isdigit():
 		raise ValueError(f"Invalid range format: '{range}'. Expected format like '1h', '7d', etc.")
 	try:
@@ -107,7 +106,7 @@ def calculateAggregation(range,maxPoints):
 	print(f"Rough Interval: {rough_interval} seconds\nChosen Interval: {chosen_interval} seconds")
 	return f"{chosen_interval}{intervalUnits}"
 
-def _buildQuery(flux,range,type,minimised):
+def _buildQuery(queryDict,range,type,minimised):
 	"""
 	Builds an InfluxDB Flux query based on the input parameters and modifies it
 	depending on the visualisaton type and minimisation flag.
@@ -123,7 +122,7 @@ def _buildQuery(flux,range,type,minimised):
 	"""
 
 	maxPointsToFetch  = FULL_SCREEN_POINTS
-	query = flux
+	query = queryDict.get("Flux")
 	if(type== "Stat" and minimised == True):
 		print("Stat query is minimised, get last value")
 		query = query + "|> last()"
@@ -131,13 +130,29 @@ def _buildQuery(flux,range,type,minimised):
 		print("Graph query is minimised, use bigger interval")
 		maxPointsToFetch = MINIMISED_POINTS
 		
-	query = query.replace("v.timeRangeStart", f"-{range}")
-	query = query.replace("v.timeRangeStop", f"now()")
-	
-	query = query.replace("v.windowPeriod", calculateAggregation(range,maxPointsToFetch)) #This is a temporary fix, as the window period is not used in this query
+	if("RequestedRange" in queryDict):
+		requestedRange = queryDict.get("RequestedRange")
+		print(f"RANGE: {requestedRange}")
+		startDate = requestedRange.get("from")
+		endDate = requestedRange.get("to")
+
+		fmt = "%Y-%m-%dT%H:%M"
+		startDateTime = datetime.strptime(startDate,fmt)
+		endDateTime = datetime.strptime(endDate,fmt)
+		print(startDateTime)
+		print(endDateTime)
+		range = f"{int((endDateTime - startDateTime).total_seconds() / 60)}m"
+		print(range)
+		query = query.replace("v.timeRangeStart", startDateTime.isoformat() + "Z")
+		query = query.replace("v.timeRangeStop", endDateTime.isoformat() + "Z")
+	else:
+		query = query.replace("v.timeRangeStart", f"-{range}")
+		query = query.replace("v.timeRangeStop", f"now()")
+		endDateTime = datetime.now()
+		
+	query = query.replace("v.windowPeriod", calculateAggregation(range,maxPointsToFetch,endDateTime)) #This is a temporary fix, as the window period is not used in this query
 
 	return query
-
 
 def _runQuery(query):
 	"""
@@ -178,8 +193,8 @@ def _parseJSONQuery(jsonQuery):
 	requestedRange = jsonQuery.get("RequestedRange")
 	Queries = jsonQuery.get("Queries")
 
-	print("Default Range: ", defaultRange)
-	print("Requested Range: ", requestedRange)
+	# print("Default Range: ", defaultRange)
+	# print("Requested Range: ", requestedRange)
 	
 	return Queries,defaultRange,type,minimised
 	
@@ -273,7 +288,7 @@ def runJSONQuery(jsonQuery):
 	pivotedData = []
 	times = []
 	for i in range(len(Queries)):
-		influxQuery = _buildQuery(Queries[i].get("Flux"),Range,Type,minimised)
+		influxQuery = _buildQuery(Queries[i],Range,Type,minimised)
 		data = _runQuery(influxQuery)
 		if not data:
 			print("No data returned from query")

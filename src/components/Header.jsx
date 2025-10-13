@@ -35,11 +35,21 @@ const Header = () => {
   //   return () => clearInterval(interval);
   // }, []);
 
+  const [customRangeText, setCustomRangeText] = useState('');
+
   const handleApplyRange = (type, value) => {
     if(type === 'custom') {
       console.log('Submitting custom range:', value); // value = { from, to }
+      
+      // Format for display
+      const fromDate = new Date(value.from).toLocaleString();
+      const toDate = new Date(value.to).toLocaleString();
+      const rangeText = `${fromDate} - ${toDate}`;
+      setCustomRangeText(rangeText);
+      setSelectedRange('custom-applied');
+      setShowCustomRange(false); // Hide popup
 
-      fetch(`http://localhost:8000/api/dashboard-config/?from=${encodeURIComponent(customFrom)}&to=${encodeURIComponent(customTo)}&machine_name=Hurco`, {
+      fetch(`http://localhost:8000/api/dashboard-config/?from=${encodeURIComponent(value.from)}&to=${encodeURIComponent(value.to)}&machine_name=Hurco`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -47,6 +57,7 @@ const Header = () => {
       });
     } else {
       console.log('Submitting predefined range:', value); // value = '1 hour', '2 hours', etc.
+      setCustomRangeText(''); // Clear custom range text
 
       fetch(`http://localhost:8000/api/dashboard-config/?range=${encodeURIComponent(value)}&machine_name=Hurco`, {
         method: 'GET',
@@ -169,6 +180,11 @@ const Header = () => {
               <option value="90d">90 Days</option>
               <option value="6m">6 Months</option>
               <option value="1y">1 Year</option>
+              {customRangeText && (
+                <option value="custom-applied" disabled>
+                  {customRangeText}
+                </option>
+              )}
               <option value="custom">Custom</option>
             </select>
           </div>
@@ -195,8 +211,9 @@ const Header = () => {
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white font-semibold rounded px-4 py-2 mt-2 hover:bg-blue-700 transition"
+                  className="bg-blue-600 text-white font-semibold rounded px-4 py-2 mt-2 hover:bg-blue-700 transition disabled:bg-gray-400"
                   onClick={() => handleApplyRange('custom', { from: customFrom, to: customTo })}
+                  disabled={!customFrom || !customTo}
                 >
                   Apply time range
                 </button>
