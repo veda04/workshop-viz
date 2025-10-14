@@ -7,6 +7,11 @@ const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handl
   const [data, setData] = useState(initialData);
   const [error, setError] = useState(null);
 
+  // Update data when initialData changes (e.g., when range changes)
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
   useEffect(() => {
     const fetchBlockData = async () => {
       try {

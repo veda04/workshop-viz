@@ -5,7 +5,7 @@ const Header = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [airValveOpen, setAirValveOpen] = useState(false);
-  const [selectedRange, setSelectedRange] = useState('1 hour');
+  const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
@@ -49,22 +49,18 @@ const Header = () => {
       setSelectedRange('custom-applied');
       setShowCustomRange(false); // Hide popup
 
-      fetch(`http://localhost:8000/api/dashboard-config/?from=${encodeURIComponent(value.from)}&to=${encodeURIComponent(value.to)}&machine_name=Hurco`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('rangeChanged', {
+        detail: { type: 'custom', from: value.from, to: value.to }
+      }));
     } else {
       console.log('Submitting predefined range:', value); // value = '1 hour', '2 hours', etc.
       setCustomRangeText(''); // Clear custom range text
 
-      fetch(`http://localhost:8000/api/dashboard-config/?range=${encodeURIComponent(value)}&machine_name=Hurco`, {
-        method: 'GET',
-        headers: {  
-          'Content-Type': 'application/json',
-        },
-      });
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('rangeChanged', {
+        detail: { type: 'predefined', range: value }
+      }));
     }
   };
 

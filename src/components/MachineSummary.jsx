@@ -93,10 +93,12 @@ const MachineSummary = () => {
 
   // fetch the dashboard configuration data
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = async (rangeParams = '') => {
       try {
         setLoading(true);
-        const response = await fetch('http://localhost:8000/api/dashboard-config/?machine_name=Hurco')
+        const url = `http://localhost:8000/api/dashboard-config/?machine_name=Hurco${rangeParams}`;
+        console.log('Fetching dashboard data from:', url);
+        const response = await fetch(url);
 
         if(!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -118,7 +120,30 @@ const MachineSummary = () => {
         setLoading(false);
       }
     };
-    fetchDashboardData();
+
+    // Initial fetch with default range (3h)
+    fetchDashboardData('&range=3h');
+
+    // Listen for range change events from Header
+    const handleRangeChange = (event) => {
+      const { type, range, from, to } = event.detail;
+      let rangeParams = '';
+      
+      if (type === 'custom') {
+        rangeParams = `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+      } else {
+        rangeParams = `&range=${encodeURIComponent(range)}`;
+      }
+      
+      fetchDashboardData(rangeParams);
+    };
+
+    window.addEventListener('rangeChanged', handleRangeChange);
+
+    // Cleanup listener on unmount
+    return () => {
+      window.removeEventListener('rangeChanged', handleRangeChange);
+    };
   }, []);  
 
   const openModal = (content) => {
