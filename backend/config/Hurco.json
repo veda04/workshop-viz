@@ -142,7 +142,7 @@
         "RefreshRate": "1m",
         "Queries": [
             {
-                "Flux": "import \"array\" realData  = from(bucket: \"Machines\")  |> range(start: -1m, stop: now())  |> filter(fn: (r) => r[\"_measurement\"] == \"AirQuality\")  |> filter(fn: (r) => r[\"Machine\"] == \"Cincinnati\")  |> filter(fn: (r) => r[\"_field\"] == \"valve_status\")  |>last() fallback = array.from(rows: [{  _time: now(),  _start:now(),  _stop: now(),  _value: -1.0,  _field: \"valve_status\",   Machine: \"Tool\",  _measurement: \"AirQuality\"}]) union(tables: [realData, fallback]) |>group()  |> sort(columns: [\"_time\"], desc: false)  |> limit(n: 1)  |> map(fn: (r) => ({r with _value: if r._value == 1 then \"Open\" else if r._value == 0 then \"Closed\" else \"Unknown\"}))",
+                "Flux": "import \"array\" realData  = from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"AirQuality\")  |> filter(fn: (r) => r[\"Machine\"] == \"Cincinnati\")  |> filter(fn: (r) => r[\"_field\"] == \"valve_status\")  |>last() fallback = array.from(rows: [{  _time: now(),  _start:now(),  _stop: now(),  _value: -1.0,  _field: \"valve_status\",   Machine: \"Tool\",  _measurement: \"AirQuality\"}]) union(tables: [realData, fallback]) |>group()  |> sort(columns: [\"_time\"], desc: false)  |> limit(n: 1)  |> map(fn: (r) => ({r with _value: if r._value == 1 then \"Open\" else if r._value == 0 then \"Closed\" else \"Unknown\"}))",
                 "Units": false,
                 "Pivot": false
             }

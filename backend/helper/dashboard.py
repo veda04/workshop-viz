@@ -106,7 +106,7 @@ def calculateAggregation(range,maxPoints, endDatetime):
 	print(f"Rough Interval: {rough_interval} seconds\nChosen Interval: {chosen_interval} seconds")
 	return f"{chosen_interval}{intervalUnits}"
 
-def _buildQuery(queryDict,range,type,minimised):
+def _buildQuery(queryDict,range,type,minimised,requestedRange):
 	"""
 	Builds an InfluxDB Flux query based on the input parameters and modifies it
 	depending on the visualisaton type and minimisation flag.
@@ -129,26 +129,62 @@ def _buildQuery(queryDict,range,type,minimised):
 	elif(type == "Graph" and minimised == True):
 		print("Graph query is minimised, use bigger interval")
 		maxPointsToFetch = MINIMISED_POINTS
-		
-	if("RequestedRange" in queryDict):
-		requestedRange = queryDict.get("RequestedRange")
-		print(f"RANGE: {requestedRange}")
-		startDate = requestedRange.get("from")
-		endDate = requestedRange.get("to")
+	#print("QueryDICT", queryDict)
 
-		fmt = "%Y-%m-%dT%H:%M"
-		startDateTime = datetime.strptime(startDate,fmt)
-		endDateTime = datetime.strptime(endDate,fmt)
-		print(startDateTime)
-		print(endDateTime)
-		range = f"{int((endDateTime - startDateTime).total_seconds() / 60)}m"
-		print(range)
-		query = query.replace("v.timeRangeStart", startDateTime.isoformat() + "Z")
-		query = query.replace("v.timeRangeStop", endDateTime.isoformat() + "Z")
+	if requestedRange and ('start' in requestedRange and 'end' in requestedRange):
+		try:
+			# print("Custom date range provided, using RequestedRange")
+			startDate = requestedRange['start']
+			endDate = requestedRange['end']
+			
+			# Try multiple datetime formats to handle different input formats
+			formats = ["%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"]
+			
+			startDateTime = None
+			endDateTime = None
+			
+			for fmt in formats:
+				try:
+					startDateTime = datetime.strptime(startDate, fmt)
+					endDateTime = datetime.strptime(endDate, fmt)
+					break
+				except ValueError:
+					continue
+			
+			if startDateTime is None or endDateTime is None:
+				raise ValueError(f"Unable to parse dates with formats: {formats}")
+			
+			# Calculate range in minutes and update query parameters
+			range = f"{int((endDateTime - startDateTime).total_seconds() / 60)}m"
+			query = query.replace("v.timeRangeStart", startDateTime.isoformat() + "Z")
+			query = query.replace("v.timeRangeStop", endDateTime.isoformat() + "Z")
+		except (KeyError, ValueError, TypeError) as e:
+			print(f"Error parsing requested range: {e}")
+			# Fallback to default range behavior
+			query = query.replace("v.timeRangeStart", f"-{range}")
+			query = query.replace("v.timeRangeStop", "now()")
+			endDateTime = datetime.now()
 	else:
+		# print("No custom date range provided, using default range")
 		query = query.replace("v.timeRangeStart", f"-{range}")
-		query = query.replace("v.timeRangeStop", f"now()")
+		query = query.replace("v.timeRangeStop", "now()")
 		endDateTime = datetime.now()
+
+	# if("RequestedRange" in queryDict):
+	# 	requestedRange = queryDict.get("RequestedRange")
+	# 	startDate = requestedRange.get("from")
+	# 	endDate = requestedRange.get("to")
+
+	# 	fmt = "%Y-%m-%dT%H:%M"
+	# 	startDateTime = datetime.strptime(startDate,fmt)
+	# 	endDateTime = datetime.strptime(endDate,fmt)
+	# 	range = f"{int((endDateTime - startDateTime).total_seconds() / 60)}m"
+	# 	query = query.replace("v.timeRangeStart", startDateTime.isoformat() + "Z")
+	# 	query = query.replace("v.timeRangeStop", endDateTime.isoformat() + "Z")
+	# else:
+	# 	query = query.replace("v.timeRangeStart", f"-{range}")
+	# 	query = query.replace("v.timeRangeStop", f"now()")
+	# 	endDateTime = datetime.now()
 		
 	query = query.replace("v.windowPeriod", calculateAggregation(range,maxPointsToFetch,endDateTime)) #This is a temporary fix, as the window period is not used in this query
 
@@ -196,7 +232,7 @@ def _parseJSONQuery(jsonQuery):
 	# print("Default Range: ", defaultRange)
 	# print("Requested Range: ", requestedRange)
 	
-	return Queries,defaultRange,type,minimised
+	return Queries,defaultRange,type,minimised,requestedRange
 	
 
 
@@ -283,12 +319,11 @@ def runJSONQuery(jsonQuery):
 		list: A list of processed DataFrames (or None for queries that return no data),
 			  each corresponding to one entry in the "Queries" list.
 	"""
-	
-	Queries,Range,Type,minimised = _parseJSONQuery(jsonQuery)
+	Queries,Range,Type,minimised,requestedRange = _parseJSONQuery(jsonQuery)
 	pivotedData = []
 	times = []
 	for i in range(len(Queries)):
-		influxQuery = _buildQuery(Queries[i],Range,Type,minimised)
+		influxQuery = _buildQuery(Queries[i],Range,Type,minimised,requestedRange)
 		data = _runQuery(influxQuery)
 		if not data:
 			print("No data returned from query")
@@ -302,10 +337,6 @@ def runJSONQuery(jsonQuery):
 	return pivotedData
 
 def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone='Europe/London'):
-
-	custom_date_from = custom_date_from
-	custom_date_to = custom_date_to
-
 	if not filePath:
 		raise ValueError("File path cannot be empty or None")
 	if not isinstance(filePath, str):
@@ -328,8 +359,8 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 		for query in jsonQuery.values():
 			if isinstance(query, dict):
 				query['RequestedRange'] = {
-					'from': custom_date_from,
-					'to': custom_date_to
+					'start': custom_date_from,
+					'end': custom_date_to
 				}
 	#pprint.pprint(jsonQuery, indent=2, width=120)
 
