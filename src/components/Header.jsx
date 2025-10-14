@@ -37,27 +37,37 @@ const Header = () => {
 
   const [customRangeText, setCustomRangeText] = useState('');
 
+  /**
+   * Handle time range selection changes
+   * Dispatches a custom event to notify other components (MachineSummary, DashboardBlock)
+   * about the range change so they can re-fetch data accordingly
+   * 
+   * @param {string} type - Either 'custom' for custom date range or 'predefined' for preset ranges
+   * @param {string|object} value - For predefined: range string (e.g., '1h', '3h'). For custom: {from, to} object
+   */
   const handleApplyRange = (type, value) => {
     if(type === 'custom') {
       console.log('Submitting custom range:', value); // value = { from, to }
       
-      // Format for display
+      // Format custom date range for display in the dropdown
       const fromDate = new Date(value.from).toLocaleString();
       const toDate = new Date(value.to).toLocaleString();
       const rangeText = `${fromDate} - ${toDate}`;
       setCustomRangeText(rangeText);
       setSelectedRange('custom-applied');
-      setShowCustomRange(false); // Hide popup
+      setShowCustomRange(false); // Hide custom range popup
 
-      // Dispatch custom event to notify other components
+      // Broadcast custom range change event to all listening components
+      // Event detail contains type and the from/to datetime values
       window.dispatchEvent(new CustomEvent('rangeChanged', {
         detail: { type: 'custom', from: value.from, to: value.to }
       }));
     } else {
-      console.log('Submitting predefined range:', value); // value = '1 hour', '2 hours', etc.
-      setCustomRangeText(''); // Clear custom range text
+      console.log('Submitting predefined range:', value); // value = '1h', '3h', '24h', etc.
+      setCustomRangeText(''); // Clear any previous custom range text
 
-      // Dispatch custom event to notify other components
+      // Broadcast predefined range change event to all listening components
+      // Event detail contains type and the range value (e.g., '3h', '24h')
       window.dispatchEvent(new CustomEvent('rangeChanged', {
         detail: { type: 'predefined', range: value }
       }));

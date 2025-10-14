@@ -91,8 +91,11 @@ const MachineSummary = () => {
     fetchUserList();
   }, []);
 
-  // fetch the dashboard configuration data
+  // Fetch the dashboard configuration data with support for dynamic time range updates
+  // This useEffect handles both initial data load and updates when user changes time range
   useEffect(() => {
+    // Fetch dashboard data from backend with optional range parameters
+    // rangeParams can be empty (uses backend default) or contain range/custom date filters
     const fetchDashboardData = async (rangeParams = '') => {
       try {
         setLoading(true);
@@ -121,26 +124,32 @@ const MachineSummary = () => {
       }
     };
 
-    // Initial fetch with default range (3h)
+    // Initial data fetch with default 3-hour range when component mounts
     fetchDashboardData('&range=3h');
 
-    // Listen for range change events from Header
+    // Event handler for range changes from the Header component
+    // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
     const handleRangeChange = (event) => {
       const { type, range, from, to } = event.detail;
       let rangeParams = '';
       
+      // Build query parameters based on range type (predefined or custom date range)
       if (type === 'custom') {
+        // Custom date range: use 'from' and 'to' parameters
         rangeParams = `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
       } else {
+        // Predefined range: use 'range' parameter (e.g., '1h', '3h', '24h')
         rangeParams = `&range=${encodeURIComponent(range)}`;
       }
       
+      // Re-fetch dashboard data with new range parameters
       fetchDashboardData(rangeParams);
     };
 
+    // Subscribe to range change events from Header component
     window.addEventListener('rangeChanged', handleRangeChange);
 
-    // Cleanup listener on unmount
+    // Cleanup: Remove event listener when component unmounts to prevent memory leaks
     return () => {
       window.removeEventListener('rangeChanged', handleRangeChange);
     };

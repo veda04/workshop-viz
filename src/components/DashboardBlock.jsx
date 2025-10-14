@@ -7,11 +7,14 @@ const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handl
   const [data, setData] = useState(initialData);
   const [error, setError] = useState(null);
 
-  // Update data when initialData changes (e.g., when range changes)
+  // Sync local data state with parent component's data when it changes
+  // This ensures the component updates when MachineSummary fetches new data based on range changes
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
 
+  // Periodic auto-refresh: Fetch latest data at regular intervals
+  // This keeps the dashboard up-to-date with real-time changes from the backend
   useEffect(() => {
     const fetchBlockData = async () => {
       try {
@@ -25,7 +28,10 @@ const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handl
         setError(e.message);
       }
     };
+    // Set up interval to refresh data every reloadInterval milliseconds (default: 10 seconds)
     const interval = setInterval(fetchBlockData, reloadInterval);
+    
+    // Cleanup: Clear interval when component unmounts to prevent memory leaks
     return () => clearInterval(interval);
   }, [blockIndex, reloadInterval]);
 
