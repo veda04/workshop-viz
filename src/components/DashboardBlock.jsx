@@ -3,9 +3,17 @@ import DataCard from './DataCard';
 import OverviewChart from './OverviewChart';
 import UsageChart from './UsageChart';
 
-const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handleCardClick, handleChartClick, getRandomColors, reloadInterval = 10000 }) => {
+const DashboardBlock = ({ 
+  config, 
+  initialData, 
+  blockIndex, 
+  getUnitByTitle, 
+  handleCardClick, 
+  handleChartClick, 
+  getRandomColors,
+  isLoading = false 
+}) => {
   const [data, setData] = useState(initialData);
-  const [error, setError] = useState(null);
 
   // Sync local data state with parent component's data when it changes
   // This ensures the component updates when MachineSummary fetches new data based on range changes
@@ -13,27 +21,16 @@ const DashboardBlock = ({ config, initialData, blockIndex, getUnitByTitle, handl
     setData(initialData);
   }, [initialData]);
 
-  // Periodic auto-refresh: Fetch latest data at regular intervals
-  // This keeps the dashboard up-to-date with real-time changes from the backend
-  useEffect(() => {
-    const fetchBlockData = async () => {
-      try {
-        const res = await fetch('http://localhost:8000/api/dashboard-config/?machine_name=Hurco');
-        const result = await res.json();
-        if (result.status === 'success' && result.data && result.data[blockIndex]) {
-          setData(result.data[blockIndex].data);
-        }
-      } catch (e) {
-        console.error('Error fetching dashboard data:', e);
-        setError(e.message);
-      }
-    };
-    // Set up interval to refresh data every reloadInterval milliseconds (default: 10 seconds)
-    const interval = setInterval(fetchBlockData, reloadInterval);
-    
-    // Cleanup: Clear interval when component unmounts to prevent memory leaks
-    return () => clearInterval(interval);
-  }, [blockIndex, reloadInterval]);
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-lg shadow p-4 flex items-center justify-center min-h-[200px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Render based on config.Type
   if (config?.Type === 'Graph') {

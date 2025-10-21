@@ -9,10 +9,12 @@ const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Keep for initial load
+  const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
   const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Add state for form submission
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentRangeParams, setCurrentRangeParams] = useState('&range=3h');
+ 
   // Handle form submission
   const handleNotesSubmit = async (e) => {
 
@@ -98,7 +100,11 @@ const MachineSummary = () => {
     // rangeParams can be empty (uses backend default) or contain range/custom date filters
     const fetchDashboardData = async (rangeParams = '') => {
       try {
-        setLoading(true);
+        // Only show page-level loading on initial load
+        if (dashboardData.length === 0) {
+          setLoading(true);
+        }
+        
         const url = `http://localhost:8000/api/dashboard-config/?machine_name=Hurco${rangeParams}`;
         console.log('Fetching dashboard data from:', url);
         const response = await fetch(url);
@@ -107,16 +113,16 @@ const MachineSummary = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-      const result = await response.json();
+        const result = await response.json();
 
-      if (result.status === 'success') {
-        setDashboardData(result.data);
-        console.log('Dashboard data loaded:', result.data);
-      }
-      else {
-        throw new Error(result.message || 'Failed to load dashboard data');
-      }
-    } catch (error) {
+        if (result.status === 'success') {
+          setDashboardData(result.data);
+          console.log('Dashboard data loaded:', result.data);
+        }
+        else {
+          throw new Error(result.message || 'Failed to load dashboard data');
+        }
+      } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError(error.message);
       } finally {
@@ -125,7 +131,13 @@ const MachineSummary = () => {
     };
 
     // Initial data fetch with default 3-hour range when component mounts
-    fetchDashboardData('&range=3h');
+    fetchDashboardData(currentRangeParams);
+
+    // set up auto refresh intervals (30 seconds)
+    const refreshInterval = setInterval(() => {
+      console.log('Auto-refreshing dashboard data...');
+      fetchDashboardData(currentRangeParams);
+    }, 30000); // 30 seconds 
 
     // Event handler for range changes from the Header component
     // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
@@ -143,6 +155,7 @@ const MachineSummary = () => {
       }
       
       // Re-fetch dashboard data with new range parameters
+      setCurrentRangeParams(rangeParams);
       fetchDashboardData(rangeParams);
     };
 
@@ -152,8 +165,9 @@ const MachineSummary = () => {
     // Cleanup: Remove event listener when component unmounts to prevent memory leaks
     return () => {
       window.removeEventListener('rangeChanged', handleRangeChange);
+      clearInterval(refreshInterval);
     };
-  }, []);  
+  }, [currentRangeParams]);  // Re-run effect when currentRangeParams change
 
   const openModal = (content) => {
     setModalContent(content);
@@ -386,14 +400,14 @@ const MachineSummary = () => {
           </svg>
         </button>
         <div className="flex flex-wrap gap-4">
-          {loading && (
+          {loading && dashboardData.length === 0 && (
             <div className="w-full flex justify-center items-center py-8">
               <div className="text-xl text-gray-600 font-bold">Loading content...</div>
             </div>
           )}
           {error && (
             <div className="w-full flex justify-center items-center py-8">
-              <div className="text-xl text-red-600">Error: {error}</div>
+              <div className="text-xl text-red-600">Error: There is a problem with loading the data:<br /> {error}</div>
             </div>
           )}
           {dashboardData && dashboardData.map((item, index) => (
@@ -415,11 +429,10 @@ const MachineSummary = () => {
                 handleCardClick={handleCardClick}
                 handleChartClick={handleChartClick}
                 getRandomColors={getRandomColors}
-                reloadInterval={30000} // 30 seconds, adjust as needed
+                isLoading={blockLoadingStates[index]}
               />
             </div>
           ))}
-
         </div>
 
         {/* Sensors Section */}
