@@ -14,6 +14,7 @@ const MachineSummary = () => {
   const [error, setError] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentRangeParams, setCurrentRangeParams] = useState('&range=3h');
+  const [activeModalConfig, setActiveModalConfig] = useState(null); // Track which modal is open
  
   // Handle form submission
   const handleNotesSubmit = async (e) => {
@@ -176,18 +177,150 @@ const MachineSummary = () => {
     };
   }, [currentRangeParams]);  // Re-run effect when currentRangeParams change
 
-  const openModal = (content) => {
+  // Update modal content when dashboard data changes (for live updates in enlarged view)
+  useEffect(() => {
+    if (!isModalOpen || !activeModalConfig) return;
+
+    const { type, index } = activeModalConfig;
+    
+    if (type === 'chart') {
+      const item = dashboardData[index];
+      if (!item) return;
+
+      const { title, series, color, yAxisDomain } = activeModalConfig;
+      const data = item.data?.[0] || [];
+
+      setModalContent(
+        <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+          <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
+          <div className="flex-1 px-8 pb-4">
+            <div className="h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="time" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+
+                  {series.map((s, idx) => (
+                    <Line
+                      key={idx}
+                      type="monotone"
+                      dataKey={s}
+                      stroke={color[idx % color.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
+          {series && series.length > 0 && (
+            <div className="px-8 pb-6">
+              <div className="border-t border-gray-600 pt-4">
+                <div className="flex flex-wrap justify-center gap-4">
+                  {series.map((seriesName, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: color[idx % color.length] }}
+                      ></div>
+                      <span className="text-sm font-medium text-gray-300">
+                        {seriesName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    } else if (type === 'card') {
+      const item = dashboardData[index];
+      if (!item) return;
+
+      const { config } = item;
+      const data = item.data;
+      const value = data?.[0]?.[0]?.value || 'N/A';
+      const unit = config?.Unit || getUnitByTitle(config?.Title || '');
+
+      if (config?.Minimised) {
+        setModalContent(
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+            <div className="text-center">
+              <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
+              {value && (
+                <div className="text-gray-900 font-bold text-8xl">
+                  {value} {unit}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      } else {
+        setModalContent(
+          <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+            <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{config?.Title}</h2>
+            <div className="flex-1 px-8 pb-4">
+              <div className="h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data?.[0] || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="time" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+  }, [dashboardData, isModalOpen, activeModalConfig]);
+
+  const openModal = (content, config = null) => {
     setModalContent(content);
+    setActiveModalConfig(config);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setModalContent(null);
+    setActiveModalConfig(null);
   };
 
   // handles for chart clicks
-  const handleChartClick = (title, data, series = [], color, yAxisDomain) => {
+  const handleChartClick = (title, data, series = [], color, yAxisDomain, index) => {
     openModal(
       <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
         <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
@@ -209,12 +342,12 @@ const MachineSummary = () => {
                   tick={{ fontSize: 14, fill: '#9CA3AF' }}
                 />
 
-                {series.map((s, index) => (
+                {series.map((s, idx) => (
                   <Line
-                    key={index}
+                    key={idx}
                     type="monotone"
                     dataKey={s}
-                    stroke={color[index % color.length]}
+                    stroke={color[idx % color.length]}
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
@@ -230,11 +363,11 @@ const MachineSummary = () => {
           <div className="px-8 pb-6">
             <div className="border-t border-gray-600 pt-4">
               <div className="flex flex-wrap justify-center gap-4">
-                {series.map((seriesName, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                {series.map((seriesName, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded"
-                      style={{ backgroundColor: color[index % color.length] }}
+                      style={{ backgroundColor: color[idx % color.length] }}
                     ></div>
                     <span className="text-sm font-medium text-gray-300">
                       {seriesName}
@@ -245,12 +378,13 @@ const MachineSummary = () => {
             </div>
           </div>
         )}
-      </div>
+      </div>,
+      { type: 'chart', index, title, series, color, yAxisDomain }
     );
   };
   
   // handles for card clicks
-  const handleCardClick = (item) => {
+  const handleCardClick = (item, index) => {
     const { config, data } = item;
     const value = data?.[0]?.[0]?.value || 'N/A';
     const unit = config?.Unit || getUnitByTitle(config?.Title || '');
@@ -267,7 +401,8 @@ const MachineSummary = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        { type: 'card', index, config }
       );
     } else {
       // Show chart with all data points
@@ -302,7 +437,8 @@ const MachineSummary = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </div>,
+        { type: 'card', index, config }
       );
     }
   };

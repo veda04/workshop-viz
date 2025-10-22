@@ -41,7 +41,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={config?.Color || getRandomColors(5)}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100])}
+        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
   }
@@ -52,7 +52,7 @@ const DashboardBlock = ({
         value={data?.[0]?.[0]?.value || 'N/A'}
         textColor={config?.TextColor || getRandomColors(1)}
         unit={data?.[0]?.[0]?.value ? config?.Unit || getUnitByTitle(config?.Title || '') : ''}
-        onClick={config?.Maximisable ? () => handleCardClick({ config, data }) : undefined}
+        onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
       />
     );
   }
@@ -60,7 +60,7 @@ const DashboardBlock = ({
     return (
       <UsageChart
         title={config?.Title}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100])}
+        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
   }
