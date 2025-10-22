@@ -100,6 +100,9 @@ const MachineSummary = () => {
     // rangeParams can be empty (uses backend default) or contain range/custom date filters
     const fetchDashboardData = async (rangeParams = '') => {
       try {
+        // clear previous error
+        setError(null);
+
         // Only show page-level loading on initial load
         if (dashboardData.length === 0) {
           setLoading(true);
@@ -113,7 +116,11 @@ const MachineSummary = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const result = await response.json();
+        // const result = await response.json();
+        // handles NaN values in the response (Error fetching dashboard data: SyntaxError: Unexpected token 'N', ..."s_Motor": NaN, "C-Ax"... is not valid JSON)
+        const responseText = await response.text(); // Get the response as text first
+        const sanitizedText = responseText.replace(/:\s*NaN\b/g, ': null');  // Replace NaN with null to make it valid JSON  
+        const result = JSON.parse(sanitizedText);  // parse the sanitized JSON
 
         if (result.status === 'success') {
           setDashboardData(result.data);
@@ -407,10 +414,10 @@ const MachineSummary = () => {
           )}
           {error && (
             <div className="w-full flex justify-center items-center py-8">
-              <div className="text-xl text-red-600">Error: There is a problem with loading the data:<br /> {error}</div>
+              <div className="text-xl text-red-600">Error fetching dashboard data:<br /> {error}</div>
             </div>
           )}
-          {dashboardData && dashboardData.map((item, index) => (
+          {!error && dashboardData && dashboardData.map((item, index) => (
             <div
               key={index}
               className={`sub-blocks ${
@@ -436,7 +443,7 @@ const MachineSummary = () => {
         </div>
 
         {/* Sensors Section */}
-        {dashboardData && dashboardData.map((item, index) => (
+        {!error && dashboardData && dashboardData.map((item, index) => (
           item.sensor_list? (
             <div className="-mt-10 p-0 gap-0 space-y-0" key={index}>
               <Sensors sensorData={item.sensor_list} />
