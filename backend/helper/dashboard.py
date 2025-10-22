@@ -133,7 +133,6 @@ def _buildQuery(queryDict,range,type,minimised,requestedRange):
 
 	if requestedRange and ('start' in requestedRange and 'end' in requestedRange):
 		try:
-			# print("Custom date range provided, using RequestedRange")
 			startDate = requestedRange['start']
 			endDate = requestedRange['end']
 			
@@ -154,22 +153,39 @@ def _buildQuery(queryDict,range,type,minimised,requestedRange):
 			if startDateTime is None or endDateTime is None:
 				raise ValueError(f"Unable to parse dates with formats: {formats}")
 			
+			# **FIX: Assume input times are in BST/GMT and convert to UTC**
+			local_tz = pytz.timezone('Europe/London')
+			
+			# Localize the naive datetime to BST/GMT depending on the current timezone
+			startDateTime = local_tz.localize(startDateTime)
+			endDateTime = local_tz.localize(endDateTime)
+			
+			# Convert to UTC for InfluxDB query as InfluxDB stores times in UTC
+			startDateTime_utc = startDateTime.astimezone(pytz.UTC)
+			endDateTime_utc = endDateTime.astimezone(pytz.UTC)
+			
+			#print(f"User requested: {startDateTime} to {endDateTime}")
+			#print(f"Querying InfluxDB (UTC): {startDateTime_utc} to {endDateTime_utc}")
+			
 			# Calculate range in minutes and update query parameters
 			range = f"{int((endDateTime - startDateTime).total_seconds() / 60)}m"
-			query = query.replace("v.timeRangeStart", startDateTime.isoformat() + "Z")
-			query = query.replace("v.timeRangeStop", endDateTime.isoformat() + "Z")
+			query = query.replace("v.timeRangeStart", startDateTime_utc.isoformat())
+			query = query.replace("v.timeRangeStop", endDateTime_utc.isoformat())
+			
+			# Use UTC datetime for aggregation calculation
+			endDateTime = endDateTime_utc
 		except (KeyError, ValueError, TypeError) as e:
 			print(f"Error parsing requested range: {e}")
 			# Fallback to default range behavior
 			query = query.replace("v.timeRangeStart", f"-{range}")
 			query = query.replace("v.timeRangeStop", "now()")
-			endDateTime = datetime.now()
+			endDateTime = datetime.now(pytz.UTC)
 	else:
-		# print("No custom date range provided, using default range")
 		query = query.replace("v.timeRangeStart", f"-{range}")
 		query = query.replace("v.timeRangeStop", "now()")
-		endDateTime = datetime.now()
+		endDateTime = datetime.now(pytz.UTC)
 
+	# AC code: commented out - replaced with above code:  
 	# if("RequestedRange" in queryDict):
 	# 	requestedRange = queryDict.get("RequestedRange")
 	# 	startDate = requestedRange.get("from")
@@ -384,7 +400,7 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 			#serializable_data = generate_random_data(50, start_time="2025-07-28T11:15:00Z", interval_minutes=1)  # Replace with actual query function
 			end = perf_counter()
 			# print(f"{i} = {end-start}")
-			#print(data)
+			#print("printing data : ", data)
 
 			serializable_data = []
 			if data:
@@ -453,7 +469,7 @@ def format_timestamp(timestamp, timezone='Europe/London'):
         target_tz = pytz.timezone(timezone)  # Use pytz to get the timezone object
         
         if isinstance(timestamp, pd.Timestamp):  # handles if timestamp is a pandas Timestamp eg: Timestamp('2025-07-28 11:15:00+0000', tz='UTC')
-            # Handle pandas Timestamp - ensure it's UTC first
+			# Handle pandas Timestamp - ensure it's UTC first
             if timestamp.tz is None:
                 utc_timestamp = timestamp.tz_localize('UTC')
             else:
@@ -541,4 +557,4 @@ def _getPivotKey(data,specifiedTags):
 	pivotKey = longest_key
 	print("Pivot key:", pivotKey)
 	return pivotKey
-"""	
+"""
