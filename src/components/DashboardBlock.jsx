@@ -14,6 +14,7 @@ const DashboardBlock = ({
   isLoading = false 
 }) => {
   const [data, setData] = useState(initialData);
+  const [chartColors] = useState(config?.Color || getRandomColors(5));
 
   // Sync local data state with parent component's data when it changes
   // This ensures the component updates when MachineSummary fetches new data based on range changes
@@ -39,9 +40,9 @@ const DashboardBlock = ({
         title={config?.Title}
         series={config?.Series || []}
         data={data && data.length > 0 ? data[0] : []}
-        color={config?.Color || getRandomColors(5)}
+        color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
+        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
   }
