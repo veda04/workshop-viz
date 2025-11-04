@@ -48,6 +48,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   stroke={Array.isArray(color) ? color[index % color.length] : color}
                   strokeWidth={2}
                   dot={false}
+                  isAnimationActive={true}
                   activeDot={{ r: 4 }}
                 />
               ))}

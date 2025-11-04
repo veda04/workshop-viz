@@ -9,10 +9,13 @@ const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [dashboardData, setDashboardData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Keep for initial load
+  const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
   const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Add state for form submission
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentRangeParams, setCurrentRangeParams] = useState('&range=3h');
+  const [activeModalConfig, setActiveModalConfig] = useState(null); // Track which modal is open
+ 
   // Handle form submission
   const handleNotesSubmit = async (e) => {
 
@@ -98,7 +101,14 @@ const MachineSummary = () => {
     // rangeParams can be empty (uses backend default) or contain range/custom date filters
     const fetchDashboardData = async (rangeParams = '') => {
       try {
-        setLoading(true);
+        // clear previous error
+        setError(null);
+
+        // Only show page-level loading on initial load
+        if (dashboardData.length === 0) {
+          setLoading(true);
+        }
+        
         const url = `http://localhost:8000/api/dashboard-config/?machine_name=Hurco${rangeParams}`;
         console.log('Fetching dashboard data from:', url);
         const response = await fetch(url);
@@ -107,16 +117,20 @@ const MachineSummary = () => {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-      const result = await response.json();
+        // const result = await response.json();
+        // handles NaN values in the response (Error fetching dashboard data: SyntaxError: Unexpected token 'N', ..."s_Motor": NaN, "C-Ax"... is not valid JSON)
+        const responseText = await response.text(); // Get the response as text first
+        const sanitizedText = responseText.replace(/:\s*NaN\b/g, ': null');  // Replace NaN with null to make it valid JSON  
+        const result = JSON.parse(sanitizedText);  // parse the sanitized JSON
 
-      if (result.status === 'success') {
-        setDashboardData(result.data);
-        console.log('Dashboard data loaded:', result.data);
-      }
-      else {
-        throw new Error(result.message || 'Failed to load dashboard data');
-      }
-    } catch (error) {
+        if (result.status === 'success') {
+          setDashboardData(result.data);
+          console.log('Dashboard data loaded:', result.data);
+        }
+        else {
+          throw new Error(result.message || 'Failed to load dashboard data');
+        }
+      } catch (error) {
         console.error('Error fetching dashboard data:', error);
         setError(error.message);
       } finally {
@@ -125,7 +139,13 @@ const MachineSummary = () => {
     };
 
     // Initial data fetch with default 3-hour range when component mounts
-    fetchDashboardData('&range=3h');
+    fetchDashboardData(currentRangeParams);
+
+    // set up auto refresh intervals (30 seconds)
+    const refreshInterval = setInterval(() => {
+      console.log('Auto-refreshing dashboard data...');
+      fetchDashboardData(currentRangeParams);
+    }, 30000); // 30 seconds 
 
     // Event handler for range changes from the Header component
     // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
@@ -143,6 +163,7 @@ const MachineSummary = () => {
       }
       
       // Re-fetch dashboard data with new range parameters
+      setCurrentRangeParams(rangeParams);
       fetchDashboardData(rangeParams);
     };
 
@@ -152,21 +173,154 @@ const MachineSummary = () => {
     // Cleanup: Remove event listener when component unmounts to prevent memory leaks
     return () => {
       window.removeEventListener('rangeChanged', handleRangeChange);
+      clearInterval(refreshInterval);
     };
-  }, []);  
+  }, [currentRangeParams]);  // Re-run effect when currentRangeParams change
 
-  const openModal = (content) => {
+  // Update modal content when dashboard data changes (for live updates in enlarged view)
+  useEffect(() => {
+    if (!isModalOpen || !activeModalConfig) return;
+
+    const { type, index } = activeModalConfig;
+    
+    if (type === 'chart') {
+      const item = dashboardData[index];
+      if (!item) return;
+
+      const { title, series, color, yAxisDomain } = activeModalConfig;
+      const data = item.data?.[0] || [];
+
+      setModalContent(
+        <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+          <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
+          <div className="flex-1 px-8 pb-4">
+            <div className="h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={data}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis 
+                    dataKey="time" 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+                  <YAxis 
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  />
+
+                  {series.map((s, idx) => (
+                    <Line
+                      key={idx}
+                      type="monotone"
+                      dataKey={s}
+                      stroke={color[idx % color.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+          
+          {series && series.length > 0 && (
+            <div className="px-8 pb-6">
+              <div className="border-t border-gray-600 pt-4">
+                <div className="flex flex-wrap justify-center gap-4">
+                  {series.map((seriesName, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div 
+                        className="w-4 h-4 rounded"
+                        style={{ backgroundColor: color[idx % color.length] }}
+                      ></div>
+                      <span className="text-sm font-medium text-gray-300">
+                        {seriesName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    } else if (type === 'card') {
+      const item = dashboardData[index];
+      if (!item) return;
+
+      const { config } = item;
+      const data = item.data;
+      const value = data?.[0]?.[0]?.value || 'N/A';
+      const unit = config?.Unit || getUnitByTitle(config?.Title || '');
+
+      if (config?.Minimised) {
+        setModalContent(
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+            <div className="text-center">
+              <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
+              {value && (
+                <div className="text-gray-900 font-bold text-8xl">
+                  {value} {unit}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      } else {
+        setModalContent(
+          <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+            <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{config?.Title}</h2>
+            <div className="flex-1 px-8 pb-4">
+              <div className="h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={data?.[0] || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                    <XAxis 
+                      dataKey="time" 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    />
+                    <YAxis 
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#3B82F6"
+                      strokeWidth={2}
+                      dot={false}
+                      activeDot={{ r: 4 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+        );
+      }
+    }
+  }, [dashboardData, isModalOpen, activeModalConfig]);
+
+  const openModal = (content, config = null) => {
     setModalContent(content);
+    setActiveModalConfig(config);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setModalContent(null);
+    setActiveModalConfig(null);
   };
 
   // handles for chart clicks
-  const handleChartClick = (title, data, series = [], color, yAxisDomain) => {
+  const handleChartClick = (title, data, series = [], color, yAxisDomain, index) => {
     openModal(
       <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
         <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
@@ -188,12 +342,12 @@ const MachineSummary = () => {
                   tick={{ fontSize: 14, fill: '#9CA3AF' }}
                 />
 
-                {series.map((s, index) => (
+                {series.map((s, idx) => (
                   <Line
-                    key={index}
+                    key={idx}
                     type="monotone"
                     dataKey={s}
-                    stroke={color[index % color.length]}
+                    stroke={color[idx % color.length]}
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 4 }}
@@ -209,11 +363,11 @@ const MachineSummary = () => {
           <div className="px-8 pb-6">
             <div className="border-t border-gray-600 pt-4">
               <div className="flex flex-wrap justify-center gap-4">
-                {series.map((seriesName, index) => (
-                  <div key={index} className="flex items-center gap-2">
+                {series.map((seriesName, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
                     <div 
                       className="w-4 h-4 rounded"
-                      style={{ backgroundColor: color[index % color.length] }}
+                      style={{ backgroundColor: color[idx % color.length] }}
                     ></div>
                     <span className="text-sm font-medium text-gray-300">
                       {seriesName}
@@ -224,12 +378,13 @@ const MachineSummary = () => {
             </div>
           </div>
         )}
-      </div>
+      </div>,
+      { type: 'chart', index, title, series, color, yAxisDomain }
     );
   };
   
   // handles for card clicks
-  const handleCardClick = (item) => {
+  const handleCardClick = (item, index) => {
     const { config, data } = item;
     const value = data?.[0]?.[0]?.value || 'N/A';
     const unit = config?.Unit || getUnitByTitle(config?.Title || '');
@@ -246,7 +401,8 @@ const MachineSummary = () => {
               </div>
             )}
           </div>
-        </div>
+        </div>,
+        { type: 'card', index, config }
       );
     } else {
       // Show chart with all data points
@@ -281,7 +437,8 @@ const MachineSummary = () => {
               </ResponsiveContainer>
             </div>
           </div>
-        </div>
+        </div>,
+        { type: 'card', index, config }
       );
     }
   };
@@ -386,17 +543,17 @@ const MachineSummary = () => {
           </svg>
         </button>
         <div className="flex flex-wrap gap-4">
-          {loading && (
+          {loading && dashboardData.length === 0 && (
             <div className="w-full flex justify-center items-center py-8">
               <div className="text-xl text-gray-600 font-bold">Loading content...</div>
             </div>
           )}
           {error && (
             <div className="w-full flex justify-center items-center py-8">
-              <div className="text-xl text-red-600">Error: {error}</div>
+              <div className="text-xl text-red-600">Error fetching dashboard data:<br /> {error}</div>
             </div>
           )}
-          {dashboardData && dashboardData.map((item, index) => (
+          {!error && dashboardData && dashboardData.map((item, index) => (
             <div
               key={index}
               className={`sub-blocks ${
@@ -415,15 +572,14 @@ const MachineSummary = () => {
                 handleCardClick={handleCardClick}
                 handleChartClick={handleChartClick}
                 getRandomColors={getRandomColors}
-                reloadInterval={30000} // 30 seconds, adjust as needed
+                isLoading={blockLoadingStates[index]}
               />
             </div>
           ))}
-
         </div>
 
         {/* Sensors Section */}
-        {dashboardData && dashboardData.map((item, index) => (
+        {!error && dashboardData && dashboardData.map((item, index) => (
           item.sensor_list? (
             <div className="-mt-10 p-0 gap-0 space-y-0" key={index}>
               <Sensors sensorData={item.sensor_list} />
