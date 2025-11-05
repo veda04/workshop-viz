@@ -4,6 +4,7 @@ import Layout from './Layout';
 import Modal from './Modal';
 import Sensors from './Sensors';
 import DashboardBlock from './DashboardBlock';
+import ZoomableChart from './ZoomableChart';
 
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
@@ -191,61 +192,12 @@ const MachineSummary = () => {
       const data = item.data?.[0] || [];
 
       setModalContent(
-        <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
-          <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
-          <div className="flex-1 px-8 pb-4">
-            <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="time" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                  />
-
-                  {series.map((s, idx) => (
-                    <Line
-                      key={idx}
-                      type="monotone"
-                      dataKey={s}
-                      stroke={color[idx % color.length]}
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 4 }}
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-          
-          {series && series.length > 0 && (
-            <div className="px-8 pb-6">
-              <div className="border-t border-gray-600 pt-4">
-                <div className="flex flex-wrap justify-center gap-4">
-                  {series.map((seriesName, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <div 
-                        className="w-4 h-4 rounded"
-                        style={{ backgroundColor: color[idx % color.length] }}
-                      ></div>
-                      <span className="text-sm font-medium text-gray-300">
-                        {seriesName}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+        <ZoomableChart 
+          data={data}
+          series={series}
+          color={color}
+          title={title}
+        />
       );
     } else if (type === 'card') {
       const item = dashboardData[index];
@@ -271,37 +223,12 @@ const MachineSummary = () => {
         );
       } else {
         setModalContent(
-          <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
-            <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{config?.Title}</h2>
-            <div className="flex-1 px-8 pb-4">
-              <div className="h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={data?.[0] || []}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis 
-                      dataKey="time" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="value"
-                      stroke="#3B82F6"
-                      strokeWidth={2}
-                      dot={false}
-                      activeDot={{ r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-          </div>
+          <ZoomableChart 
+            data={data?.[0] || []}
+            series={['value']}
+            color={['#3B82F6']}
+            title={config?.Title}
+          />
         );
       }
     }
@@ -322,63 +249,12 @@ const MachineSummary = () => {
   // handles for chart clicks
   const handleChartClick = (title, data, series = [], color, yAxisDomain, index) => {
     openModal(
-      <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
-        <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{title}</h2>
-        <div className="flex-1 px-8 pb-4">
-          <div className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                />
-                <YAxis 
-                  // domain={yAxisDomain}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                />
-
-                {series.map((s, idx) => (
-                  <Line
-                    key={idx}
-                    type="monotone"
-                    dataKey={s}
-                    stroke={color[idx % color.length]}
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4 }}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        
-        {/* Legend Section */}
-        {series && series.length > 0 && (
-          <div className="px-8 pb-6">
-            <div className="border-t border-gray-600 pt-4">
-              <div className="flex flex-wrap justify-center gap-4">
-                {series.map((seriesName, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div 
-                      className="w-4 h-4 rounded"
-                      style={{ backgroundColor: color[idx % color.length] }}
-                    ></div>
-                    <span className="text-sm font-medium text-gray-300">
-                      {seriesName}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>,
+      <ZoomableChart 
+        data={data}
+        series={series}
+        color={color}
+        title={title}
+      />,
       { type: 'chart', index, title, series, color, yAxisDomain }
     );
   };
