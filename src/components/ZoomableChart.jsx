@@ -84,12 +84,12 @@ const ZoomableChart = ({ data, series, color, title }) => {
 
   return (
     <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
-      <div className="flex items-center justify-between px-8 pt-8 mb-4">
+      <div className="px-8 pt-8 mb-4 relative">
         <h2 className="text-4xl font-bold text-white text-center flex-1">{title}</h2>
         {isZoomed && (
           <button
             onClick={handleResetZoom}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded shadow-lg transition-colors"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 absolute right-16 top-9 transform -translate-y-1/2 rounded shadow-lg transition-colors"
             title="Reset Zoom"
           >
             Reset Zoom
