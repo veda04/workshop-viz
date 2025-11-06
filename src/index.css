@@ -15,3 +15,20 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Ensure cursor styles are applied to chart areas and their children */
+.chart-interactive {
+  cursor: grab !important;
+}
+
+.chart-interactive * {
+  cursor: grab !important;
+}
+
+.chart-interactive.dragging {
+  cursor: grabbing !important;
+}
+
+.chart-interactive.dragging * {
+  cursor: grabbing !important;
+}

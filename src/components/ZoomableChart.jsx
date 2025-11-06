@@ -4,8 +4,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } fro
 const ZoomableChart = ({ data, series, color, title }) => {
   // Zoom and pan state
   const [zoomState, setZoomState] = useState({ startIndex: 0, endIndex: data.length - 1 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState(0);
+  const [isDragging, setIsDragging] = useState(false); // Track if the user is currently dragging
+  const [dragStart, setDragStart] = useState(0); // store initial mouse X position
   const chartRef = useRef(null);
 
   // Reset zoom when data changes
@@ -42,7 +42,7 @@ const ZoomableChart = ({ data, series, color, title }) => {
     if (e.button === 0) { // Left mouse button
       e.stopPropagation();
       setIsDragging(true);
-      setDragStart(e.clientX);
+      setDragStart(e.clientX); // saves initial X position
     }
   };
 
@@ -92,7 +92,7 @@ const ZoomableChart = ({ data, series, color, title }) => {
             className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 absolute right-16 top-9 transform -translate-y-1/2 rounded shadow-lg transition-colors"
             title="Reset Zoom"
           >
-            Reset Zoom
+            Reset
           </button>
         )}
       </div>
@@ -100,7 +100,7 @@ const ZoomableChart = ({ data, series, color, title }) => {
       <div className="flex-1 px-8 pb-4">
         <div 
           ref={chartRef}
-          className={`h-full ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+          className={`h-full chart-interactive ${isDragging ? 'dragging' : ''}`}
           onWheel={handleWheel}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -160,8 +160,8 @@ const ZoomableChart = ({ data, series, color, title }) => {
 
       {/* Help text */}
       <div className="px-8 pb-4 text-center">
-        <p className="text-xs text-gray-400">
-          Use mouse wheel to zoom • Drag to pan
+        <p className="text-xs text-red-400">
+          ** Use mouse wheel to zoom • Drag to pan **
         </p>
       </div>
     </div>

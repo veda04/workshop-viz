@@ -137,7 +137,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
 
       <div 
         ref={chartRef}
-        className={`h-56 bg-gray-800 p-2 relative ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
+        className={`h-56 bg-gray-800 p-2 relative`}
         onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -145,11 +145,11 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
         onMouseLeave={handleMouseLeave}
       >
         {chartData.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center cursor-not-allowed">
             <p className="text-gray-400 text-lg">No data available</p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" className={`chart-interactive ${isDragging ? 'dragging' : ''}`}>
             <LineChart data={displayData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
