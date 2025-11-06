@@ -1,5 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
+
+// Custom Tooltip Component to display data on hover of activeDots
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 shadow-lg">
+        <p className="text-white text-xs font-medium mb-2">{label}</p>
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2 mb-1">
+            <div 
+              className="w-3 h-3 rounded"
+              style={{ backgroundColor: entry.color }}
+            ></div>
+            <span className="text-gray-300 text-xs">
+              {entry.name}: <span className="font-semibold text-white">{entry.value.toFixed(3)}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 const ZoomableChart = ({ data, series, color, title }) => {
   // Zoom and pan state
@@ -121,6 +144,7 @@ const ZoomableChart = ({ data, series, color, title }) => {
                 tickLine={false}
                 tick={{ fontSize: 14, fill: '#9CA3AF' }}
               />
+              <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
 
               {series.map((s, idx) => (
                 <Line
@@ -128,8 +152,9 @@ const ZoomableChart = ({ data, series, color, title }) => {
                   type="monotone"
                   dataKey={s}
                   stroke={color[idx % color.length]}
-                  strokeWidth={2}
+                  strokeWidth={1}
                   dot={false}
+                  isAnimationActive={true}
                   activeDot={{ r: 4 }}
                 />
               ))}

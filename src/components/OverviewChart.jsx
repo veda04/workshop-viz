@@ -169,10 +169,10 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   type="monotone"
                   dataKey={s}
                   stroke={Array.isArray(color) ? color[index % color.length] : color}
-                  strokeWidth={2}
+                  strokeWidth={1}
                   dot={false}
                   isAnimationActive={true}
-                  activeDot={{ r: 4 }}
+                  activeDot={{ r: 2 }}
                 />
               ))}
             </LineChart>
