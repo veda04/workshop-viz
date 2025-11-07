@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from .influx_service import InfluxDBService
 from .mysql_service import MySQLService
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 from django.conf import settings
 import os
@@ -52,6 +52,7 @@ def test_influx_connection(request):
                 'data': {
                     'influxdb_version': health.version,
                     'server_time': datetime.now(datetime.timezone.utc).isoformat()
+                    #'server_time': datetime.now(timezone.utc).isoformat()  # uncomment incase of connection fails 
                 }
             }, status=status.HTTP_200_OK)
         else:
