@@ -11,10 +11,11 @@ const DashboardBlock = ({
   handleCardClick, 
   handleChartClick, 
   getRandomColors,
+  getFixedColors,
   isLoading = false 
 }) => {
   const [data, setData] = useState(initialData);
-  const [chartColors] = useState(config?.Color || getRandomColors(5));
+  const [chartColors] = useState(config?.Color || getFixedColors(12));
 
   // Sync local data state with parent component's data when it changes
   // This ensures the component updates when MachineSummary fetches new data based on range changes

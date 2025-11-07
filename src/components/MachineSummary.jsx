@@ -319,21 +319,51 @@ const MachineSummary = () => {
     }
   };
 
-  // series of random colors for the charts
-  const getRandomColor = () => {
+  // get random colors for stats
+    const getRandomColor = () => {
     const letters = '0123456789ABCDEF';
     let color = '#';
     for (let i = 0; i < 6; i++) {
       color += letters[Math.floor(Math.random() * 16)];
     }
     return color;
-  }
+  };
 
   // get x number of random colors
   const getRandomColors = (num) => {
     const colors = [];
     for (let i = 0; i < num; i++) {
       colors.push(getRandomColor());
+    }
+    return colors;
+  };
+
+  // Predefined distinct colors for charts - each from a different color family
+  const CHART_COLORS = [
+    '#FF0000', // Red
+    '#4ECDC4', // Teal
+    '#FFD93D', // Yellow
+    '#6BCB77', // Green
+    '#4D96FF', // Blue
+    '#FF8E53', // Orange
+    '#A78BFA', // Purple
+    '#F472B6', // Pink
+    '#34D399', // Emerald
+    '#FBBF24', // Amber
+    '#A3E635', // Lime
+    '#ffb387ff'  // Peach
+  ];
+
+  // Get a specific color by index, cycling through if needed
+  const getChartColor = (index) => {
+    return CHART_COLORS[index % CHART_COLORS.length];
+  }
+
+  // Get an array of fixed colors for multiple series
+  const getFixedColors = (num) => {
+    const colors = [];
+    for (let i = 0; i < num; i++) {
+      colors.push(getChartColor(i));
     }
     return colors;
   }
@@ -448,6 +478,7 @@ const MachineSummary = () => {
                 handleCardClick={handleCardClick}
                 handleChartClick={handleChartClick}
                 getRandomColors={getRandomColors}
+                getFixedColors={getFixedColors}
                 isLoading={blockLoadingStates[index]}
               />
             </div>
