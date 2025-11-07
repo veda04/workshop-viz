@@ -6,7 +6,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-gray-900 border border-gray-600 rounded-lg p-3 shadow-lg">
-        <p className="text-white text-xs font-medium mb-2">{label}</p>
+        <p className="text-white text-xs font-medium mb-2">Time: {label}</p>
         {payload.map((entry, index) => (
           <div key={index} className="flex items-center gap-2 mb-1">
             <div 

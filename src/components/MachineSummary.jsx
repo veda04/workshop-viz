@@ -5,6 +5,8 @@ import Modal from './Modal';
 import Sensors from './Sensors';
 import DashboardBlock from './DashboardBlock';
 import ZoomableChart from './ZoomableChart';
+import LoadingSpinner from './common/LoadingSpinner';
+import ErrorMessage from './common/ErrorMessage';
 
 const MachineSummary = () => {
   const [modalContent, setModalContent] = useState(null);
@@ -146,7 +148,7 @@ const MachineSummary = () => {
     const refreshInterval = setInterval(() => {
       console.log('Auto-refreshing dashboard data...');
       fetchDashboardData(currentRangeParams);
-    }, 30000); // 30 seconds 
+    }, 60000); // 60 seconds
 
     // Event handler for range changes from the Header component
     // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
@@ -371,72 +373,39 @@ const MachineSummary = () => {
   }
 
   // Function to get appropriate unit based on title for coolant values
-  const getUnitByTitle = (title) => {
-    const titleLower = title.toLowerCase();
-    
-    // Temperature related
-    if (titleLower.includes('temperature') || titleLower.includes('temp')) {
-      return '°C';
-    }
-    
-    // Pressure related
-    if (titleLower.includes('pressure')) {
-      return 'bar';
-    }
-    
-    // Flow related
-    if (titleLower.includes('flow')) {
-      return 'L/min';
-    }
-    
-    // Level related
-    if (titleLower.includes('level')) {
-      return 'mm';
-    }
-    
-    // Concentration related
-    if (titleLower.includes('concentration') || titleLower.includes('brix')) {
-      return 'Brix(%)';
-    }
-    
-    // Voltage related
-    if (titleLower.includes('voltage')) {
-      return 'V';
-    }
-    
-    // Current related
-    if (titleLower.includes('current')) {
-      return 'A';
-    }
-    
-    // Speed/RPM related
-    if (titleLower.includes('speed') || titleLower.includes('rpm')) {
-      return 'RPM';
-    }
-    
-    // Vibration/acceleration related
-    if (titleLower.includes('vibration') || titleLower.includes('acceleration')) {
-      return 'g';
-    }
-    
-    // Air related
-    if (titleLower.includes('air flow') || titleLower.includes('airflow')) {
-      return 'L/min';
-    }
-    
-    // Percentage related
-    if (titleLower.includes('usage') || titleLower.includes('efficiency') || titleLower.includes('quality')) {
-      return '%';
-    }
-    
-    // Power related
-    if (titleLower.includes('power')) {
-      return 'kW';
-    }
-    
-    // Default fallback
-    return '';
-  }
+    const UNIT_MAPPINGS = {
+      temperature: '°C',
+      temp: '°C',
+      pressure: 'bar',
+      flow: 'L/min',
+      level: 'mm',
+      concentration: 'Brix(%)',
+      brix: 'Brix(%)',
+      voltage: 'V',
+      current: 'A',
+      speed: 'RPM',
+      rpm: 'RPM',
+      vibration: 'g',
+      acceleration: 'g',
+      airflow: 'L/min',
+      'air flow': 'L/min',
+      usage: '%',
+      efficiency: '%',
+      quality: '%',
+      power: 'kW',
+    };
+
+    const getUnitByTitle = (title) => {
+      const titleLower = title.toLowerCase();
+      
+      for (const [keyword, unit] of Object.entries(UNIT_MAPPINGS)) {
+        if (titleLower.includes(keyword)) {
+          return unit;
+        }
+      }
+      
+      return '';
+    };
 
   return (
     <Layout>
@@ -452,14 +421,10 @@ const MachineSummary = () => {
         </button>
         <div className="flex flex-wrap gap-4">
           {loading && dashboardData.length === 0 && (
-            <div className="w-full flex justify-center items-center py-8">
-              <div className="text-xl text-gray-600 font-bold">Loading content...</div>
-            </div>
+            <LoadingSpinner message="Loading dashboard data..." />
           )}
           {error && (
-            <div className="w-full flex justify-center items-center py-8">
-              <div className="text-xl text-red-600">Error fetching dashboard data:<br /> {error}</div>
-            </div>
+            <ErrorMessage message={error} />
           )}
           {!error && dashboardData && dashboardData.map((item, index) => (
             <div
