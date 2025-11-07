@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 
-const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], onClick }) => {
+const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick }) => {
   // Ensure data is an array and not empty
   const chartData = Array.isArray(data) ? data : [];
   
@@ -212,6 +212,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                tickFormatter={(value) => `${value} ${unit}`}
               />
               {actualSeries.map((s, index) => (
                 <Line

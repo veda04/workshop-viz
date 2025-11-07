@@ -197,6 +197,7 @@ const MachineSummary = () => {
           series={series}
           color={color}
           title={title}
+          unit={item.config?.Unit || getUnitByTitle(item.config?.Title || '')}
         />
       );
     } else if (type === 'card') {
@@ -228,6 +229,7 @@ const MachineSummary = () => {
             series={['value']}
             color={['#3B82F6']}
             title={config?.Title}
+            unit={unit}
           />
         );
       }

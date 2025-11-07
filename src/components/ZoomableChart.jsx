@@ -24,7 +24,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const ZoomableChart = ({ data, series, color, title }) => {
+const ZoomableChart = ({ data, series, color, title, unit }) => {
   // Zoom and pan state
   const [zoomState, setZoomState] = useState({ startIndex: 0, endIndex: data.length - 1 });
   const [isDragging, setIsDragging] = useState(false); // Track if the user is currently dragging
@@ -194,6 +194,7 @@ const ZoomableChart = ({ data, series, color, title }) => {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                tickFormatter={(value) => `${value} ${unit}`}
               />
               <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
 

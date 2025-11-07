@@ -43,6 +43,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
+        unit={config?.Unit || getUnitByTitle(config?.Title || '')}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
