@@ -7,179 +7,19 @@ import DashboardBlock from './DashboardBlock';
 import ZoomableChart from '../charts/ZoomableChart';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
+import NotesForm from '../forms/NotesForm';
+import { useDashboardData } from '../../hooks/useDashboardData';
+
+import apiService from '../../services/apiService';
 
 const MachineSummary = () => {
+  const {dashboardData, loading, error } = useDashboardData('Hurco');
+  const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
+  
   const [modalContent, setModalContent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [dashboardData, setDashboardData] = useState([]);
-  const [loading, setLoading] = useState(true); // Keep for initial load
-  const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
-  const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [currentRangeParams, setCurrentRangeParams] = useState('&range=3h');
   const [activeModalConfig, setActiveModalConfig] = useState(null); // Track which modal is open
- 
-  // Handle form submission
-  const handleNotesSubmit = async (e) => {
-
-    // console.log('Submitting note:', notesData);
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!notesData.description || !notesData.category || !notesData.startDate || !notesData.endDate || !notesData.user) {
-      alert('Please fill in all required fields');
-      return;
-    }
-    
-    try {
-      setIsSubmitting(true);
-      
-      const response = await fetch('http://localhost:8000/api/add-notes/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(notesData)
-      });
-      
-      const result = await response.json();
-      
-      if (result.status === 'success') {
-        alert('Note added successfully!');
-        setIsNotesModalOpen(false);
-        setNotesData({ description: '', category: '', startDate: '', endDate: '', user: '' });
-      } else {
-        alert(`Error: ${result.message}`);
-      }
-    } catch (error) {
-      console.error('Error submitting note:', error);
-      alert('Failed to submit note. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-    // State for notes modal
-  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  const [notesData, setNotesData] = useState({
-    description: '',
-    category: '',
-    startDate: '',
-    endDate: '',
-    user: ''
-  });
-
-  // Example categories and users (replace with API data if needed)
-  const categories = ['Category 1', 'Category 2', 'Category 3', 'Category 4'];
-
-  // fetch the user list from the backend
-  const [users, setUsers] = useState([]);
-  useEffect(() => {
-    const fetchUserList = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/user-list/');
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        if (result.status === 'success' && result.data) {
-          setUsers(result.data);
-          console.log('User list loaded:', result.data);
-        } else {
-          throw new Error(result.message || 'Failed to load user list');
-        }
-      }
-      catch (error) {
-        console.error('Error fetching user list:', error);
-        setError(error.message);
-      }
-    };
-    fetchUserList();
-  }, []);
-
-  // Fetch the dashboard configuration data with support for dynamic time range updates
-  // This useEffect handles both initial data load and updates when user changes time range
-  useEffect(() => {
-    // Fetch dashboard data from backend with optional range parameters
-    // rangeParams can be empty (uses backend default) or contain range/custom date filters
-    const fetchDashboardData = async (rangeParams = '') => {
-      try {
-        // clear previous error
-        setError(null);
-
-        // Only show page-level loading on initial load
-        if (dashboardData.length === 0) {
-          setLoading(true);
-        }
-        
-        const url = `http://localhost:8000/api/dashboard-config/?machine_name=Hurco${rangeParams}`;
-        console.log('Fetching dashboard data from:', url);
-        const response = await fetch(url);
-
-        if(!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        // const result = await response.json();
-        // handles NaN values in the response (Error fetching dashboard data: SyntaxError: Unexpected token 'N', ..."s_Motor": NaN, "C-Ax"... is not valid JSON)
-        const responseText = await response.text(); // Get the response as text first
-        const sanitizedText = responseText.replace(/:\s*NaN\b/g, ': null');  // Replace NaN with null to make it valid JSON  
-        const result = JSON.parse(sanitizedText);  // parse the sanitized JSON
-
-        if (result.status === 'success') {
-          setDashboardData(result.data);
-          console.log('Dashboard data loaded:', result.data);
-        }
-        else {
-          throw new Error(result.message || 'Failed to load dashboard data');
-        }
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Initial data fetch with default 3-hour range when component mounts
-    fetchDashboardData(currentRangeParams);
-
-    // set up auto refresh intervals (30 seconds)
-    const refreshInterval = setInterval(() => {
-      console.log('Auto-refreshing dashboard data...');
-      fetchDashboardData(currentRangeParams);
-    }, 60000); // 60 seconds
-
-    // Event handler for range changes from the Header component
-    // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
-    const handleRangeChange = (event) => {
-      const { type, range, from, to } = event.detail;
-      let rangeParams = '';
-      
-      // Build query parameters based on range type (predefined or custom date range)
-      if (type === 'custom') {
-        // Custom date range: use 'from' and 'to' parameters
-        rangeParams = `&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
-      } else {
-        // Predefined range: use 'range' parameter (e.g., '1h', '3h', '24h')
-        rangeParams = `&range=${encodeURIComponent(range)}`;
-      }
-      
-      // Re-fetch dashboard data with new range parameters
-      setCurrentRangeParams(rangeParams);
-      fetchDashboardData(rangeParams);
-    };
-
-    // Subscribe to range change events from Header component
-    window.addEventListener('rangeChanged', handleRangeChange);
-
-    // Cleanup: Remove event listener when component unmounts to prevent memory leaks
-    return () => {
-      window.removeEventListener('rangeChanged', handleRangeChange);
-      clearInterval(refreshInterval);
-    };
-  }, [currentRangeParams]);  // Re-run effect when currentRangeParams change
-
   // Update modal content when dashboard data changes (for live updates in enlarged view)
   useEffect(() => {
     if (!isModalOpen || !activeModalConfig) return;
@@ -462,94 +302,14 @@ const MachineSummary = () => {
         ))}
       </div>
 
-      {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={closeModal}>
+      {/* Chart/Data Modal */}
+      <Modal isOpen={isModalOpen} onClose={closeModal} size="full">
         {modalContent}
       </Modal>
 
       {/* Notes Modal */}
-      <Modal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)}>
-        <div className="p-8 w-2/4 max-w-lg mx-auto">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800 underline text-center">Add Note</h2>
-          <form className="space-y-6" onSubmit={handleNotesSubmit}>
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Description</label>
-              <textarea
-                className="w-full p-2 border border-gray-300 rounded"
-                rows={4}
-                value={notesData.description}
-                onChange={e => setNotesData({ ...notesData, description: e.target.value })}
-                placeholder="Enter description..."
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">Category</label>
-              <select
-                className="w-full p-2 border border-gray-300 rounded"
-                value={notesData.category}
-                onChange={e => setNotesData({ ...notesData, category: e.target.value })}
-                required
-              >
-                <option value="">Select category</option>
-                {categories.map((cat, idx) => (
-                  <option key={idx} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-gray-700 font-semibold mb-2">Start Date</label>
-                <input
-                  type="datetime-local"
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={notesData.startDate}
-                  onChange={e => setNotesData({ ...notesData, startDate: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-gray-700 font-semibold mb-2">End Date</label>
-                <input
-                  type="datetime-local"
-                  className="w-full p-2 border border-gray-300 rounded"
-                  value={notesData.endDate}
-                  onChange={e => setNotesData({ ...notesData, endDate: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-gray-700 font-semibold mb-2">User</label>
-              <select 
-                className="w-full p-2 border border-gray-300 rounded"
-                value={notesData.user}
-                onChange={e => setNotesData({ ...notesData, user: e.target.value })}
-                required
-              >
-                <option value="">Select user</option>
-                {users.slice(2, users.length).map((user, idx) => (
-                   <option key={idx} value={user.iUser_id}>
-                    {user.vName || user.name || user}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-between gap-4 pt-4">
-              <button
-                type="button"
-                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
-                onClick={() => setIsNotesModalOpen(false)}
-                disabled={isSubmitting}
-              >Cancel</button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                disabled={isSubmitting}
-              >{isSubmitting ? 'Saving...' : 'Save'}</button>
-            </div>
-          </form>
-        </div>
+      <Modal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} size="large">
+        <NotesForm onClose={() =>setIsNotesModalOpen(false)} />
       </Modal>
     </Layout>
   );
