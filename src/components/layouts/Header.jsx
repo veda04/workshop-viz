@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useBookingData } from '../../hooks/useBookingData';
 
 const Header = () => {
-  const [bookingData, setBookingData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [airValveOpen, setAirValveOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+
+  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
+  const { bookingData, loading, error } = useBookingData(machineName);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -75,38 +76,6 @@ const Header = () => {
     }, 1000);
     return () => clearInterval(timer);
   }, []);
-
-  // get the current machine name from the URL or use a default
-  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';  // Fetch the current booking data from the backend
-  useEffect(() => {
-    const fetchCurrentBooking = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`http://localhost:8000/api/current-booking/?machine_name=${machineName}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        console.log('Machine booking details:', result);
-        
-        // Set the booking data from the response
-        if (result.status === 'success' && result.data && result.data.length > 0) {
-          setBookingData(result.data[0]); // Get the first booking
-        } else {
-          setBookingData(null);
-        }
-      } catch (error) {
-        console.error('Error fetching current booking:', error);
-        setError(error.message);
-        setBookingData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCurrentBooking();
-  }, [machineName]);
 
   // Helper function to format timings
   const formatTimings = (booking) => {
@@ -270,7 +239,9 @@ const Header = () => {
       </div>
       {/* check if bookingData is available */}
       <div className="mt-4 current-booking">
-        {(!bookingData) ? (
+        {console.log('Booking Data in Header:', bookingData)}{
+          
+        (!bookingData) ? (
           <div className="w-full text-center py-3 text-lg text-gray-700 font-semibold yellow-gradient-bg rounded-lg shadow">
             There are no bookings for this machine today 
           </div>
