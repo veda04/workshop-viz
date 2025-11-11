@@ -1,251 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import React, { useState } from 'react';
 import Layout from '../layouts/Layout';
 import Modal from '../Modal';
 import Sensors from './Sensors';
 import DashboardBlock from './DashboardBlock';
-import ZoomableChart from '../charts/ZoomableChart';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
 import NotesForm from '../forms/NotesForm';
 import { useDashboardData } from '../../hooks/useDashboardData';
-
-import apiService from '../../services/apiService';
+import { useModalManager } from '../../hooks/useModalManager';
+import {getUnitByTitle} from '../../utils/unitUtils';
+import { getFixedColors, getRandomColors} from '../../utils/chartUtils';
 
 const MachineSummary = () => {
   const {dashboardData, loading, error } = useDashboardData('Hurco');
   const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
-  
-  const [modalContent, setModalContent] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeModalConfig, setActiveModalConfig] = useState(null); // Track which modal is open
-  // Update modal content when dashboard data changes (for live updates in enlarged view)
-  useEffect(() => {
-    if (!isModalOpen || !activeModalConfig) return;
 
-    const { type, index } = activeModalConfig;
-    
-    if (type === 'chart') {
-      const item = dashboardData[index];
-      if (!item) return;
-
-      const { title, series, color, yAxisDomain } = activeModalConfig;
-      const data = item.data?.[0] || [];
-
-      setModalContent(
-        <ZoomableChart 
-          data={data}
-          series={series}
-          color={color}
-          title={title}
-          unit={item.config?.Unit || getUnitByTitle(item.config?.Title || '')}
-        />
-      );
-    } else if (type === 'card') {
-      const item = dashboardData[index];
-      if (!item) return;
-
-      const { config } = item;
-      const data = item.data;
-      const value = data?.[0]?.[0]?.value || 'N/A';
-      const unit = config?.Unit || getUnitByTitle(config?.Title || '');
-
-      if (config?.Minimised) {
-        setModalContent(
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
-            <div className="text-center">
-              <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
-              {value && (
-                <div className="text-gray-900 font-bold text-8xl">
-                  {value} {unit}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      } else {
-        setModalContent(
-          <ZoomableChart 
-            data={data?.[0] || []}
-            series={['value']}
-            color={['#3B82F6']}
-            title={config?.Title}
-            unit={unit}
-          />
-        );
-      }
-    }
-  }, [dashboardData, isModalOpen, activeModalConfig]);
-
-  const openModal = (content, config = null) => {
-    setModalContent(content);
-    setActiveModalConfig(config);
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalContent(null);
-    setActiveModalConfig(null);
-  };
-
-  // handles for chart clicks
-  const handleChartClick = (title, data, series = [], color, yAxisDomain, index) => {
-    openModal(
-      <ZoomableChart 
-        data={data}
-        series={series}
-        color={color}
-        title={title}
-      />,
-      { type: 'chart', index, title, series, color, yAxisDomain }
-    );
-  };
-  
-  // handles for card clicks
-  const handleCardClick = (item, index) => {
-    const { config, data } = item;
-    const value = data?.[0]?.[0]?.value || 'N/A';
-    const unit = config?.Unit || getUnitByTitle(config?.Title || '');
-
-    if (config?.Minimised) {
-      // Show single value
-      openModal(
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
-          <div className="text-center">
-            <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
-            {value && (
-              <div className="text-gray-900 font-bold text-8xl">
-                {value} {unit}
-              </div>
-            )}
-          </div>
-        </div>,
-        { type: 'card', index, config }
-      );
-    } else {
-      // Show chart with all data points
-      openModal(
-        <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
-          <h2 className="text-4xl font-bold text-white mb-8 text-center pt-8">{config?.Title}</h2>
-          <div className="flex-1 px-8 pb-4">
-            <div className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data?.[0] || []}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="time" 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                  />
-                  <YAxis 
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#3B82F6"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 4 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>,
-        { type: 'card', index, config }
-      );
-    }
-  };
-
-  // get random colors for stats
-    const getRandomColor = () => {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-  };
-
-  // get x number of random colors
-  const getRandomColors = (num) => {
-    const colors = [];
-    for (let i = 0; i < num; i++) {
-      colors.push(getRandomColor());
-    }
-    return colors;
-  };
-
-  // Predefined distinct colors for charts - each from a different color family
-  const CHART_COLORS = [
-    '#FF0000', // Red
-    '#4ECDC4', // Teal
-    '#FFD93D', // Yellow
-    '#6BCB77', // Green
-    '#4D96FF', // Blue
-    '#FF8E53', // Orange
-    '#A78BFA', // Purple
-    '#F472B6', // Pink
-    '#34D399', // Emerald
-    '#FBBF24', // Amber
-    '#A3E635', // Lime
-    '#ffb387ff'  // Peach
-  ];
-
-  // Get a specific color by index, cycling through if needed
-  const getChartColor = (index) => {
-    return CHART_COLORS[index % CHART_COLORS.length];
-  }
-
-  // Get an array of fixed colors for multiple series
-  const getFixedColors = (num) => {
-    const colors = [];
-    for (let i = 0; i < num; i++) {
-      colors.push(getChartColor(i));
-    }
-    return colors;
-  }
-
-  // Function to get appropriate unit based on title for coolant values
-    const UNIT_MAPPINGS = {
-      temperature: '°C',
-      temp: '°C',
-      pressure: 'bar',
-      flow: 'L/min',
-      level: 'mm',
-      concentration: 'Brix(%)',
-      brix: 'Brix(%)',
-      voltage: 'V',
-      current: 'A',
-      speed: 'RPM',
-      rpm: 'RPM',
-      vibration: 'g',
-      acceleration: 'g',
-      airflow: 'L/min',
-      'air flow': 'L/min',
-      usage: '%',
-      efficiency: '%',
-      quality: '%',
-      power: 'kW',
-    };
-
-    const getUnitByTitle = (title) => {
-      const titleLower = title.toLowerCase();
-      
-      for (const [keyword, unit] of Object.entries(UNIT_MAPPINGS)) {
-        if (titleLower.includes(keyword)) {
-          return unit;
-        }
-      }
-      
-      return '';
-    };
+  const {
+    modalContent,
+    isModalOpen,
+    closeModal,
+    handleChartClick,
+    handleCardClick,
+  } = useModalManager(dashboardData, getUnitByTitle);
 
   return (
     <Layout>
