@@ -241,12 +241,68 @@ def get_user_list(request):
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+@api_view(['GET'])
+def get_asset_id_by_name(request):
+    """Get asset ID by name from MySQL database"""
+    try:
+        asset_name = request.GET.get('name', '')
+        
+        if not asset_name:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Asset name is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        mysql_service = MySQLService()
+        asset_id = mysql_service.get_asset_id_by_name(asset_name)
+        
+        if asset_id is not None:
+            return JsonResponse({
+                'status': 'success',    
+                'message': 'Asset ID retrieved successfully',
+                'data': asset_id
+            }, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No asset found with the given name',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+
+    except Exception as e:
+        logger.error(f"Error retrieving asset ID: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 @api_view(['POST'])
 def add_notes(request):
     """Add notes to a booking"""
     try:
         # Get the data from the request body
         data = request.data
+        asset_name = data.get('machine_name', '')
+        
+        if not asset_name:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine name is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        mysql_service = MySQLService()
+        asset_data = mysql_service.get_asset_id_by_name(asset_name)
+        
+        if not asset_data:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Asset not found',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        asset_id = asset_data.get('iAsset_id') if isinstance(asset_data, dict) else asset_data
         description = data.get('description', '')
         category = data.get('category', '')
         startDateTime = data.get('startDate', '')
@@ -255,9 +311,10 @@ def add_notes(request):
         endDateTime = data.get('endDate', '')
         endDate = endDateTime.split("T")[0] if "T" in endDateTime else endDateTime
         endTime = endDateTime.split("T")[1] if "T" in endDateTime else ''
-        user = data.get('user', '')
+        user_id = data.get('user_id', '')
+        print("Add notes data:", asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
 
-        if not all([description, category, startDate, startTime, endDate, endTime, user]):
+        if not all([asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id]):
             return JsonResponse({
                 'status': 'error',
                 'message': 'Missing required fields in the request body',
@@ -265,7 +322,7 @@ def add_notes(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         mysql_service = MySQLService()
-        success = mysql_service.add_notes(description, category, startDate, startTime, endDate, endTime, user)
+        success = mysql_service.add_notes(asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
         print("Add notes success:", success)
         if success:
             return JsonResponse({

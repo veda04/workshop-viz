@@ -4,8 +4,8 @@ import apiService from '../../services/apiService';
 const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
-    // machine_name: machineName,
-    user: '',
+    machine_name: machineName,
+    user_id: '',
     category: '',
     startDate: '',
     endDate: '',
@@ -45,7 +45,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
     e.preventDefault();
     
     // Validation
-    if (!formData.user || !formData.category || !formData.description || !formData.startDate || !formData.endDate) {
+    if (!formData.user_id || !formData.category || !formData.description || !formData.startDate || !formData.endDate) {
       setError('Please fill in all fields');
       return;
     }
@@ -90,7 +90,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Machine Name (Read-only) */}
-        {/* <div>
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Machine Name
           </label>
@@ -101,7 +101,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
             readOnly
             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
           />
-        </div> */}
+        </div>
 
         {/* User Selection */}
         <div>
@@ -109,15 +109,15 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
             User Name <span className="text-red-500">*</span>
           </label>
           <select
-            name="user"
-            value={formData.user}
+            name="user_id"
+            value={formData.user_id}
             onChange={handleInputChange}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
             <option value="">Select a user</option>
             {users.map((user, index) => (
-              <option key={index} value={user.vName}>
+              <option key={index} value={user.iUser_id}>
                 {user.vName}
               </option>
             ))}
