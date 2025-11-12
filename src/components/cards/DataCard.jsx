@@ -9,13 +9,6 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
     extraLarge: "p-10 h-52"
   };
 
-  const unitMap = {
-    "Coolant Temperature": "°C",
-    "Coolant Level": "RPM",
-    "Coolant Flow": "mm/min",
-    "Coolant Concentration": "Brix(%)"
-  };
-
   // Helper to round value to 2 decimal places if it's a number
   const formatValue = (val) => {
     if (typeof val === 'number') {

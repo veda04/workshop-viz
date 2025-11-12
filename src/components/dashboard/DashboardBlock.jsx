@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import DataCard from '../DataCard';
+import DataCard from '../cards/DataCard';
 import OverviewChart from '../charts/OverviewChart';
 import UsageChart from '../charts/UsageChart';
 
