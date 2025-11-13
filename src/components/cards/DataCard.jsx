@@ -23,7 +23,7 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
         bg-white rounded-xl shadow-lg border border-gray-200 
         flex flex-col justify-center items-center 
         dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50
-        dark:border-gray-700
+        dark:border-gray-700  dark:hover:border-blue-600
         ${sizeClasses[size]} 
         ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
         backdrop-blur-sm bg-opacity-90

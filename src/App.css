@@ -36,6 +36,11 @@
   background: linear-gradient(0deg, rgba(255, 227, 166, 1) 0%, rgba(254, 249, 195, 1) 100%);
 }
 
+.dark .yellow-gradient-bg{
+  background: #FFE3A6 ;
+  background: linear-gradient(0deg, rgb(166 255 244) 0%, rgba(254, 249, 195, 1) 100%) !important;
+}
+
 .dash-cover {
   margin-top: 150px;
 }
