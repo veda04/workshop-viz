@@ -73,8 +73,8 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 overflow-hidden">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800">Add Note</h2>
+    <div className="bg-white border rounded-lg p-6 overflow-hidden dark:bg-gray-800 dark:shadow-gray-900/50">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Add Note</h2>
       
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
@@ -91,7 +91,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Machine Name (Read-only) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             Machine Name
           </label>
           <input
@@ -99,20 +99,20 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
             name="machine_name"
             value={formData.machine_name}
             readOnly
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 cursor-not-allowed"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-900 dark:text-white cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-gray-500"
           />
         </div>
 
         {/* User Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             User Name <span className="text-red-500">*</span>
           </label>
           <select
             name="user_id"
             value={formData.user_id}
             onChange={handleInputChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-gray-300 dark:bg-gray-800 dark:text-white rounded-md focus:outline-none focus:ring-1 focus:ring-gray-500"
             required
           >
             <option value="">Select a user</option>
@@ -126,9 +126,9 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
 
         {/* Category Selection */}
         <div>
-            <label className="block text-gray-700 font-semibold mb-2">Category</label>
+            <label className="block text-gray-700 dark:text-white font-semibold mb-2">Category</label>
             <select
-            className="w-full p-2 border border-gray-300 rounded"
+            className="w-full p-2 border border-gray-300 rounded dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-500"
             name="category"
             value={formData.category}
             onChange={handleInputChange}
@@ -142,10 +142,10 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
         </div>
         <div className="flex gap-4">
             <div className="flex-1">
-                <label className="block text-gray-700 font-semibold mb-2">Start Date</label>
+                <label className="block text-gray-700 dark:text-white font-semibold mb-2">Start Date</label>
                 <input
                     type="datetime-local"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 dark:bg-gray-800 dark:text-white rounded focus:outline-none focus:ring-1 focus:ring-gray-500"
                     name="startDate"
                     value={formData.startDate}
                     onChange={handleInputChange}
@@ -153,10 +153,10 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
                 />
             </div>
             <div className="flex-1">
-                <label className="block text-gray-700 font-semibold mb-2">End Date</label>
+                <label className="block text-gray-700 dark:text-white font-semibold mb-2">End Date</label>
                 <input
                     type="datetime-local"
-                    className="w-full p-2 border border-gray-300 rounded"
+                    className="w-full p-2 border border-gray-300 rounded dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-500"
                     name="endDate"
                     value={formData.endDate}
                     onChange={e => setFormData({ ...formData, endDate: e.target.value })}
@@ -164,10 +164,9 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
                 />
             </div>
         </div>
-
         {/* Notes Text Area */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
             Notes/ Description <span className="text-red-500">*</span>
           </label>
           <textarea
@@ -175,7 +174,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
             value={formData.description}
             onChange={handleInputChange}
             rows="4"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-1 focus:ring-gray-500"
             placeholder="Enter your notes here..."
             required
           />

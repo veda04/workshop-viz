@@ -10,6 +10,7 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import { useModalManager } from '../../hooks/useModalManager';
 import {getUnitByTitle} from '../../utils/unitUtils';
 import { getFixedColors, getRandomColors} from '../../utils/chartUtils';
+import { PencilSquareIcon } from '@heroicons/react/24/outline';
 
 const MachineSummary = () => {
   const {dashboardData, loading, error } = useDashboardData('Hurco');
@@ -28,13 +29,11 @@ const MachineSummary = () => {
     <Layout>
       <div className="dash-cover p-6 space-y-6">
         <button
-          className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
+          className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
           title="Add Note"
           onClick={() => setIsNotesModalOpen(true)}
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6 text-white">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 3.75h9a2.25 2.25 0 012.25 2.25v12a2.25 2.25 0 01-2.25 2.25h-9A2.25 2.25 0 015.25 18V5.25A2.25 2.25 0 017.5 3.75zm0 0V6m9-2.25V6m-9 6h9m-9 3h6" />
-          </svg>
+          <PencilSquareIcon className="w-6 h-6 text-white" />
         </button>
         <div className="flex flex-wrap gap-4">
           {loading && dashboardData.length === 0 && (

@@ -16,16 +16,19 @@
   -webkit-text-fill-color: transparent;
 }
 
-.bg-white {
-  background-color: #fff;
-}
-
 .current-booking {
   box-shadow: 1px 1px 7px 2px rgba(235, 235, 235, 0.75) inset;
   -webkit-box-shadow: 1px 1px 7px 2px rgba(235, 235, 235, 0.938) inset;
   -moz-box-shadow: 1px 1px 7px 2px rgba(235, 235, 235, 0.938) inset;
   padding: 10px;
   border-radius: 3px;
+}
+
+/* Dark mode for current-booking */
+.dark .current-booking {
+  box-shadow: 1px 1px 7px 2px rgba(55, 55, 55, 0.75) inset;
+  -webkit-box-shadow: 1px 1px 7px 2px rgba(55, 55, 55, 0.938) inset;
+  -moz-box-shadow: 1px 1px 7px 2px rgba(55, 55, 55, 0.938) inset;
 }
 
 .yellow-gradient-bg{

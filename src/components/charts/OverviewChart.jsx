@@ -120,13 +120,13 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   return (
     <div 
       className={`
-        bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-72
-        backdrop-blur-sm bg-opacity-90 overflow-hidden relative
-        ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
+        bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-72
+        backdrop-blur-sm bg-opacity-90 overflow-hidden relative transition-colors
+        ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
       `}
       onClick={handleChartClick}
     >
-      <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black">{title}</h3>
+      <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black dark:text-white">{title}</h3>
       
       {/* Reset zoom button */}
       {isZoomed && chartData.length > 0 && (
@@ -150,7 +150,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
 
       <div 
         ref={chartRef}
-        className={`h-56 bg-gray-800 p-2 relative`}
+        className={`h-56 bg-gray-800 dark:bg-gray-900 p-2 relative transition-colors`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -158,7 +158,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
       >
         {chartData.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center cursor-not-allowed">
-            <p className="text-gray-400 text-lg">No data available</p>
+            <p className="text-gray-400 dark:text-gray-500 text-lg">No data available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" className={`chart-interactive ${isDragging ? 'dragging' : ''}`}>
@@ -206,7 +206,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   className="w-2 h-2 rounded"
                   style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
                 ></div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
                   {seriesName}
                 </p>
               </div>

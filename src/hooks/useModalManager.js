@@ -52,11 +52,11 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
 
       if (config?.Minimised) {
         setModalContent(
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-800">
             <div className="text-center">
-              <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
+              <h2 className="text-6xl font-bold text-gray-800 dark:text-white mb-12">{config?.Title}</h2>
               {value && (
-                <div className="text-gray-900 font-bold text-8xl">
+                <div className="text-gray-900 dark:text-white font-bold text-8xl">
                   {value} {unit}
                 </div>
               )}
@@ -99,7 +99,7 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
     if (config?.Minimised) {
       // Show single value
       openModal(
-        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300">
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-800">
           <div className="text-center">
             <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
             {value && (
