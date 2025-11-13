@@ -119,7 +119,7 @@ const ZoomableChart = ({ data, series, color, title, unit }) => {
   const customTicks = generateTicks(displayData);
 
   return (
-    <div className="w-full h-full flex flex-col bg-gray-800 text-white rounded-lg">
+    <div className="w-full h-full flex flex-col bg-gray-800 dark:bg-gray-900 text-white rounded-lg">
       <div className="px-8 pt-8 mb-4">
         <h2 className="text-4xl font-bold text-white text-center flex-1">{title}</h2>
         {isZoomed && (

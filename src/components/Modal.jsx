@@ -12,8 +12,8 @@ const Modal = ({ isOpen, onClose, children, size = 'full'}) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className={`bg-white ${sizeClasses[size]} relative overflow-hidden border border-transparent rounded-lg shadow-2xl`}>
+    <div className="fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+      <div className={`${sizeClasses[size]} relative overflow-hidden border border-transparent rounded-lg shadow-2xl`}>
         <button
           onClick={onClose}
           className="absolute top-4 right-4 z-100 bg-gray-200 hover:bg-gray-300 rounded-full p-2 transition-colors"
