@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useBookingData } from '../../hooks/useBookingData';
-import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { useDarkMode } from '../../context/DarkModeContext';
+import SideMenu from './SideMenu';
 
 const Header = () => {
   const [airValveOpen, setAirValveOpen] = useState(false);
@@ -9,6 +10,7 @@ const Header = () => {
   const [showCustomRange, setShowCustomRange] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
@@ -104,6 +106,15 @@ const Header = () => {
     <div className="bg-white dark:bg-gray-900 backdrop-blur-sm shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 fixed top-0 left-0 right-0 z-40 transition-colors duration-200">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsSideMenuOpen(true)}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative top-1"
+            aria-label="Open menu"
+          >
+            <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+          </button>
+          
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2">
             {machineName}
           </h1>
@@ -283,6 +294,9 @@ const Header = () => {
           </>
         )}
       </div>
+
+      {/* Side Menu Component */}
+      <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} />
     </div>
   );
 };
