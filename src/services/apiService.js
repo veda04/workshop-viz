@@ -52,6 +52,33 @@ class ApiService {
       body: JSON.stringify(notesData),
     });
   }
+
+  async getGraphConfigurations(machineName = 'Hurco') {
+    const url = buildUrl(API_ENDPOINTS.graphConfigurations, {
+      machine_name: machineName,
+    });
+    return this.fetchWithErrorHandling(url);
+  }
+
+  async getCustomGraphData(requestData) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.customGraphData}`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        machine_name: 'Hurco',
+        ...requestData,
+      }),
+    });
+  }
+
+  async getAvailableSeries(graphId, machineName = 'Hurco', range = '1h') {
+    const url = buildUrl(API_ENDPOINTS.availableSeries, {
+      machine_name: machineName,
+      graph_id: graphId,
+      range: range,
+    });
+    return this.fetchWithErrorHandling(url);
+  }
 }
 
 export default new ApiService();

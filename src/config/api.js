@@ -7,6 +7,9 @@ export const API_ENDPOINTS = {
   addNotes: '/api/add-notes/',
   testConnection: '/api/test-connection/',
   testMySQL: '/api/test-mysql/',
+  graphConfigurations: '/api/graph-configurations/',
+  customGraphData: '/api/custom-graph-data/',
+  availableSeries: '/api/available-series/',
 };
 
 export const buildUrl = (endpoint, params = {}) => {

@@ -44,34 +44,10 @@ const SideMenu = ({ isOpen, onClose }) => {
               </li>
               <li>
                 <a
-                  href="/bookings"
+                  href="/customize-graphs"
                   className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
-                  Bookings
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/machines"
-                  className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Machines
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/reports"
-                  className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Reports
-                </a>
-              </li>
-              <li>
-                <a
-                  href="/settings"
-                  className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Settings
+                  Customize Graphs
                 </a>
               </li>
             </ul>
