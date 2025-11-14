@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react';
 import apiService from '../services/apiService';
 
-export const useDashboardData = (machineName, initialRange = '&range=3h') => {
+export const useDashboardData = (machineName) => {
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true); // Keep for initial load
     const [error, setError] = useState(null);
@@ -16,7 +16,7 @@ export const useDashboardData = (machineName, initialRange = '&range=3h') => {
         if (dashboardData.length === 0) { // Only show page-level loading on initial load
             setLoading(true);
         }
-        const result = await apiService.getDashboardConfig('Hurco', rangeParams);
+        const result = await apiService.getDashboardConfig(machineName, rangeParams);
         console.log('Fetched dashboard data with params:', rangeParams, result);
 
         if (result.status === 'success') {
