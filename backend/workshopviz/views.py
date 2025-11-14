@@ -434,14 +434,11 @@ def get_custom_graph_data(request):
         combined_data = {
             'chartData': [],
             'series': [],
-            'colors': {},
             'unit': ''
         }
         
         all_timestamps = set()
         series_data_map = {}
-        color_palette = ['#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316']
-        color_index = 0
         
         for graph_id in selected_graphs:
             # machine_data is a list, find the item that matches the graph_id
@@ -472,8 +469,6 @@ def get_custom_graph_data(request):
                                             if series_name not in series_data_map:
                                                 series_data_map[series_name] = {}
                                                 combined_data['series'].append(series_name)
-                                                combined_data['colors'][series_name] = color_palette[color_index % len(color_palette)]
-                                                color_index += 1
                                             
                                             series_data_map[series_name][timestamp] = entry[series_name]
         

@@ -6,6 +6,7 @@ import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
 import apiService from '../services/apiService';
+import { getFixedColors } from '../utils/chartUtils';
 
 const CustomGraphs = () => {
   const [graphConfigs, setGraphConfigs] = useState([]);
@@ -20,6 +21,7 @@ const CustomGraphs = () => {
   const [loadingSeries, setLoadingSeries] = useState({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
+  const [chartColors, setChartColors] = useState([]);
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -29,7 +31,7 @@ const CustomGraphs = () => {
         <ZoomableChart
         data={graphData.chartData}
         series={graphData.series}
-        color={graphData.colors}
+        color={chartColors}
         title="Custom Graph"
         unit={graphData.unit}
         />
@@ -154,6 +156,10 @@ const CustomGraphs = () => {
       
       if (response.status === 'success') {
         setGraphData(response.data);
+        // Generate colors using the existing function from dashboard
+        const numSeries = response.data.series.length;
+        const colors = getFixedColors(numSeries);
+        setChartColors(colors);
       } else {
         setError(response.message || 'Failed to generate graph');
       }
@@ -334,7 +340,7 @@ const CustomGraphs = () => {
                       title="Custom Graph"
                       data={graphData.chartData}
                       series={graphData.series}
-                      color={Object.values(graphData.colors)}
+                      color={chartColors}
                       yAxisDomain={[0, 'auto']}
                       unit={graphData.unit}
                       onClick={handleChartClick}
