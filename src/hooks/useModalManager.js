@@ -38,7 +38,7 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
           series={series}
           color={color}
           title={title}
-          unit={item.config?.Unit || getUnitByTitle(item.config?.Title || '')}
+          unit={item.config?.Units || getUnitByTitle(item.config?.Title || '')}
         />
       );
     } else if (type === 'card') {
@@ -48,7 +48,7 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
       const { config } = item;
       const data = item.data;
       const value = data?.[0]?.[0]?.value || 'N/A';
-      const unit = config?.Unit || getUnitByTitle(config?.Title || '');
+      const unit = config?.Units || getUnitByTitle(config?.Title || '');
 
       if (config?.Minimised) {
         setModalContent(
@@ -94,7 +94,7 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
   const handleCardClick = (item, index) => {
     const { config, data } = item;
     const value = data?.[0]?.[0]?.value || 'N/A';
-    const unit = config?.Unit || getUnitByTitle(config?.Title || '');
+    const unit = config?.Units || getUnitByTitle(config?.Title || '');
 
     if (config?.Minimised) {
       // Show single value

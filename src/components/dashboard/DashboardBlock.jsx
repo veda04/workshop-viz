@@ -43,7 +43,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        unit={config?.Unit || getUnitByTitle(config?.Title || '')}
+        unit={config?.Units || getUnitByTitle(config?.Title || '')}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
@@ -54,7 +54,7 @@ const DashboardBlock = ({
         title={config?.Title}
         value={data?.[0]?.[0]?.value || 'N/A'}
         textColor={config?.TextColor || getRandomColors(1)}
-        unit={data?.[0]?.[0]?.value ? config?.Unit || getUnitByTitle(config?.Title || '') : ''}
+        unit={data?.[0]?.[0]?.value ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
         onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
       />
     );
