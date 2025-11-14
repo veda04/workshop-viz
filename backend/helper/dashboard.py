@@ -364,7 +364,7 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	if not os.path.exists(filePath):
 		raise FileNotFoundError(f"File not found at path: {filePath}")
 
-	with open(filePath,'r') as f:
+	with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
 		configFile = f.read()
 
 	jsonQuery = json.loads(configFile)
