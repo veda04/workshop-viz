@@ -1,6 +1,6 @@
 // Generate custom ticks with dynamic intervals based on zoom level
 export const generateTicks = (displayData) => {
-if (displayData.length === 0) return [];
+if (!displayData || displayData.length === 0) return [];
 
 const ticks = [];
 const firstTime = displayData[0].time;

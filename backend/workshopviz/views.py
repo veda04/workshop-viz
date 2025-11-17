@@ -302,7 +302,12 @@ def add_notes(request):
                 'data': {}
             }, status=status.HTTP_404_NOT_FOUND)
         
-        asset_id = asset_data.get('iAsset_id') if isinstance(asset_data, dict) else asset_data
+        if asset_data is None:
+            asset_id = None
+        elif isinstance(asset_data, dict):
+            asset_id = asset_data.get('iAsset_id')
+        else:
+            asset_id = asset_data if asset_data else None
         description = data.get('description', '')
         category = data.get('category', '')
         startDateTime = data.get('startDate', '')

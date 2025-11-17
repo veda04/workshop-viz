@@ -101,9 +101,9 @@ export const useModalManager = (dashboardData, getUnitByTitle) => {
       openModal(
         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-300 dark:bg-gray-800">
           <div className="text-center">
-            <h2 className="text-6xl font-bold text-gray-800 mb-12">{config?.Title}</h2>
+            <h2 className="text-6xl font-bold text-gray-800 mb-12 dark:text-white">{config?.Title}</h2>
             {value && (
-              <div className="text-gray-900 font-bold text-8xl">
+              <div className="text-gray-900 font-bold text-8xl dark:text-white">
                 {value} {unit}
               </div>
             )}
