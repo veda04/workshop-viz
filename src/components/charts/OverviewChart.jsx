@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
+import { generateTicks } from '../../utils/timeUtils';
 
 const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick }) => {
   // Ensure data is an array and not empty
@@ -22,29 +23,39 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
     setZoomState({ startIndex: 0, endIndex: chartData.length - 1 });
   }, [chartData.length]);
 
-  // Handle mouse wheel zoom
-  const handleWheel = (e) => {
-    if (chartData.length === 0) return;
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const delta = e.deltaY;
-    const zoomFactor = 0.1;
-    const range = zoomState.endIndex - zoomState.startIndex;
-    const zoomAmount = Math.max(1, Math.floor(range * zoomFactor));
-    
-    if (delta < 0) {
-      // Zoom in
-      const newStart = Math.min(zoomState.startIndex + zoomAmount, zoomState.endIndex - 10);
-      const newEnd = Math.max(zoomState.endIndex - zoomAmount, zoomState.startIndex + 10);
-      setZoomState({ startIndex: newStart, endIndex: newEnd });
-    } else {
-      // Zoom out
-      const newStart = Math.max(0, zoomState.startIndex - zoomAmount);
-      const newEnd = Math.min(chartData.length - 1, zoomState.endIndex + zoomAmount);
-      setZoomState({ startIndex: newStart, endIndex: newEnd });
-    }
-  };
+  // Add wheel event listener with passive: false
+  useEffect(() => {
+    const chartElement = chartRef.current;
+    if (!chartElement) return;
+
+    const handleWheelEvent = (e) => {
+      if (chartData.length === 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const delta = e.deltaY;
+      const zoomFactor = 0.1;
+      const range = zoomState.endIndex - zoomState.startIndex;
+      const zoomAmount = Math.max(1, Math.floor(range * zoomFactor));
+      
+      if (delta < 0) {
+        // Zoom in
+        const newStart = Math.min(zoomState.startIndex + zoomAmount, zoomState.endIndex - 10);
+        const newEnd = Math.max(zoomState.endIndex - zoomAmount, zoomState.startIndex + 10);
+        setZoomState({ startIndex: newStart, endIndex: newEnd });
+      } else {
+        // Zoom out
+        const newStart = Math.max(0, zoomState.startIndex - zoomAmount);
+        const newEnd = Math.min(chartData.length - 1, zoomState.endIndex + zoomAmount);
+        setZoomState({ startIndex: newStart, endIndex: newEnd });
+      }
+    };
+
+    chartElement.addEventListener('wheel', handleWheelEvent, { passive: false });
+    return () => {
+      chartElement.removeEventListener('wheel', handleWheelEvent);
+    };
+  }, [chartData.length, zoomState]);
 
   // Handle drag pan
   const handleMouseDown = (e) => {
@@ -104,63 +115,18 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   // Get zoomed data
   const displayData = chartData.slice(zoomState.startIndex, zoomState.endIndex + 1);
 
-  // Generate custom ticks with dynamic interval on zoom level
-  const generateTicks = () => {
-    if (displayData.length === 0) return [];
-
-    const ticks = [];
-    const firstTime = displayData[0].time;
-    const lastTime = displayData[displayData.length - 1].time;
-
-    // Parse the first and the last times
-    const [startHours, startMinutes] = firstTime.split(':').map(Number);
-    const [endHours, endMinutes] = lastTime.split(':').map(Number);
-    const startTotalMinutes = startHours * 60 + startMinutes;
-    const endTotalMinutes = endHours * 60 + endMinutes;
-    const rangeMinutes = endTotalMinutes - startTotalMinutes;
-
-    // Determine interval based on visible range
-    let interval;
-    if (rangeMinutes <= 10) {
-      interval = 1;  // 1-minute intervals when zoomed in to 10 minutes or less (maximum zoom)
-    } else if (rangeMinutes <= 30) {
-      interval = 2;  // 2-minute intervals for 10-30 minutes
-    } else if (rangeMinutes <= 60) {
-      interval = 5;  // 5-minute intervals for 30-60 minutes
-    } else if (rangeMinutes <= 180) {
-      interval = 10; // 10-minute intervals for 1-3 hours
-    } else if (rangeMinutes <= 360) {
-      interval = 15; // 15-minute intervals for 3-6 hours
-    } else {
-      interval = 20; // 20-minute intervals for wider ranges
-    }
-
-    // Round to nearest interval
-    const roundedStart = Math.floor(startTotalMinutes / interval) * interval;
-
-    // Generate ticks for visible range
-    for (let m = roundedStart; m <= endTotalMinutes + interval; m += interval) {
-      const h = Math.floor(m / 60);
-      const min = m % 60;
-      const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-      ticks.push(timeStr);
-    }
-    return ticks;
-  }
-
-  
-  const customTicks = generateTicks();
+  const customTicks = generateTicks(displayData);
 
   return (
     <div 
       className={`
-        bg-white rounded-xl shadow-lg border border-gray-200 p-0 h-72
-        backdrop-blur-sm bg-opacity-90 overflow-hidden relative
-        ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
+        bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-72
+        backdrop-blur-sm bg-opacity-90 overflow-hidden relative transition-colors
+        ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
       `}
       onClick={handleChartClick}
     >
-      <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black">{title}</h3>
+      <h3 className="z-50 text-lg w-full font-semibold my-2 tracking-wider text-sm text-center text-black dark:text-white">{title}</h3>
       
       {/* Reset zoom button */}
       {isZoomed && chartData.length > 0 && (
@@ -184,8 +150,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
 
       <div 
         ref={chartRef}
-        className={`h-56 bg-gray-800 p-2 relative`}
-        onWheel={handleWheel}
+        className={`h-56 bg-gray-800 dark:bg-gray-900 p-2 relative transition-colors`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -193,7 +158,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
       >
         {chartData.length === 0 ? (
           <div className="absolute inset-0 flex items-center justify-center cursor-not-allowed">
-            <p className="text-gray-400 text-lg">No data available</p>
+            <p className="text-gray-400 dark:text-gray-500 text-lg">No data available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" className={`chart-interactive ${isDragging ? 'dragging' : ''}`}>
@@ -241,7 +206,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   className="w-2 h-2 rounded"
                   style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
                 ></div>
-                <p className="text-xs text-gray-600">
+                <p className="text-xs text-gray-600 dark:text-gray-400">
                   {seriesName}
                 </p>
               </div>

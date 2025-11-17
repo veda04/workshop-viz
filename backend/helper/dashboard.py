@@ -364,7 +364,7 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	if not os.path.exists(filePath):
 		raise FileNotFoundError(f"File not found at path: {filePath}")
 
-	with open(filePath,'r') as f:
+	with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
 		configFile = f.read()
 
 	jsonQuery = json.loads(configFile)
@@ -428,6 +428,12 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 
 			# add new key to config_without_queries which exclues # the Queries key from the jsonQuery
 			config_without_queries = {k: v for k, v in jsonQuery[str(i)].items() if k != "Queries"}
+
+			# Extract unit from the first query if available
+			if 'Queries' in jsonQuery[str(i)] and len(jsonQuery[str(i)]['Queries']) > 0:
+				config_without_queries['Units'] = jsonQuery[str(i)]['Queries'][0].get('Units', '')
+			else:
+				config_without_queries['Units'] = ''
 
 			#seriesExtracted = ["A-Axis_Motor", "C-Axis_Motor", "Spindle", "X-Axis_Motor_Bearing", "Y-Axis_Motor_Bearing", "Z-Axis_Motor_Bearing"]
 

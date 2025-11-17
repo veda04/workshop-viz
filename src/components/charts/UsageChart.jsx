@@ -11,13 +11,13 @@ const UsageChart = ({title, onClick}) => {
   return (
     <div
         className={`
-        bg-white p-6 rounded-xl shadow-lg border border-gray-200  
-        ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
-        backdrop-blur-sm bg-opacity-90
+        bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700  
+        ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
+        backdrop-blur-sm bg-opacity-90 transition-colors
         `}
         onClick={onClick}
     >
-        <h3 className="text-gray-700 text-lg font-semibold text-center mb-2 text-base leading-tight">
+        <h3 className="text-gray-700 dark:text-gray-300 text-lg font-semibold text-center mb-2 text-base leading-tight">
             {title}
         </h3>
         <div className="h-44">

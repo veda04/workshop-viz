@@ -9,13 +9,6 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
     extraLarge: "p-10 h-52"
   };
 
-  const unitMap = {
-    "Coolant Temperature": "°C",
-    "Coolant Level": "RPM",
-    "Coolant Flow": "mm/min",
-    "Coolant Concentration": "Brix(%)"
-  };
-
   // Helper to round value to 2 decimal places if it's a number
   const formatValue = (val) => {
     if (typeof val === 'number') {
@@ -29,18 +22,20 @@ const DataCard = ({ title, value, textColor="txt-gradient-green", unit = "", siz
       className={`
         bg-white rounded-xl shadow-lg border border-gray-200 
         flex flex-col justify-center items-center 
+        dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50
+        dark:border-gray-700  dark:hover:border-blue-600
         ${sizeClasses[size]} 
         ${onClick ? 'cursor-pointer hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300' : ''}
         backdrop-blur-sm bg-opacity-90
       `}
       onClick={onClick}
     >                                                     
-      <h3 className="text-gray-700 text-lg font-semibold text-center mb-2 text-base leading-tight">
+      <h3 className="text-black dark:text-white text-lg font-semibold text-center mb-2 text-base leading-tight">
         {title}
       </h3>
       {value && (
         <div style={{color: textColor}} className="font-bold text-4xl">
-          {formatValue(value)} <span className="text-lg font-medium text-gray-600">{unit}</span>
+          {formatValue(value)} <span className="text-lg font-medium text-gray-600 dark:text-white">{unit}</span>
         </div>
       )}
     </div>

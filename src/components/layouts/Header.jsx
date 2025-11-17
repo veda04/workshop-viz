@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useBookingData } from '../../hooks/useBookingData';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { useDarkMode } from '../../context/DarkModeContext';
+import SideMenu from './SideMenu';
 
 const Header = () => {
-  const [bookingData, setBookingData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [airValveOpen, setAirValveOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
   const [customFrom, setCustomFrom] = useState('');
   const [customTo, setCustomTo] = useState('');
+  const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
+
+  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
+  const { bookingData, loading, error } = useBookingData(machineName);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -24,16 +30,6 @@ const Header = () => {
     minute: '2-digit',
     second: '2-digit'
   }));
-
-  // Auto-refresh every 20 seconds to fetch latest booking data
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     //console.log('Page reloaded to fetch latest booking data');
-  //     window.location.reload();
-  //   }, 60000); // 60000 ms = 60 seconds
-
-  //   return () => clearInterval(interval);
-  // }, []);
 
   const [customRangeText, setCustomRangeText] = useState('');
 
@@ -86,38 +82,6 @@ const Header = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // get the current machine name from the URL or use a default
-  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco';  // Fetch the current booking data from the backend
-  useEffect(() => {
-    const fetchCurrentBooking = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await fetch(`http://localhost:8000/api/current-booking/?machine_name=${machineName}`);
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        const result = await response.json();
-        console.log('Machine booking details:', result);
-        
-        // Set the booking data from the response
-        if (result.status === 'success' && result.data && result.data.length > 0) {
-          setBookingData(result.data[0]); // Get the first booking
-        } else {
-          setBookingData(null);
-        }
-      } catch (error) {
-        console.error('Error fetching current booking:', error);
-        setError(error.message);
-        setBookingData(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCurrentBooking();
-  }, [machineName]);
-
   // Helper function to format timings
   const formatTimings = (booking) => {
     if (!booking) return 'Available';
@@ -139,11 +103,22 @@ const Header = () => {
   };
 
   return (
-    <div className="bg-white backdrop-blur-sm shadow-lg border-b border-gray-200/50 px-6 py-4 fixed top-0 left-0 right-0 z-40">
+    <div className="bg-white dark:bg-gray-900 backdrop-blur-sm shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 fixed top-0 left-0 right-0 z-40 transition-colors duration-200">
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <h1 className="text-4xl font-bold text-gray-900 tracking-wider pr-2">
-            {machineName}
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsSideMenuOpen(true)}
+            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative top-1"
+            aria-label="Open menu"
+          >
+            <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
+          </button>
+          
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2">
+             <a href="/machine-summary" className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                {machineName}
+              </a>
           </h1>
           <div
             className={
@@ -159,11 +134,9 @@ const Header = () => {
             </span>
           </div>
           <div className="relative mr-0 ml-0">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <ClockIcon className='absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500 dark:text-gray-400 mr-2'/>
             <select 
-              className="bg-white border border-gray-300 rounded-lg py-2 pr-3 pl-10 text-gray-700 font-medium focus:outline-none focus:ring-2"
+              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg py-2 pr-3 pl-10 text-gray-700 dark:text-gray-200 font-medium focus:outline-none focus:ring-2 transition-colors"
               defaultValue="1 hour"
               value={selectedRange}
               onChange={e => {
@@ -195,29 +168,29 @@ const Header = () => {
             </select>
           </div>
           {showCustomRange && (
-            <div className="absolute top-14 left-64 mt-2 w-96 bg-white border border-gray-300 rounded-lg shadow-lg z-50 p-4">
+            <div className="absolute top-14 left-64 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 p-4 transition-colors">
               <div className="flex flex-col gap-4">
                 <div className="flex gap-4 items-center">
-                  <label className="font-medium text-gray-700 w-16">From</label>
+                  <label className="font-medium text-gray-700 dark:text-gray-300 w-16">From</label>
                   <input
                     type="datetime-local"
-                    className="border border-gray-300 rounded px-2 py-1 flex-1"
+                    className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-2 py-1 flex-1 transition-colors"
                     value={customFrom}
                     onChange={e => setCustomFrom(e.target.value)}
                   />
                 </div>
                 <div className="flex gap-4 items-center">
-                  <label className="font-medium text-gray-700 w-16">To</label>
+                  <label className="font-medium text-gray-700 dark:text-gray-300 w-16">To</label>
                   <input
                     type="datetime-local"
-                    className="border border-gray-300 rounded px-2 py-1 flex-1"
+                    className="border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded px-2 py-1 flex-1 transition-colors"
                     value={customTo}
                     onChange={e => setCustomTo(e.target.value)}
                   />
                 </div>
                 <button
                   type="submit"
-                  className="bg-blue-600 text-white font-semibold rounded px-4 py-2 mt-2 hover:bg-blue-700 transition disabled:bg-gray-400"
+                  className="bg-blue-600 dark:bg-blue-700 text-white font-semibold rounded px-4 py-2 mt-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition disabled:bg-gray-400 dark:disabled:bg-gray-600"
                   onClick={() => handleApplyRange('custom', { from: customFrom, to: customTo })}
                   disabled={!customFrom || !customTo}
                 >
@@ -228,9 +201,9 @@ const Header = () => {
           )}
         </div>
 
-        <div className="text-center border-l border-r border-gray-300 px-20">
-          <h5 className="relative border-b border-gray-300 pb-5 bottom-2">
-            <p className="text-lg font-semibold text-gray-800 bg-white absolute mx-auto left-0 right-0 top-1 uppercase w-32">Air Flow</p>
+        <div className="text-center border-l border-r border-gray-300 dark:border-gray-600 px-20">
+          <h5 className="relative border-b border-gray-300 dark:border-gray-600 pb-5 bottom-2">
+            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 absolute mx-auto left-0 right-0 top-1 uppercase w-32">Air Flow</p>
           </h5>
           <div className="mt-2">
           {/* Toggle Switch */}
@@ -266,38 +239,57 @@ const Header = () => {
         </div>
         
         <div className="text-right flex items-center space-x-2 pr-10">
-          <div className="text-xl text-gray-600 uppercase tracking-wide">
+          <div className="text-xl text-gray-600 dark:text-gray-300 uppercase tracking-wide transition-colors">
             {currentDate} | {currentTime} 
           </div>
-          <div className="bg-indigo-500 px-2 py-2 rounded-lg shadow-md flex items-center space-x-2">
-            <button className="text-white font-medium" title="Refresh" onClick={() => window.location.reload()}>
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
+          <div className="bg-gray-500 dark:bg-yellow-400 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
+            <button 
+              className="text-white font-medium hover:bg-gray-600 hover:dark:bg-yellow-500 p-1 rounded-lg transition-colors" 
+              title="Toggle Mode" 
+              onClick={toggleDarkMode}
+            >
+              {isDarkMode ? (
+                <SunIcon className="w-6 h-6 text-white" />
+              ) : (
+                <MoonIcon className="w-6 h-6 text-white" />
+              )}
             </button>
           </div>
+          <div className="bg-indigo-500 dark:bg-indigo-600 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
+            <button className="text-white font-medium hover:bg-indigo-700 p-1 rounded-lg transition-colors" title="Refresh" onClick={() => window.location.reload()}>
+              <ArrowPathIcon className="w-6 h-6 text-white" />
+            </button>
+          </div>
+          <button
+            className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
+            title="Add Note"
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('openNotesModal'))}
+          >
+            <PencilSquareIcon className="w-6 h-6 text-white" />
+          </button>
         </div>
       </div>
       {/* check if bookingData is available */}
       <div className="mt-4 current-booking">
         {(!bookingData) ? (
-          <div className="w-full text-center py-3 text-lg text-gray-700 font-semibold yellow-gradient-bg rounded-lg shadow">
+          <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">
             There are no bookings for this machine today 
           </div>
         ) : (
           <>
           <div className="flex justify-between items-center px-3 py-2 yellow-gradient-bg rounded-lg shadow">
             <div>
-              <div className="text-sm text-gray-600 uppercase">Booked By:</div>
-              <div className="text-xl font-semibold text-gray-900">
+              <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Booked By:</div>
+              <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
                 {loading ? 'Loading...' : 
                  error ? 'Error loading' :
                  bookingData?.vbooked_by || 'No Current Booking'}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-600 uppercase">Duration:</div>
-              <div className="text-xl font-semibold text-gray-900">
+              <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Duration:</div>
+              <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
                 {loading ? 'Loading...' : 
                  error ? 'Error loading' :
                  bookingData
@@ -310,6 +302,10 @@ const Header = () => {
           </>
         )}
       </div>
+
+      {/* Side Menu Component */}
+      <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} />
+      
     </div>
   );
 };

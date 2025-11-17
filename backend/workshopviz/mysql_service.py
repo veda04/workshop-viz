@@ -139,7 +139,7 @@ class MySQLService:
             if not self.connect():
                 return None
             cursor = self.connection.cursor(dictionary=True)
-            query = "SELECT iUser_id, vName FROM users"
+            query = "SELECT iUser_id, vName FROM users WHERE iUser_id > 2"
             cursor.execute(query)
             results = cursor.fetchall()
             cursor.close()
@@ -150,14 +150,31 @@ class MySQLService:
         finally:
             self.close()
 
-    def add_notes(self, description, category, startDate, startTime, endDate, endTime, user ):
+    def get_asset_id_by_name(self, asset_name):
+        """Get asset ID by asset name"""
+        try:
+            if not self.connect():
+                return None
+            cursor = self.connection.cursor(dictionary=True)
+            query = "SELECT iAsset_id FROM assets WHERE vName = %s"
+            cursor.execute(query, (asset_name,))
+            result = cursor.fetchone()
+            cursor.close()
+            return result['iAsset_id'] if result else None
+        except Exception as e:
+            logger.error(f"Error getting asset ID by name: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def add_notes(self, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id ):
         """Add note to a booking"""
         try:
             if not self.connect():
                 return False
             cursor = self.connection.cursor()
-            query = "INSERT INTO machine_notes (vDesc, vCategory, dStart, tStart, dEnd, tEnd, vUser) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (description, category, startDate, startTime, endDate, endTime, user))
+            query = "INSERT INTO machine_notes (iAsset_id, vAsset_name, vDesc, vCategory, dStart, tStart, dEnd, tEnd, iUser_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id))
             self.connection.commit()
             cursor.close()
             return True

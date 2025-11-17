@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import DataCard from './DataCard';
-import OverviewChart from './OverviewChart';
-import UsageChart from './UsageChart';
+import DataCard from '../cards/DataCard';
+import OverviewChart from '../charts/OverviewChart';
+import UsageChart from '../charts/UsageChart';
 
 const DashboardBlock = ({ 
   config, 
@@ -25,10 +25,10 @@ const DashboardBlock = ({
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-4 flex items-center justify-center min-h-[200px]">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow dark:shadow-gray-900/50 p-4 flex items-center justify-center min-h-[200px] transition-colors">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading...</p>
         </div>
       </div>
     );
@@ -43,7 +43,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        unit={config?.Unit || getUnitByTitle(config?.Title || '')}
+        unit={config?.Units || getUnitByTitle(config?.Title || '')}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
@@ -54,7 +54,7 @@ const DashboardBlock = ({
         title={config?.Title}
         value={data?.[0]?.[0]?.value || 'N/A'}
         textColor={config?.TextColor || getRandomColors(1)}
-        unit={data?.[0]?.[0]?.value ? config?.Unit || getUnitByTitle(config?.Title || '') : ''}
+        unit={data?.[0]?.[0]?.value ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
         onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
       />
     );
