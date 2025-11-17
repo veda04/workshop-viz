@@ -194,7 +194,7 @@ const CustomGraphs = () => {
 
         {error && (
           <div className="mb-6">
-            <ErrorMessage message={error} onDismiss={() => setError(null)} />
+            <ErrorMessage message={error} onDismiss={() => setError(null)} padding="py-2" />
           </div>
         )}
 
@@ -223,11 +223,8 @@ const CustomGraphs = () => {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-gray-900 dark:text-white">
-                          {config.title}
+                          {config.title} <span className="text-sm text-gray-500 dark:text-gray-400">( {config.unit} )</span>
                         </h3>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {config.unit}
-                        </p>
                       </div>
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
                         selectedGraphs.includes(config.id)
@@ -288,12 +285,12 @@ const CustomGraphs = () => {
                           <span className="ml-3 text-gray-600 dark:text-gray-400">Loading series...</span>
                         </div>
                       ) : series.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {series.map((seriesName) => (
                             <button
                               key={seriesName}
                               onClick={() => handleSeriesSelection(graphId, seriesName)}
-                              className={`px-4 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                              className={`px-2 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
                                 selectedSeries[graphId]?.includes(seriesName)
                                   ? 'border-blue-500 bg-blue-500 text-white'
                                   : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'

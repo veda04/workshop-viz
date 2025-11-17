@@ -116,7 +116,9 @@ const Header = () => {
           </button>
           
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2">
-            {machineName}
+             <a href="/machine-summary" className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                {machineName}
+              </a>
           </h1>
           <div
             className={
