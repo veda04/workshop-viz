@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBookingData } from '../../hooks/useBookingData';
-import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon } from '@heroicons/react/24/outline';
 import { useDarkMode } from '../../context/DarkModeContext';
 import SideMenu from './SideMenu';
 
@@ -260,13 +260,19 @@ const Header = () => {
               <ArrowPathIcon className="w-6 h-6 text-white" />
             </button>
           </div>
+          <button
+            className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
+            title="Add Note"
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('openNotesModal'))}
+          >
+            <PencilSquareIcon className="w-6 h-6 text-white" />
+          </button>
         </div>
       </div>
       {/* check if bookingData is available */}
       <div className="mt-4 current-booking">
-        {console.log('Booking Data in Header:', bookingData)}{
-          
-        (!bookingData) ? (
+        {(!bookingData) ? (
           <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">
             There are no bookings for this machine today 
           </div>
@@ -299,6 +305,7 @@ const Header = () => {
 
       {/* Side Menu Component */}
       <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} />
+      
     </div>
   );
 };

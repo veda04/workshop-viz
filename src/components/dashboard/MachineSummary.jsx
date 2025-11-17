@@ -5,17 +5,14 @@ import Sensors from './Sensors';
 import DashboardBlock from './DashboardBlock';
 import LoadingSpinner from '../common/LoadingSpinner';
 import ErrorMessage from '../common/ErrorMessage';
-import NotesForm from '../forms/NotesForm';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { useModalManager } from '../../hooks/useModalManager';
 import {getUnitByTitle} from '../../utils/unitUtils';
 import { getFixedColors, getRandomColors} from '../../utils/chartUtils';
-import { PencilSquareIcon } from '@heroicons/react/24/outline';
 
 const MachineSummary = () => {
   const {dashboardData, loading, error } = useDashboardData('Hurco');
   const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
-  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   const {
     modalContent,
@@ -26,15 +23,8 @@ const MachineSummary = () => {
   } = useModalManager(dashboardData, getUnitByTitle);
 
   return (
-    <Layout>
+    <Layout> 
       <div className="dash-cover p-6 space-y-6">
-        <button
-          className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
-          title="Add Note"
-          onClick={() => setIsNotesModalOpen(true)}
-        >
-          <PencilSquareIcon className="w-6 h-6 text-white" />
-        </button>
         <div className="flex flex-wrap gap-4">
           {loading && dashboardData.length === 0 && (
             <LoadingSpinner message="Loading dashboard data..." />
@@ -81,11 +71,6 @@ const MachineSummary = () => {
       {/* Chart/Data Modal */}
       <Modal isOpen={isModalOpen} onClose={closeModal} size="full">
         {modalContent}
-      </Modal>
-
-      {/* Notes Modal */}
-      <Modal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} size="large">
-        <NotesForm onClose={() =>setIsNotesModalOpen(false)} />
       </Modal>
     </Layout>
   );

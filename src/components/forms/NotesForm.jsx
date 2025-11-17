@@ -73,7 +73,7 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
   };
 
   return (
-    <div className="bg-white border rounded-lg p-6 overflow-hidden dark:bg-gray-800 dark:shadow-gray-900/50">
+    <div className="notes-form bg-white border rounded-lg p-6 overflow-hidden dark:bg-gray-800 dark:shadow-gray-900/50">
       <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Add Note</h2>
       
       {error && (
