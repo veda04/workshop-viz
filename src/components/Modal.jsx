@@ -12,7 +12,7 @@ const Modal = ({ isOpen, onClose, children, size = 'full'}) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black dark:bg-gray-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className={`${sizeClasses[size]} relative overflow-hidden border border-transparent rounded-lg shadow-2xl`}>
         <button
           onClick={onClose}
