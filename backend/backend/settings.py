@@ -131,7 +131,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/backend_static/'
+STATIC_ROOT = '/web/dashboard/backend/staticfiles'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -165,7 +166,7 @@ REST_FRAMEWORK = {
 }
 
 # Allow React development server
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '10.101.23.23', 'dashboard.local']
 
 
 #MSQL Database Configuration
@@ -173,4 +174,4 @@ MYSQL_DB_NAME = os.getenv('MYSQL_DB_NAME', 'atmas')
 MYSQL_USER = os.getenv('MYSQL_USER', 'root')
 MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', '')
 MYSQL_HOST = os.getenv('MYSQL_HOST', 'localhost')
-MYSQL_PORT = os.getenv('MYSQL_PORT', '3306s')
+MYSQL_PORT = os.getenv('MYSQL_PORT', '3306')

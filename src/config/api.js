@@ -1,4 +1,4 @@
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = 'http://10.101.23.23:9000'; //process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 export const API_ENDPOINTS = {
   dashboardConfig: '/api/dashboard-config/',
