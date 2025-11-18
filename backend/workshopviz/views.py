@@ -13,10 +13,18 @@ import logging
 from django.conf import settings
 import os
 from influxdb_client import InfluxDBClient
-from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG
+from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
 from helper.dashboard import getInfluxData
 import pprint
 import pandas as pd
+
+# Debug: Check if MACHINE_CONFIG_PATH is loaded correctly
+if MACHINE_CONFIG_PATH is None:
+    print("WARNING: MACHINE_CONFIG_PATH is None. Check .env file and ensure it's in the correct location.")
+    print("Current working directory:", os.getcwd())
+    print("Looking for .env file in backend directory")
+else:
+    print("Config Path:", MACHINE_CONFIG_PATH)
 
 @api_view(['GET'])
 def test_mysql_connection(request):
@@ -139,8 +147,7 @@ def get_dashboard_config(request):
         custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
         custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
 
-    file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
-    #file_path = f"E:\\ECPMG\\workshop-viz\\backend\\config\\{machine_name}.json"
+    file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
     machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
     #print("Machine Data:")
     #pprint.pprint(machine_data, indent=2, width=120)
@@ -354,7 +361,7 @@ def get_graph_configurations(request):
     """Get available graph configurations from config file"""
     try:
         machine_name = request.GET.get('machine_name', 'Hurco')
-        file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
         
         if not os.path.exists(file_path):
             return JsonResponse({
@@ -423,7 +430,7 @@ def get_custom_graph_data(request):
         custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
         custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         
-        file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
         
         if not os.path.exists(file_path):
             return JsonResponse({
@@ -521,7 +528,7 @@ def get_available_series(request):
         custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
         custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         
-        file_path = f"D:\\projects\\workshop-viz\\backend\\config\\{machine_name}.json"
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
         
         if not os.path.exists(file_path):
             return JsonResponse({

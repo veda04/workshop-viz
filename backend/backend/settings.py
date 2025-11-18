@@ -14,11 +14,11 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables from .env file in BASE_DIR
+load_dotenv(os.path.join(BASE_DIR, '.env'))
 
 
 # Quick-start development settings - unsuitable for production
@@ -142,6 +142,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 INFLUX_TOKEN = os.getenv('INFLUX_TOKEN')
 DB_LINK = os.getenv('DB_LINK')
 DB_ORG = os.getenv('DB_ORG')
+
+# CONFIG PATH
+MACHINE_CONFIG_PATH = os.getenv('MACHINE_CONFIG_PATH')
 
 # CORS Configuration
 CORS_ALLOWED_ORIGINS = [
