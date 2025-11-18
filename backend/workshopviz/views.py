@@ -200,19 +200,19 @@ def get_current_booking(request):
                         'status': 'error',
                         'message': 'No booking list found for the specified machine',
                         'data': {}
-                    }, status=status.HTTP_404_NOT_FOUND)
+                    }, status=status.HTTP_200_OK)
             else: 
                 return JsonResponse({
                     'status': 'error',
                     'message': 'No machine related bookings found for the specified machine',
                     'data': {}
-                }, status=status.HTTP_404_NOT_FOUND)
+                }, status=status.HTTP_200_OK)
         else:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Machine id not found in the database',
                 'data': {}
-            }, status=status.HTTP_404_NOT_FOUND)
+            }, status=status.HTTP_200_OK)
     
     except Exception as e:
         logger.error(f"Error retrieving current booking: {str(e)}")
@@ -275,7 +275,7 @@ def get_asset_id_by_name(request):
                 'status': 'error',
                 'message': 'No asset found with the given name',
                 'data': {}
-            }, status=status.HTTP_404_NOT_FOUND)
+            }, status=status.HTTP_200_OK)
 
     except Exception as e:
         logger.error(f"Error retrieving asset ID: {str(e)}")
@@ -307,7 +307,7 @@ def add_notes(request):
                 'status': 'error',
                 'message': 'Asset not found',
                 'data': {}
-            }, status=status.HTTP_404_NOT_FOUND)
+            }, status=status.HTTP_200_OK)
         
         if asset_data is None:
             asset_id = None
