@@ -43,7 +43,7 @@ const Header = () => {
    */
   const handleApplyRange = (type, value) => {
     if(type === 'custom') {
-      console.log('Submitting custom range:', value); // value = { from, to }
+      //console.log('Submitting custom range:', value); // value = { from, to }
       
       // Format custom date range for display in the dropdown
       const fromDate = new Date(value.from).toLocaleString();
@@ -59,7 +59,7 @@ const Header = () => {
         detail: { type: 'custom', from: value.from, to: value.to }
       }));
     } else {
-      console.log('Submitting predefined range:', value); // value = '1h', '3h', '24h', etc.
+      //console.log('Submitting predefined range:', value); // value = '1h', '3h', '24h', etc.
       setCustomRangeText(''); // Clear any previous custom range text
 
       // Broadcast predefined range change event to all listening components

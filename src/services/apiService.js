@@ -45,7 +45,6 @@ class ApiService {
   }
 
   async addNotes(notesData) {
-    console.log('Adding notes:', notesData);
     const url = `${API_BASE_URL}${API_ENDPOINTS.addNotes}`;
     return this.fetchWithErrorHandling(url, {
       method: 'POST',

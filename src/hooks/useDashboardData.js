@@ -17,11 +17,11 @@ export const useDashboardData = (machineName) => {
             setLoading(true);
         }
         const result = await apiService.getDashboardConfig(machineName, rangeParams);
-        console.log('Fetched dashboard data with params:', rangeParams, result);
+        //console.log('Fetched dashboard data with params:', rangeParams, result);
 
         if (result.status === 'success') {
             setDashboardData(result.data);
-            console.log('Dashboard data loaded:', result.data);
+            //console.log('Dashboard data loaded:', result.data);
         } else {
             throw new Error(result.message || 'Failed to load dashboard data');
         }

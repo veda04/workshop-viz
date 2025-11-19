@@ -13,7 +13,7 @@ export const useBookingData = (machineName) => {
         setError(null);
         
         const result = await apiService.getCurrentBooking(machineName);
-        console.log('Fetched current booking data:', result);
+        //console.log('Fetched current booking data:', result);
 
         if (result.status === 'success' && result.data && result.data.length > 0) {
           setBookingData(result.data[0]);
