@@ -25,12 +25,25 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-const ZoomableChart = ({ data, series, color, title, unit }) => {
+const ZoomableChart = ({ data, series, color, title, unit, axisConfig }) => {
   // Zoom and pan state
   const [zoomState, setZoomState] = useState({ startIndex: 0, endIndex: data.length - 1 });
   const [isDragging, setIsDragging] = useState(false); // Track if the user is currently dragging
   const [dragStart, setDragStart] = useState(0); // store initial mouse X position
   const chartRef = useRef(null);
+
+  // Determine if we have dual axes
+  const hasDualAxes = axisConfig && axisConfig.length === 2;
+  
+  // Map series to their axis positions
+  const seriesAxisMap = {};
+  if (hasDualAxes) {
+    axisConfig.forEach(config => {
+      config.series.forEach(s => {
+        seriesAxisMap[s] = config.position;
+      });
+    });
+  }
 
   // Reset zoom when data changes
   useEffect(() => {
@@ -155,12 +168,36 @@ const ZoomableChart = ({ data, series, color, title, unit }) => {
                 angle={0}
                 textAnchor="middle"
               />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 14, fill: '#9CA3AF' }}
-                tickFormatter={(value) => `${value} ${unit}`}
-              />
+              
+              {/* Dual Y-axes support */}
+              {hasDualAxes ? (
+                <>
+                  <YAxis 
+                    yAxisId="left"
+                    orientation="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    tickFormatter={(value) => `${value} ${axisConfig[0].unit}`}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                    tickFormatter={(value) => `${value} ${axisConfig[1].unit}`}
+                  />
+                </>
+              ) : (
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 14, fill: '#9CA3AF' }}
+                  tickFormatter={(value) => `${value} ${unit}`}
+                />
+              )}
+              
               <Tooltip content={<CustomTooltip />} cursor={{fill: 'transparent'}} />
 
               {series.map((s, idx) => (
@@ -173,6 +210,7 @@ const ZoomableChart = ({ data, series, color, title, unit }) => {
                   dot={false}
                   isAnimationActive={true}
                   activeDot={{ r: 4 }}
+                  yAxisId={hasDualAxes ? seriesAxisMap[s] : undefined}
                 />
               ))}
             </LineChart>
@@ -183,19 +221,69 @@ const ZoomableChart = ({ data, series, color, title, unit }) => {
       {series && series.length > 0 && (
         <div className="px-8 pb-6">
           <div className="border-t border-gray-600 pt-4">
-            <div className="flex flex-wrap justify-center gap-4">
-              {series.map((seriesName, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <div 
-                    className="w-4 h-4 rounded"
-                    style={{ backgroundColor: color[idx % color.length] }}
-                  ></div>
-                  <span className="text-sm font-medium text-gray-300">
-                    {seriesName}
-                  </span>
+            {hasDualAxes ? (
+              <div className="grid grid-cols-2 gap-8">
+                {/* Left Axis Legend (First Selection) */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 mb-2 text-left px-2">
+                    {axisConfig[0].title} ({axisConfig[0].unit}) - Left Axis
+                  </h4>
+                  <div className="flex flex-wrap justify-start gap-4 px-2">
+                    {axisConfig[0].series.map((seriesName) => {
+                      const idx = series.indexOf(seriesName);
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: color[idx % color.length] }}
+                          ></div>
+                          <span className="text-sm font-medium text-gray-300">
+                            {seriesName}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))}
-            </div>
+                
+                {/* Right Axis Legend (Second Selection) */}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 mb-2 text-right px-2">
+                    {axisConfig[1].title} ({axisConfig[1].unit}) - Right Axis
+                  </h4>
+                  <div className="flex flex-wrap justify-end gap-4 px-2">
+                    {axisConfig[1].series.map((seriesName) => {
+                      const idx = series.indexOf(seriesName);
+                      return (
+                        <div key={idx} className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: color[idx % color.length] }}
+                          ></div>
+                          <span className="text-sm font-medium text-gray-300">
+                            {seriesName}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap justify-center gap-4">
+                {series.map((seriesName, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <div 
+                      className="w-4 h-4 rounded"
+                      style={{ backgroundColor: color[idx % color.length] }}
+                    ></div>
+                    <span className="text-sm font-medium text-gray-300">
+                      {seriesName}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { generateTicks } from '../../utils/timeUtils';
 
-const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick }) => {
+const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick, axisConfig }) => {
   // Ensure data is an array and not empty
   const chartData = Array.isArray(data) ? data : [];
   
@@ -10,6 +10,19 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   const actualSeries = series && series.length > 0 
     ? series 
     : Object.keys(chartData[0] || {}).filter(key => key !== 'time' && key !== 'ExecutionTime').slice(0, 5);
+
+  // Determine if we have dual axes
+  const hasDualAxes = axisConfig && axisConfig.length === 2;
+  
+  // Map series to their axis positions
+  const seriesAxisMap = {};
+  if (hasDualAxes) {
+    axisConfig.forEach(config => {
+      config.series.forEach(s => {
+        seriesAxisMap[s] = config.position;
+      });
+    });
+  }
 
   // Zoom and pan state
   const [zoomState, setZoomState] = useState({ startIndex: 0, endIndex: chartData.length - 1 });
@@ -173,12 +186,36 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                 interval={0}
                 angle={-60}
               />
-              <YAxis 
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10, fill: '#9CA3AF' }}
-                tickFormatter={(value) => `${value} ${unit}`}
-              />
+              
+              {/* Dual Y-axes support */}
+              {hasDualAxes ? (
+                <>
+                  <YAxis 
+                    yAxisId="left"
+                    orientation="left"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    tickFormatter={(value) => `${value} ${axisConfig[0].unit}`}
+                  />
+                  <YAxis 
+                    yAxisId="right"
+                    orientation="right"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                    tickFormatter={(value) => `${value} ${axisConfig[1].unit}`}
+                  />
+                </>
+              ) : (
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#9CA3AF' }}
+                  tickFormatter={(value) => `${value} ${unit}`}
+                />
+              )}
+              
               {actualSeries.map((s, index) => (
                 <Line
                   key={index}
@@ -189,6 +226,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
                   dot={false}
                   isAnimationActive={true}
                   activeDot={{ r: 2 }}
+                  yAxisId={hasDualAxes ? seriesAxisMap[s] : undefined}
                 />
               ))}
             </LineChart>
@@ -199,19 +237,63 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
       {/* Mini Legend for the card view */}
       {actualSeries.length > 0 && chartData.length > 0 && (
         <div className="px-2 py-1">
-          <div className="flex  gap-2 justify-center flex-wrap">
-            {actualSeries.map((seriesName, index) => (
-              <div key={index} className="flex items-center gap-1">
-                <div 
-                  className="w-2 h-2 rounded"
-                  style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
-                ></div>
-                <p className="text-xs text-gray-600 dark:text-gray-400">
-                  {seriesName}
-                </p>
+          {hasDualAxes ? (
+            <div className="grid grid-cols-2 gap-2">
+              {/* Left Axis */}
+              <div className="text-center">
+                <div className="flex gap-1 justify-start flex-wrap px-4">
+                  {axisConfig[0].series.map((seriesName) => {
+                    const index = actualSeries.indexOf(seriesName);
+                    return (
+                      <div key={index} className="flex items-center gap-1">
+                        <div 
+                          className="w-2 h-2 rounded"
+                          style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
+                        ></div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {seriesName}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            ))}
-          </div>
+              
+              {/* Right Axis */}
+              <div className="text-center">
+                <div className="flex gap-1 justify-end flex-wrap px-4">
+                  {axisConfig[1].series.map((seriesName) => {
+                    const index = actualSeries.indexOf(seriesName);
+                    return (
+                      <div key={index} className="flex items-center gap-1">
+                        <div 
+                          className="w-2 h-2 rounded"
+                          style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
+                        ></div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {seriesName}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-2 justify-center flex-wrap">
+              {actualSeries.map((seriesName, index) => (
+                <div key={index} className="flex items-center gap-1">
+                  <div 
+                    className="w-2 h-2 rounded"
+                    style={{ backgroundColor: Array.isArray(color) ? color[index % color.length] : color }}
+                  ></div>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    {seriesName}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

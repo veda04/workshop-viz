@@ -34,6 +34,7 @@ const CustomGraphs = () => {
         color={chartColors}
         title="Custom Graph"
         unit={graphData.unit}
+        axisConfig={graphData.axisConfig}
         />
     );
     setIsModalOpen(true);
@@ -155,7 +156,22 @@ const CustomGraphs = () => {
       });
       
       if (response.status === 'success') {
-        setGraphData(response.data);
+        // Organize data with axis information
+        const graphDataWithAxes = {
+          ...response.data,
+          axisConfig: selectedGraphs.map((graphId, index) => {
+            const config = graphConfigs.find(g => g.id === graphId);
+            return {
+              graphId,
+              position: index === 0 ? 'left' : 'right', // First selection = left, second = right
+              unit: config?.unit || '',
+              title: config?.title || '',
+              series: selectedSeries[graphId] || []
+            };
+          })
+        };
+        
+        setGraphData(graphDataWithAxes);
         // Generate colors using the existing function from dashboard
         const numSeries = response.data.series.length;
         const colors = getFixedColors(numSeries);
@@ -341,6 +357,7 @@ const CustomGraphs = () => {
                       yAxisDomain={[0, 'auto']}
                       unit={graphData.unit}
                       onClick={handleChartClick}
+                      axisConfig={graphData.axisConfig}
                     />
                   </div>
                 )}
