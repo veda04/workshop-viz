@@ -50,10 +50,13 @@
 }
 
 .loader {
-    height: 77vh;
     overflow: hidden;
     background: transparent;
     align-items: center;
     justify-content: center;
     z-index: 1;
+}
+
+.h-77 {
+  height: 77vh;
 }

@@ -295,11 +295,10 @@ const CustomGraphs = () => {
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                         {config?.title} - Select Series
                       </h2>
-                      
                       {isLoading ? (
-                        <div className="flex justify-center items-center py-8">
-                          <LoadingSpinner />
-                          <span className="ml-3 text-gray-600 dark:text-gray-400">Loading series...</span>
+                        <div className="flex justify-start items-center flex-col py-8">
+                          <LoadingSpinner height={24}/>
+                          {/* <span className="ml-3 text-gray-600 dark:text-gray-400">Loading series...</span> */}
                         </div>
                       ) : series.length > 0 ? (
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
