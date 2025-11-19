@@ -26,7 +26,7 @@ export const useDashboardData = (machineName) => {
             throw new Error(result.message || 'Failed to load dashboard data');
         }
         } catch (error) {
-            console.error('Error fetching dashboard data:', error);
+            //console.error('Error fetching dashboard data:', error);
             setError(error.message);
         } finally {
         setLoading(false);

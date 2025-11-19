@@ -50,7 +50,7 @@ const CustomGraphs = () => {
     const loadGraphConfigs = async () => {
       try {
         setLoading(true);
-        const response = await apiService.getGraphConfigurations();
+        const response = await apiService.getGraphConfigurations('Hurco');  // change to selected machinename 
         if (response.status === 'success') {
           setGraphConfigs(response.data);
           setError(null);
@@ -100,7 +100,7 @@ const CustomGraphs = () => {
   const fetchAvailableSeries = async (graphId) => {
     try {
       setLoadingSeries(prev => ({ ...prev, [graphId]: true }));
-      const response = await apiService.getAvailableSeries(graphId, 'Hurco', '1h');
+      const response = await apiService.getAvailableSeries(graphId, 'Hurco', '1h');   // replace with machinename
       if (response.status === 'success') {
         setAvailableSeries(prev => ({
           ...prev,
@@ -152,7 +152,8 @@ const CustomGraphs = () => {
       const response = await apiService.getCustomGraphData({
         graphs: selectedGraphs,
         series: selectedSeries,
-        range: timeRange
+        range: timeRange,
+        machine_name: 'Hurco' // replace with selected machine name
       });
       
       if (response.status === 'success') {

@@ -385,7 +385,7 @@ def add_notes(request):
 def get_graph_configurations(request):
     """Get available graph configurations from config file"""
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
+        machine_name = request.GET.get('machine_name')
         file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
         
         if not os.path.exists(file_path):
@@ -438,7 +438,7 @@ def get_custom_graph_data(request):
     """Get custom graph data based on selected graphs and series"""
     try:
         data = request.data
-        machine_name = data.get('machine_name', 'Hurco')
+        machine_name = data.get('machine_name')
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
@@ -537,7 +537,7 @@ def get_custom_graph_data(request):
 def get_available_series(request):
     """Get available series for a specific graph"""
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
+        machine_name = request.GET.get('machine_name')
         graph_id = request.GET.get('graph_id')
         time_range = request.GET.get('range', '1h')
         
