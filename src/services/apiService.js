@@ -10,15 +10,17 @@ class ApiService {
         },
         ...options,
       });
+      
+      const text = await response.text(); // (FIX FOR:- Error fetching dashboard data: SyntaxError: Unexpected token 'N', ..."s_Motor": NaN, "C-Ax"... is not valid JSON)
+      const sanitized = text.replace(/:\s*NaN\b/g, ': null'); // Handle NaN values in JSON
+      const data = JSON.parse(sanitized);
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorMessage = data?.message || data?.error || `HTTP error! status: ${response.status}`;
+        throw new Error(errorMessage);
       }
-      //  (Error fetching dashboard data: SyntaxError: Unexpected token 'N', ..."s_Motor": NaN, "C-Ax"... is not valid JSON)
-      const text = await response.text();
-      // Handle NaN values in JSON
-      const sanitized = text.replace(/:\s*NaN\b/g, ': null');
-      return JSON.parse(sanitized);
+
+      return data;
     } catch (error) {
       console.error('API Error:', error);
       throw error;

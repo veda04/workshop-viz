@@ -115,48 +115,73 @@ def parse_range_to_timedelta(range_str):
     
 @api_view(['GET'])
 def get_dashboard_config(request):
-    machine_name = request.GET.get('machine_name', 'Hurco')
-    selected_range = request.GET.get('range', None)
-    custom_from = request.GET.get('from', None)
-    custom_to = request.GET.get('to', None) 
+    try:
+        machine_name = request.GET.get('machine_name', 'Hurco')
+        selected_range = request.GET.get('range', None)
+        custom_from = request.GET.get('from', None)
+        custom_to = request.GET.get('to', None) 
 
-    if selected_range:
-        delta = parse_range_to_timedelta (selected_range)
-        custom_date_from  = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
-        custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-    else:
-        # Ensure custom_from and custom_to are in 'YYYY-MM-DDTHH:MM:SSZ' format
-        def ensure_iso8601_z(dt_str):
-            try:
-                # Try parsing with seconds
-                dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
-            except ValueError:
+        if selected_range:
+            delta = parse_range_to_timedelta (selected_range)
+            custom_date_from  = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+            custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            # Ensure custom_from and custom_to are in 'YYYY-MM-DDTHH:MM:SSZ' format
+            def ensure_iso8601_z(dt_str):
                 try:
-                    # Try parsing without seconds
-                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+                    # Try parsing with seconds
+                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
                 except ValueError:
-                    # If already has 'Z', try parsing with 'Z'
                     try:
-                        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+                        # Try parsing without seconds
+                        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
                     except ValueError:
-                        return dt_str  # Return as is if parsing fails
-            else:
+                        # If already has 'Z', try parsing with 'Z'
+                        try:
+                            dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError:
+                            return dt_str  # Return as is if parsing fails
+                else:
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
                 return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-            return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-        custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
-        custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
+            custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
+            custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
 
-    file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
-    machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
-    #print("Machine Data:")
-    #pprint.pprint(machine_data, indent=2, width=120)
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
+        #print("Machine Data:")
+        #pprint.pprint(machine_data, indent=2, width=120)
 
-    return JsonResponse({
-        'status': 'success',
-        'message': 'Dashboard configuration loaded successfully',
-        'data': machine_data,
-    }, status=status.HTTP_200_OK)
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Dashboard configuration loaded successfully',
+            'data': machine_data,
+        }, status=status.HTTP_200_OK)
+        
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file not found: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Configuration file not found for machine "{machine_name}". Please check if the machine configuration exists.',
+            'data': {}
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    except ValueError as e:
+        logger.error(f"Invalid data format: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Invalid data format: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as e:
+        logger.error(f"Error loading dashboard configuration: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error loading dashboard configuration: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # get the current booking for a machine
