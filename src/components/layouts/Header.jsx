@@ -124,13 +124,22 @@ const Header = () => {
             className={
               loading
                 ? "bg-gradient-to-r from-gray-400 to-gray-500 px-4 py-2 rounded-lg shadow-md"
-                : bookingData
+                : bookingData && (bookingData.cStatus === 'A' || bookingData.cStatus === 'CO')
                 ? "bg-gradient-to-r from-orange-400 to-orange-600 px-4 py-2 rounded-lg shadow-md"
-                : "bg-gradient-to-r from-green-500 to-green-600 px-4 py-2 rounded-lg shadow-md"
+                : bookingData && bookingData.cStatus === 'IP'
+                ? "bg-gradient-to-r from-blue-400 to-blue-600 px-4 py-2 rounded-lg shadow-md"
+                : "bg-gradient-to-r from-green-400 to-green-700 px-4 py-2 rounded-lg shadow-md"
             }
           >
             <span className="text-white font-medium">
-              {loading ? 'LOADING...' : bookingData ? 'BOOKED' : 'AVAILABLE'}
+              {loading 
+                ? 'LOADING...' 
+                : bookingData && (bookingData.cStatus === 'A' || bookingData.cStatus === 'CO')
+                ? 'BOOKED' 
+                : bookingData && bookingData.cStatus === 'IP'
+                ? 'IN USE'
+                : 'AVAILABLE'
+              }
             </span>
           </div>
           <div className="relative mr-0 ml-0">
