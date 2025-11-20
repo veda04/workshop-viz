@@ -602,3 +602,109 @@ def get_available_series(request):
             'message': f'Internal server error: {str(e)}',
             'data': []
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+def save_custom_graph(request):
+    """Save custom graph configuration to MySQL database"""
+    try:
+        # Get the data from the request body
+        data = request.data
+        machine_name = data.get('machine_name', '')
+        title = data.get('title', '')
+        user_id = data.get('user_id', '')
+        graph_types = data.get('graph_types', [])
+        series = data.get('series', {})
+        
+        # Validation
+        if not machine_name:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine name is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not title:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Graph title is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'User ID is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not graph_types or len(graph_types) == 0:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'At least one graph type must be selected',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get asset ID from machine name (following the same pattern as add_notes)
+        mysql_service = MySQLService()
+        asset_data = mysql_service.get_asset_id_by_name(machine_name)
+        
+        if not asset_data:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine not found',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Extract asset_id from the result
+        if asset_data is None:
+            asset_id = None
+        elif isinstance(asset_data, dict):
+            asset_id = asset_data.get('iAsset_id')
+        else:
+            asset_id = asset_data if asset_data else None
+        
+        if not asset_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid machine ID',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert graph_types and series to JSON strings
+        graph_types_json = json.dumps(graph_types)
+        series_json = json.dumps(series)
+        
+        logger.info(f"Saving custom graph: {title} for machine {machine_name} (asset_id: {asset_id})")
+        logger.info(f"Graph types: {graph_types_json}")
+        logger.info(f"Series: {series_json}")
+        
+        # Save to database
+        graph_id = mysql_service.save_custom_graph(
+            asset_id, 
+            title, 
+            graph_types_json, 
+            series_json, 
+            user_id
+        )
+        
+        if graph_id:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Custom graph saved successfully',
+                'data': {'graph_id': graph_id}
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to save custom graph',
+                'data': {}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    except Exception as e:
+        logger.error(f"Error saving custom graph: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

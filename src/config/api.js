@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
   graphConfigurations: '/api/graph-configurations/',
   customGraphData: '/api/custom-graph-data/',
   availableSeries: '/api/available-series/',
+  saveCustomGraph: '/api/save-custom-graph/',
 };
 
 export const buildUrl = (endpoint, params = {}) => {

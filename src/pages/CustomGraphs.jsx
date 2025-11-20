@@ -5,6 +5,7 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
+import CustomGraphsForm from '../components/forms/CustomGraphsForm';
 import { useCustomGraphData } from '../hooks/useCustomGraphData';
 import { getFixedColors } from '../utils/chartUtils';
 
@@ -30,31 +31,15 @@ const CustomGraphs = () => {
     clearError,
   } = useCustomGraphData(machineName);
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalContent, setModalContent] = useState(null);
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [isSaveGraphModalOpen, setIsSaveGraphModalOpen] = useState(false);
   const [chartColors, setChartColors] = useState([]);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
     if (!graphData || !graphData.chartData || graphData.chartData.length === 0) return;
-    
-    setModalContent(
-        <ZoomableChart
-        data={graphData.chartData}
-        series={graphData.series}
-        color={chartColors}
-        title="Custom Graph"
-        unit={graphData.unit}
-        axisConfig={graphData.axisConfig}
-        />
-    );
-    setIsModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalContent(null);
+    setIsChartModalOpen(true);
   };
 
   // Generate colors when graph data changes
@@ -72,6 +57,15 @@ const CustomGraphs = () => {
     if (success) {
       setIsAccordionOpen(false); // Collapse accordion after successful generation
     }
+  };
+
+
+  // Handle Save Graph button click
+  const handleSaveGraph = () => {
+    if (!graphData || !graphData.chartData || graphData.chartData.length === 0) {
+      return;
+    }
+    setIsSaveGraphModalOpen(true);
   };
 
   if (loading) {
@@ -265,21 +259,28 @@ const CustomGraphs = () => {
 
                 {/* Graph Display */}
                 {graphData && (
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <OverviewChart
-                      title="Custom Graph"
-                      data={graphData.chartData}
-                      series={graphData.series}
-                      color={chartColors}
-                      yAxisDomain={[0, 'auto']}
-                      unit={graphData.unit}
-                      onClick={handleChartClick}
-                      axisConfig={graphData.axisConfig}
-                      heightOuter={96}
-                      heightInner={80}
-                    />
+                  <div className="text-right">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                      <OverviewChart
+                        title="Custom Graph"
+                        data={graphData.chartData}
+                        series={graphData.series}
+                        color={chartColors}
+                        yAxisDomain={[0, 'auto']}
+                        unit={graphData.unit}
+                        onClick={handleChartClick}
+                        axisConfig={graphData.axisConfig}
+                        heightOuter={96}
+                        heightInner={80}
+                      />
+                    </div>
+                    <button
+                    onClick={handleSaveGraph}
+                    className='mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors'>
+                      Save Graph
+                    </button>
                   </div>
-                )}
+                )} 
               </div>
             ) : (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center h-96 flex flex-col justify-center items-center">
@@ -311,8 +312,26 @@ const CustomGraphs = () => {
       </div>
 
       {/* Modal for Detailed Chart View */}
-      <Modal isOpen={isModalOpen} onClose={closeModal} size="full">
-        {modalContent}
+      <Modal isOpen={isChartModalOpen} onClose={() => setIsChartModalOpen(false)} size="full">
+        <ZoomableChart
+          data={graphData?.chartData}
+          series={graphData?.series}
+          color={chartColors}
+          title="Custom Graph"
+          unit={graphData?.unit}
+          axisConfig={graphData?.axisConfig}
+        />
+      </Modal>
+
+      {/* Modal for Save Graph Form */}
+      <Modal isOpen={isSaveGraphModalOpen} onClose={() => setIsSaveGraphModalOpen(false)} size="large">
+        <CustomGraphsForm
+          onClose={() => setIsSaveGraphModalOpen(false)}
+          machineName={machineName}
+          selectedGraphs={selectedGraphs}
+          selectedSeries={selectedSeries}
+          graphConfigs={graphConfigs}
+        />
       </Modal>
     </Layout>
   );

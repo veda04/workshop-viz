@@ -81,6 +81,14 @@ class ApiService {
     });
     return this.fetchWithErrorHandling(url);
   }
+
+  async saveCustomGraph(graphData) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.saveCustomGraph}`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'POST',
+      body: JSON.stringify(graphData),
+    });
+  }
 }
 
 export default new ApiService();
