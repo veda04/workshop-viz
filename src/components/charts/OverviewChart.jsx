@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { generateTicks } from '../../utils/timeUtils';
 
-const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick, axisConfig }) => {
+const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick, axisConfig, heightOuter="72", heightInner="56" }) => {
   // Ensure data is an array and not empty
   const chartData = Array.isArray(data) ? data : [];
   
@@ -133,7 +133,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   return (
     <div 
       className={`
-        bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-72
+        bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-${heightOuter}
         backdrop-blur-sm bg-opacity-90 overflow-hidden relative transition-colors
         ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
       `}
@@ -163,7 +163,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
 
       <div 
         ref={chartRef}
-        className={`h-56 bg-gray-800 dark:bg-gray-900 p-2 relative transition-colors`}
+        className={`h-${heightInner} bg-gray-800 dark:bg-gray-900 p-2 relative transition-colors`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

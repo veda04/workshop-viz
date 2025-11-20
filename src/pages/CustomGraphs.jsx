@@ -5,23 +5,35 @@ import ErrorMessage from '../components/common/ErrorMessage';
 import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
-import apiService from '../services/apiService';
+import { useCustomGraphData } from '../hooks/useCustomGraphData';
 import { getFixedColors } from '../utils/chartUtils';
 
 const CustomGraphs = () => {
-  const [graphConfigs, setGraphConfigs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [selectedGraphs, setSelectedGraphs] = useState([]);
-  const [availableSeries, setAvailableSeries] = useState({});
-  const [selectedSeries, setSelectedSeries] = useState({});
-  const [graphData, setGraphData] = useState(null);
-  const [generatingGraph, setGeneratingGraph] = useState(false);
-  const [timeRange, setTimeRange] = useState('3h');
-  const [loadingSeries, setLoadingSeries] = useState({});
+  const machineName = 'Hurco'; // TODO: Replace with selected machine name
+  
+  // Use custom hook for graph data management
+  const {
+    graphConfigs,
+    selectedGraphs,
+    availableSeries,
+    selectedSeries,
+    graphData,
+    timeRange,
+    loading,
+    loadingSeries,
+    generatingGraph,
+    error,
+    setTimeRange,
+    handleGraphSelection,
+    handleSeriesSelection,
+    generateGraph,
+    clearError,
+  } = useCustomGraphData(machineName);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [chartColors, setChartColors] = useState([]);
+  const [isAccordionOpen, setIsAccordionOpen] = useState(true);
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -45,145 +57,20 @@ const CustomGraphs = () => {
     setModalContent(null);
   };
 
-  // Fetch available graph configurations on mount
+  // Generate colors when graph data changes
   useEffect(() => {
-    const loadGraphConfigs = async () => {
-      try {
-        setLoading(true);
-        const response = await apiService.getGraphConfigurations('Hurco');  // change to selected machinename 
-        if (response.status === 'success') {
-          setGraphConfigs(response.data);
-          setError(null);
-        } else {
-          setError(response.message || 'Failed to load graph configurations');
-        }
-      } catch (err) {
-        setError(err.message || 'Failed to load graph configurations');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadGraphConfigs();
-  }, []);
-
-  // Handle graph selection
-  const handleGraphSelection = async (graphId) => {
-    setSelectedGraphs((prev) => {
-      // Toggle selection
-      if (prev.includes(graphId)) {
-        // Remove graph
-        const newSelection = prev.filter(id => id !== graphId);
-        // Remove associated series
-        const newSeries = { ...selectedSeries };
-        delete newSeries[graphId];
-        setSelectedSeries(newSeries);
-        
-        const newAvailable = { ...availableSeries };
-        delete newAvailable[graphId];
-        setAvailableSeries(newAvailable);
-        
-        return newSelection;
-      } else {
-        // Add graph (max 2)
-        if (prev.length < 2) {
-          // Fetch available series for this graph
-          fetchAvailableSeries(graphId);
-          return [...prev, graphId];
-        }
-        return prev;
-      }
-    });
-  };
-
-  // Fetch available series for a graph
-  const fetchAvailableSeries = async (graphId) => {
-    try {
-      setLoadingSeries(prev => ({ ...prev, [graphId]: true }));
-      const response = await apiService.getAvailableSeries(graphId, 'Hurco', '1h');   // replace with machinename
-      if (response.status === 'success') {
-        setAvailableSeries(prev => ({
-          ...prev,
-          [graphId]: response.data
-        }));
-      } else {
-        console.error('Failed to fetch series:', response.message);
-      }
-    } catch (err) {
-      console.error(`Error fetching series for graph ${graphId}:`, err);
-    } finally {
-      setLoadingSeries(prev => ({ ...prev, [graphId]: false }));
+    if (graphData && graphData.series) {
+      const numSeries = graphData.series.length;
+      const colors = getFixedColors(numSeries);
+      setChartColors(colors);
     }
-  };
+  }, [graphData]);
 
-  // Handle series selection
-  const handleSeriesSelection = (graphId, seriesName) => {
-    setSelectedSeries((prev) => {
-      const graphSeries = prev[graphId] || [];
-      const newGraphSeries = graphSeries.includes(seriesName)
-        ? graphSeries.filter(s => s !== seriesName)
-        : [...graphSeries, seriesName];
-      
-      return {
-        ...prev,
-        [graphId]: newGraphSeries
-      };
-    });
-  };
-
-  // Generate graph
+  // Handle generate graph button click
   const handleGenerateGraph = async () => {
-    if (selectedGraphs.length === 0) {
-      setError('Please select at least one graph type');
-      return;
-    }
-
-    // Check if series are selected for each graph
-    for (const graphId of selectedGraphs) {
-      if (!selectedSeries[graphId] || selectedSeries[graphId].length === 0) {
-        setError(`Please select at least one series for ${graphConfigs.find(g => g.id === graphId)?.title}`);
-        return;
-      }
-    }
-
-    try {
-      setGeneratingGraph(true);
-      setError(null);
-      const response = await apiService.getCustomGraphData({
-        graphs: selectedGraphs,
-        series: selectedSeries,
-        range: timeRange,
-        machine_name: 'Hurco' // replace with selected machine name
-      });
-      
-      if (response.status === 'success') {
-        // Organize data with axis information
-        const graphDataWithAxes = {
-          ...response.data,
-          axisConfig: selectedGraphs.map((graphId, index) => {
-            const config = graphConfigs.find(g => g.id === graphId);
-            return {
-              graphId,
-              position: index === 0 ? 'left' : 'right', // First selection = left, second = right
-              unit: config?.unit || '',
-              title: config?.title || '',
-              series: selectedSeries[graphId] || []
-            };
-          })
-        };
-        
-        setGraphData(graphDataWithAxes);
-        // Generate colors using the existing function from dashboard
-        const numSeries = response.data.series.length;
-        const colors = getFixedColors(numSeries);
-        setChartColors(colors);
-      } else {
-        setError(response.message || 'Failed to generate graph');
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to generate graph');
-    } finally {
-      setGeneratingGraph(false);
+    const success = await generateGraph();
+    if (success) {
+      setIsAccordionOpen(false); // Collapse accordion after successful generation
     }
   };
 
@@ -198,8 +85,8 @@ const CustomGraphs = () => {
   }
 
   return (
-    <Layout>
-      <div className="dash-cover max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <Layout> 
+      <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Customize Graphs
@@ -211,13 +98,13 @@ const CustomGraphs = () => {
 
         {error && (
           <div className="mb-6">
-            <ErrorMessage message={error} onDismiss={() => setError(null)} padding="py-2" />
+            <ErrorMessage message={error} onDismiss={clearError} padding="py-2" />
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
           {/* Left Panel - Graph Selection */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Select Graph Types
@@ -225,7 +112,6 @@ const CustomGraphs = () => {
                   ({selectedGraphs.length}/2)
                 </span>
               </h2>
-
               <div className="space-y-3">
                 {graphConfigs.map((config) => (
                   <div
@@ -239,8 +125,8 @@ const CustomGraphs = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-gray-900 dark:text-white">
-                          {config.title} <span className="text-sm text-gray-500 dark:text-gray-400">( {config.unit} )</span>
+                        <h3 className="font-base text-gray-900 dark:text-white">
+                          {config.title} <span className="text-xs text-gray-500 dark:text-gray-400">({config.unit})</span>
                         </h3>
                       </div>
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
@@ -267,7 +153,7 @@ const CustomGraphs = () => {
                 <select
                   value={timeRange}
                   onChange={(e) => setTimeRange(e.target.value)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 font-base rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="30m">Last 30 minutes</option>
                   <option value="1h">Last 1 hour</option>
@@ -280,70 +166,101 @@ const CustomGraphs = () => {
             </div>
           </div>
 
-          {/* Right Panel - Series Selection & Graph */}
-          <div className="lg:col-span-2">
+          {/* Center Panel - Series Selection & Graph */}
+          <div className="lg:col-span-6">
             {selectedGraphs.length > 0 ? (
               <div className="space-y-6">
-                {/* Series Selection */}
-                {selectedGraphs.map((graphId) => {
-                  const config = graphConfigs.find(g => g.id === graphId);
-                  const series = availableSeries[graphId] || [];
-                  const isLoading = loadingSeries[graphId];
-                  
-                  return (
-                    <div key={graphId} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                        {config?.title} - Select Series
-                      </h2>
-                      {isLoading ? (
-                        <div className="flex justify-start items-center flex-col py-8">
-                          <LoadingSpinner height={24}/>
-                          {/* <span className="ml-3 text-gray-600 dark:text-gray-400">Loading series...</span> */}
-                        </div>
-                      ) : series.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {series.map((seriesName) => (
-                            <button
-                              key={seriesName}
-                              onClick={() => handleSeriesSelection(graphId, seriesName)}
-                              className={`px-2 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
-                                selectedSeries[graphId]?.includes(seriesName)
-                                  ? 'border-blue-500 bg-blue-500 text-white'
-                                  : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'
-                              }`}
-                            >
-                              {seriesName}
-                            </button>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-gray-500 dark:text-gray-400">
-                          No series available for this graph
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Generate Button */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                {/* Collapsible Series Selection & Generate Button */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                  {/* Accordion Header */}
                   <button
-                    onClick={handleGenerateGraph}
-                    disabled={generatingGraph || selectedGraphs.length === 0}
-                    className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                    onClick={() => setIsAccordionOpen(!isAccordionOpen)}
+                    className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    {generatingGraph ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Generating...
-                      </>
-                    ) : (
-                      'Generate Graph'
-                    )}
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                      Configure Series
+                    </h2>
+                    <svg
+                      className={`w-5 h-5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
+                        isAccordionOpen ? 'transform rotate-180' : ''
+                      }`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
                   </button>
+
+                  {/* Accordion Content */}
+                  <div
+                    className={`transition-all duration-300 ease-in-out ${
+                      isAccordionOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+                    } overflow-hidden`}
+                  >
+                    <div className="px-6 pb-6 space-y-6">
+                      {/* Series Selection */}
+                      {selectedGraphs.map((graphId) => {
+                        const config = graphConfigs.find(g => g.id === graphId);
+                        const series = availableSeries[graphId] || [];
+                        const isLoading = loadingSeries[graphId];
+                        
+                        return (
+                          <div key={graphId} className="pt-4 border-t border-gray-200 dark:border-gray-700 first:border-t-0 first:pt-0">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                              {config?.title} - Select Series
+                            </h3>
+                            {isLoading ? (
+                              <div className="flex justify-start items-center flex-col py-8">
+                                <LoadingSpinner height={24}/>
+                              </div>
+                            ) : series.length > 0 ? (
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {series.map((seriesName) => (
+                                  <button
+                                    key={seriesName}
+                                    onClick={() => handleSeriesSelection(graphId, seriesName)}
+                                    className={`px-2 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                                      selectedSeries[graphId]?.includes(seriesName)
+                                        ? 'border-blue-500 bg-blue-500 text-white'
+                                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'
+                                    }`}
+                                  >
+                                    {seriesName}
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <p className="text-gray-500 dark:text-gray-400">
+                                No series available for this graph
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* Generate Button */}
+                      <div className="pt-4">
+                        <button
+                          onClick={handleGenerateGraph}
+                          disabled={generatingGraph || selectedGraphs.length === 0}
+                          className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                        >
+                          {generatingGraph ? (
+                            <>
+                              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Generating...
+                            </>
+                          ) : (
+                            'Generate Graph'
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Graph Display */}
@@ -358,12 +275,14 @@ const CustomGraphs = () => {
                       unit={graphData.unit}
                       onClick={handleChartClick}
                       axisConfig={graphData.axisConfig}
+                      heightOuter={96}
+                      heightInner={80}
                     />
                   </div>
                 )}
               </div>
             ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-12 text-center h-96 flex flex-col justify-center items-center">
                 <svg className="mx-auto h-16 w-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
@@ -375,6 +294,18 @@ const CustomGraphs = () => {
                 </p>
               </div>
             )}
+          </div>
+
+          {/* Right Panel - Customise graphs */}
+          <div className="lg:col-span-2">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Customised Graphs
+                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                  ({selectedGraphs.length}/2)
+                </span>
+              </h2>
+            </div>
           </div>
         </div>
       </div>

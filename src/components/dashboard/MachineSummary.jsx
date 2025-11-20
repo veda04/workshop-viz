@@ -36,7 +36,7 @@ const MachineSummary = () => {
             <div
               key={index}
               className={`sub-blocks ${
-                item.config?.Type === 'Graph' ? 'w-full md:w-[calc(33.333%-1rem)] lg:w-[calc(33.333%-1rem)]' : 
+                item.config?.Type === 'Graph' ? 'w-full md:w-[calc(33.333%-0.69rem)] lg:w-[calc(33.333%-0.69rem)]' : 
                 item.config?.Type === 'Stat' ? 'w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]' : 
                 'w-full md:w-[calc(33.333%-1rem)]'
               } mb-4`}
