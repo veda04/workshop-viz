@@ -344,7 +344,7 @@ const CustomGraphs = () => {
           {/* Right Panel - Saved Custom Graphs */}
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md py-6 pl-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center pr-6">
                 Customized Graphs
                 {savedGraphs.length > 0 && (
                   <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
