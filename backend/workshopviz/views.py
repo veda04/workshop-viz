@@ -19,12 +19,12 @@ import pprint
 import pandas as pd
 
 # Debug: Check if MACHINE_CONFIG_PATH is loaded correctly
-if MACHINE_CONFIG_PATH is None:
-    print("WARNING: MACHINE_CONFIG_PATH is None. Check .env file and ensure it's in the correct location.")
-    print("Current working directory:", os.getcwd())
-    print("Looking for .env file in backend directory")
-else:
-    print("Config Path:", MACHINE_CONFIG_PATH)
+# if MACHINE_CONFIG_PATH is None:
+#     print("WARNING: MACHINE_CONFIG_PATH is None. Check .env file and ensure it's in the correct location.")
+#     print("Current working directory:", os.getcwd())
+#     print("Looking for .env file in backend directory")
+# else:
+#     print("Config Path:", MACHINE_CONFIG_PATH)
 
 @api_view(['GET'])
 def test_mysql_connection(request):
@@ -613,6 +613,7 @@ def save_custom_graph(request):
         machine_name = data.get('machine_name', '')
         title = data.get('title', '')
         user_id = data.get('user_id', '')
+        add_to_dashboard = data.get('add_to_dashboard', 'N')  # 'Y' or 'N'
         graph_types = data.get('graph_types', [])
         series = data.get('series', {})
         
@@ -635,6 +636,13 @@ def save_custom_graph(request):
             return JsonResponse({
                 'status': 'error',
                 'message': 'User ID is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not add_to_dashboard in ['Y', 'N']:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'add_to_dashboard must be either "Y" or "N"',
                 'data': {}
             }, status=status.HTTP_400_BAD_REQUEST)
         
@@ -685,7 +693,8 @@ def save_custom_graph(request):
             title, 
             graph_types_json, 
             series_json, 
-            user_id
+            user_id,
+            add_to_dashboard
         )
         
         if graph_id:

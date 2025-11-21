@@ -181,6 +181,30 @@ class MySQLService:
         except Exception as e:
             logger.error(f"Error adding note to booking: {str(e)}")
             return False
+        finally:
+            self.close()
+
+    def save_custom_graph(self, asset_id, title, graph_types_json, series_json, user_id, add_to_dashboard):
+        """Save custom graph configuration"""
+        try:
+            if not self.connect():
+                return False
+            cursor = self.connection.cursor()
+            query = """
+                INSERT INTO machine_custom_graphs 
+                (vTitle, iAsset_id, vGraph_types, vSeries, iUser_id, cAddToDashboard) 
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (title, asset_id, graph_types_json, series_json, user_id, add_to_dashboard))
+            self.connection.commit()
+            graph_id = cursor.lastrowid
+            cursor.close()
+            return graph_id
+        except Exception as e:
+            logger.error(f"Error saving custom graph: {str(e)}")
+            return False
+        finally:
+            self.close()
 
     def close(self):
         """Close the MySQL connection"""

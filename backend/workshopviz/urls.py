@@ -11,4 +11,5 @@ urlpatterns = [
     path('graph-configurations/', views.get_graph_configurations, name='get_graph_configurations'),
     path('custom-graph-data/', views.get_custom_graph_data, name='get_custom_graph_data'),
     path('available-series/', views.get_available_series, name='get_available_series'),
+    path('save-custom-graph/', views.save_custom_graph, name='save_custom_graph'),
 ]

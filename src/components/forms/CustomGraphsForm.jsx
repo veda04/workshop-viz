@@ -7,6 +7,7 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
     title: '',
     user_id: '',
   });
+  const [addToDashboard, setAddToDashboard] = useState('no');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -60,6 +61,8 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
         user_id: formData.user_id,
         graph_types: selectedGraphs, // Array of graph IDs
         series: selectedSeries, // Object with graphId as key and series array as value
+        add_to_dashboard: addToDashboard,
+
       };
 
       const result = await apiService.saveCustomGraph(graphData);
@@ -104,7 +107,6 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
   return (
     <div className="custom-graph-form bg-white border rounded-lg p-6 overflow-hidden dark:bg-gray-800 dark:shadow-gray-900/50">
       <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Save Custom Graph</h2>
-      
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
@@ -207,34 +209,64 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
             {Object.entries(selectedSeries).map(([graphId, seriesArr]) => {
               const config = graphConfigs.find(g => g.id === graphId);
               const graphTitle = config ? config.title : graphId;
-              return (
+                return (
                 <div key={graphId}>
                   <div className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1.5">
-                    {graphTitle}:
+                  {graphTitle}:
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {seriesArr.map((series, index) => (
-                      <span
-                        key={`${graphId}-${series}-${index}`}
-                        className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-700"
-                      >
-                        {series}
-                      </span>
-                    ))}
+                  {seriesArr.map((series, index) => (
+                    <span
+                    key={`${graphId}-${series}-${index}`}
+                    className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-200 dark:border-green-700"
+                    >
+                    {series}
+                    </span>
+                  ))}
                   </div>
                 </div>
-              );
-            })}
-            {Object.keys(selectedSeries).length === 0 && (
-              <span className="text-sm text-gray-500 dark:text-gray-400 italic">
+                );
+              })}
+              {Object.keys(selectedSeries).length === 0 && (
+                <span className="text-sm text-gray-500 dark:text-gray-400 italic">
                 No series selected
-              </span>
-            )}
+                </span>
+              )}
           </div>
         </div>
-
+        {/* Add to Dashboard  */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-2">
+          Add to Dashboard?
+          </label>
+          <div className="flex items-center space-x-4">
+            <label className="inline-flex items-center text-xs">
+              <input
+                type="radio"
+                name="addToDashboard"
+                value="Y"
+                checked={addToDashboard === 'Y'}
+                onChange={(e) => setAddToDashboard(e.target.value)}
+                className="form-radio text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-gray-700 dark:text-gray-300">Yes</span>
+            </label>
+            <label className="inline-flex items-center text-xs">
+              <input
+                type="radio"
+                name="addToDashboard"
+                value="N"
+                checked={addToDashboard === 'N'}
+                onChange={(e) => setAddToDashboard(e.target.value)}
+                className="form-radio text-blue-600 focus:ring-blue-500"
+              />
+              <span className="ml-2 text-gray-700 dark:text-gray-300">No</span>
+            </label>
+          </div>
+        </div>
+        <hr className='my-0 border-gray-300 dark:border-gray-600'/>
         {/* Form Actions */}
-        <div className="flex justify-end gap-3 pt-4">
+        <div className="flex justify-end gap-3 pt-0">
           <button
             type="button"
             onClick={onClose}
