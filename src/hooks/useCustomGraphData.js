@@ -12,6 +12,26 @@ export const useCustomGraphData = (machineName) => {
   const [loadingSeries, setLoadingSeries] = useState({});
   const [generatingGraph, setGeneratingGraph] = useState(false);
   const [error, setError] = useState(null);
+  const [savedGraphs, setSavedGraphs] = useState([]);
+  const [loadingSavedGraphs, setLoadingSavedGraphs] = useState(false);
+
+  // Fetch saved custom graphs
+  const fetchSavedGraphs = useCallback(async () => {
+    try {
+      setLoadingSavedGraphs(true);
+      const response = await apiService.getCustomGraphs(machineName);
+      
+      if (response.status === 'success') {
+        setSavedGraphs(response.data);
+      } else {
+        console.error('Failed to fetch saved graphs:', response.message);
+      }
+    } catch (err) {
+      console.error('Error fetching saved graphs:', err);
+    } finally {
+      setLoadingSavedGraphs(false);
+    }
+  }, [machineName]);
 
   // Fetch available graph configurations on mount
   useEffect(() => {
@@ -35,8 +55,9 @@ export const useCustomGraphData = (machineName) => {
 
     if (machineName) {
       loadGraphConfigs();
+      fetchSavedGraphs();
     }
-  }, [machineName]);
+  }, [machineName, fetchSavedGraphs]);
 
   // Fetch available series for a specific graph
   const fetchAvailableSeries = useCallback(async (graphId) => {
@@ -164,6 +185,76 @@ export const useCustomGraphData = (machineName) => {
     }
   }, [selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs]);
 
+  // Load a saved graph configuration
+  const loadSavedGraph = useCallback(async (savedGraph) => {
+    try {
+      setGeneratingGraph(true);
+      setError(null);
+
+      // Parse the saved configuration
+      const graphTypes = typeof savedGraph.vGraph_types === 'string' 
+        ? JSON.parse(savedGraph.vGraph_types) 
+        : savedGraph.vGraph_types;
+      
+      const series = typeof savedGraph.vSeries === 'string' 
+        ? JSON.parse(savedGraph.vSeries) 
+        : savedGraph.vSeries;
+
+      // Set selected graphs and series
+      setSelectedGraphs(graphTypes);
+      setSelectedSeries(series);
+
+      // Fetch available series for each graph
+      for (const graphId of graphTypes) {
+        await fetchAvailableSeries(graphId);
+      }
+
+      // Generate the graph with saved configuration
+      const response = await apiService.getCustomGraphData({
+        graphs: graphTypes,
+        series: series,
+        range: timeRange,
+      }, machineName);
+
+      if (response.status === 'success') {
+        const graphDataWithAxes = {
+          ...response.data,
+          axisConfig: graphTypes.map((graphId, index) => {
+            const config = graphConfigs.find(g => g.id === graphId);
+            return {
+              graphId,
+              position: index === 0 ? 'left' : 'right',
+              unit: config?.unit || '',
+              title: config?.title || '',
+              series: series[graphId] || []
+            };
+          }),
+          savedGraphInfo: {
+            id: savedGraph.iGraph_id,
+            title: savedGraph.vTitle,
+            addedToDashboard: savedGraph.cAddToDashboard === 'Y'
+          }
+        };
+
+        setGraphData(graphDataWithAxes);
+        return true;
+      } else {
+        setError(response.message || 'Failed to load saved graph');
+        return false;
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to load saved graph');
+      return false;
+    } finally {
+      setGeneratingGraph(false);
+    }
+  }, [machineName, timeRange, graphConfigs, fetchAvailableSeries]);
+
+  // Refresh saved graphs list
+  const refreshSavedGraphs = useCallback(() => {
+    fetchSavedGraphs();
+  }, [fetchSavedGraphs]);
+
   // Reset error
   const clearError = useCallback(() => {
     setError(null);
@@ -181,6 +272,8 @@ export const useCustomGraphData = (machineName) => {
     loadingSeries,
     generatingGraph,
     error,
+    savedGraphs,
+    loadingSavedGraphs,
     
     // Actions
     setTimeRange,
@@ -188,5 +281,7 @@ export const useCustomGraphData = (machineName) => {
     handleSeriesSelection,
     generateGraph,
     clearError,
+    loadSavedGraph,
+    refreshSavedGraphs,
   };
 };

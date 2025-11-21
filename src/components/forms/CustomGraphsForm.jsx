@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../../services/apiService';
 
-const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries, graphConfigs }) => {
+const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries, graphConfigs, onSaveSuccess }) => {
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
     user_id: '',
   });
-  const [addToDashboard, setAddToDashboard] = useState('no');
+  const [addToDashboard, setAddToDashboard] = useState('N');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -70,6 +70,9 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
       if (result.status === 'success') {
         setSuccess(true);
         setTimeout(() => {
+          if (onSaveSuccess) {
+            onSaveSuccess(); // Trigger refresh of saved graphs list
+          }
           onClose();
         }, 1500);
       } else {

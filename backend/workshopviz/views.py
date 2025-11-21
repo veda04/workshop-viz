@@ -717,3 +717,75 @@ def save_custom_graph(request):
             'message': f'Internal server error: {str(e)}',
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+def get_custom_graphs(request):
+    """Get saved custom graphs for a machine"""
+    try:
+        machine_name = request.GET.get('machine_name', 'Hurco') # Need to change th machine name 
+        if not machine_name:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine name is required',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        mysql_service = MySQLService()
+        asset_data = mysql_service.get_asset_id_by_name(machine_name)
+
+        if not asset_data:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Machine not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        if isinstance(asset_data, dict):
+            asset_id = asset_data.get('iAsset_id')
+        else:
+            asset_id = asset_data if asset_data else None
+        
+        if not asset_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid machine ID',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        custom_graphs = mysql_service.get_custom_graphs(asset_id)
+        if custom_graphs is not None:
+            # Parse JSON strings back to objects
+            for graph in custom_graphs:
+                if 'vGraph_types' in graph and isinstance(graph['vGraph_types'], str):
+                    try:
+                        graph['vGraph_types'] = json.loads(graph['vGraph_types'])
+                    except json.JSONDecodeError:
+                        graph['vGraph_types'] = []
+                
+                if 'vSeries' in graph and isinstance(graph['vSeries'], str):
+                    try:
+                        graph['vSeries'] = json.loads(graph['vSeries'])
+                    except json.JSONDecodeError:
+                        graph['vSeries'] = {}
+            
+            logger.info(f"Retrieved {len(custom_graphs)} custom graphs for machine {machine_name}")
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Custom graphs retrieved successfully',
+                'data': custom_graphs
+            }, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'No custom graphs found',
+                'data': []
+            }, status=status.HTTP_200_OK)
+
+    except Exception as e:
+        logger.error(f"Error retrieving custom graphs: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

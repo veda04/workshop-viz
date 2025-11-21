@@ -206,6 +206,24 @@ class MySQLService:
         finally:
             self.close()
 
+    # get the list of customised graphs for a machine
+    def get_custom_graphs(self, asset_id):
+        """Get the list of customised graphs for a machine"""
+        try:
+            if not self.connect():
+                return None
+            cursor = self.connection.cursor(dictionary=True)
+            query = "SELECT * FROM machine_custom_graphs WHERE iAsset_id = %s"
+            cursor.execute(query, (asset_id,))
+            results = cursor.fetchall()
+            cursor.close()
+            return results
+        except Exception as e:
+            logger.error(f"Error getting custom graphs: {str(e)}")
+            return None
+        finally:
+            self.close()
+
     def close(self):
         """Close the MySQL connection"""
         if self.connection and self.connection.is_connected():

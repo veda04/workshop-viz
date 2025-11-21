@@ -89,6 +89,13 @@ class ApiService {
       body: JSON.stringify(graphData),
     });
   }
+
+  async getCustomGraphs(machineName) {
+    const url = buildUrl(API_ENDPOINTS.getCustomGraph, {
+      machine_name: machineName,
+    });
+    return this.fetchWithErrorHandling(url);
+  }
 }
 
 export default new ApiService();

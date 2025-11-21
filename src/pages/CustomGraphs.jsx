@@ -6,6 +6,7 @@ import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
 import CustomGraphsForm from '../components/forms/CustomGraphsForm';
+import SavedGraphsSection from '../components/SavedGraphsSection';
 import { useCustomGraphData } from '../hooks/useCustomGraphData';
 import { getFixedColors } from '../utils/chartUtils';
 
@@ -24,11 +25,15 @@ const CustomGraphs = () => {
     loadingSeries,
     generatingGraph,
     error,
+    savedGraphs,
+    loadingSavedGraphs,
     setTimeRange,
     handleGraphSelection,
     handleSeriesSelection,
     generateGraph,
     clearError,
+    loadSavedGraph,
+    refreshSavedGraphs,
   } = useCustomGraphData(machineName);
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
@@ -68,6 +73,24 @@ const CustomGraphs = () => {
     setIsSaveGraphModalOpen(true);
   };
 
+  // Handle saved graph card click
+  const handleSavedGraphClick = async (savedGraph) => {
+    // Expand accordion if collapsed
+    setIsAccordionOpen(true);
+    
+    // Scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Load the saved graph configuration
+    await loadSavedGraph(savedGraph);
+  };
+
+  // Handle successful save - refresh the list
+  const handleSaveSuccess = () => {
+    refreshSavedGraphs();
+    setIsSaveGraphModalOpen(false);
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -80,7 +103,7 @@ const CustomGraphs = () => {
 
   return (
     <Layout> 
-      <div className="dash-cover max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
+      <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Customize Graphs
@@ -96,9 +119,9 @@ const CustomGraphs = () => {
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
           {/* Left Panel - Graph Selection */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
                 Select Graph Types
@@ -161,7 +184,7 @@ const CustomGraphs = () => {
           </div>
 
           {/* Center Panel - Series Selection & Graph */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-6">
             <div class="custom-graph">
                 {selectedGraphs.length > 0 ? (
                   <div className="space-y-6">
@@ -262,8 +285,27 @@ const CustomGraphs = () => {
                     {graphData && (
                       <div className="text-right">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                          {/* Graph Title and Badge */}
+                          <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {graphData.savedGraphInfo ? graphData.savedGraphInfo.title : 'Custom Graph'}
+                            </h3>
+                            {graphData.savedGraphInfo?.addedToDashboard && (
+                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300 dark:border-green-700">
+                                <svg 
+                                  className="w-3 h-3 mr-1" 
+                                  fill="currentColor" 
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                                </svg>
+                                Added to Dashboard
+                              </span>
+                            )}
+                          </div>
+                          
                           <OverviewChart
-                            title="Custom Graph"
+                            title=""
                             data={graphData.chartData}
                             series={graphData.series}
                             color={chartColors}
@@ -297,14 +339,26 @@ const CustomGraphs = () => {
                   </div>
                 )}
             </div>
-            <div class="customised-graphs mt-3">
-                <div className="lg:col-span-2">
-                  <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                      Customised Graphs
-                    </h2>
-                  </div>
-                </div>
+          </div>
+
+          {/* Right Panel - Saved Custom Graphs */}
+          <div className="lg:col-span-2">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md py-6 pl-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
+                Customized Graphs
+                {savedGraphs.length > 0 && (
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                    ({savedGraphs.length})
+                  </span>
+                )}
+              </h2>
+              <div className="overflow-y-auto max-h-[80vh] custom-scrollbar pr-6">
+                <SavedGraphsSection
+                  savedGraphs={savedGraphs}
+                  loading={loadingSavedGraphs}
+                  onGraphClick={handleSavedGraphClick}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -330,6 +384,7 @@ const CustomGraphs = () => {
           selectedGraphs={selectedGraphs}
           selectedSeries={selectedSeries}
           graphConfigs={graphConfigs}
+          onSaveSuccess={handleSaveSuccess}
         />
       </Modal>
     </Layout>
