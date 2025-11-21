@@ -73,7 +73,8 @@ const SavedGraphCard = ({ graph, onClick }) => {
           {graph.vTitle}
         </h4>
         
-        <div className="text-sm mb-4 flex justify-between">
+        <div className="mb-4">
+          {/* Date and User Info */}
           {/* Graph Types */}
           {/* <div className="flex items-center">
             <svg className="w-4 h-4 mr-2 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
@@ -93,26 +94,27 @@ const SavedGraphCard = ({ graph, onClick }) => {
               {seriesCount} series selected
             </span>
           </div> */}
-
+          
+          <div className="space-y-2 flex justify-between ">
             {/* Created Date */}
             {graph.dtCreated && (
-            <div className="flex items-center">
-                <svg className="w-4 h-4 mr-2 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                 </svg>
                 <span className="text-xs text-gray-600 dark:text-gray-400">
-                {new Date(graph.dtCreated).toLocaleDateString('en-US', { 
+                  {new Date(graph.dtCreated).toLocaleDateString('en-US', { 
                     month: 'short', 
                     day: 'numeric', 
                     year: 'numeric' 
-                })}
+                  })}
                 </span>
-            </div>
+              </div>
             )}
 
             {/* Dashboard Badge */}
             {isAddedToDashboard && (
-                <div className="flex items-center">
+                <div className="flex items-center mt-3">
                 <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300 dark:border-green-700 shadow-sm">
                     <svg 
                     className="w-3 h-3 mr-1" 
@@ -124,6 +126,18 @@ const SavedGraphCard = ({ graph, onClick }) => {
                     Dashboard
                 </span>
                 </div>
+            )}
+          </div>
+          {/* Created By */}
+            {graph.vUserName && (
+              <div className="flex items-center">
+                <svg className="w-4 h-4 mr-2 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                </svg>
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  Created by: <span className="font-medium">{graph.vUserName}</span>
+                </span>
+              </div>
             )}
         </div>
 

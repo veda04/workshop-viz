@@ -213,7 +213,15 @@ class MySQLService:
             if not self.connect():
                 return None
             cursor = self.connection.cursor(dictionary=True)
-            query = "SELECT * FROM machine_custom_graphs WHERE iAsset_id = %s"
+            query = """
+                SELECT 
+                    mcg.*,
+                    u.vName as vUserName
+                FROM machine_custom_graphs mcg
+                LEFT JOIN users u ON mcg.iUser_id = u.iUser_id
+                WHERE mcg.iAsset_id = %s
+                ORDER BY mcg.dtCreated DESC
+            """
             cursor.execute(query, (asset_id,))
             results = cursor.fetchall()
             cursor.close()
