@@ -40,6 +40,8 @@ const CustomGraphs = () => {
   const [isSaveGraphModalOpen, setIsSaveGraphModalOpen] = useState(false);
   const [chartColors, setChartColors] = useState([]);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
+  const [editGraphId, setEditGraphId] = useState(null);
+  const [editGraphData, setEditGraphData] = useState(null);
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -81,12 +83,42 @@ const CustomGraphs = () => {
     // Scroll to top smoothly
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
+    // Set edit context
+    setEditGraphId(savedGraph.iGraph_id);
+    setEditGraphData(savedGraph);
+    
     // Load the saved graph configuration
     await loadSavedGraph(savedGraph);
   };
 
+  // Handle delete graph
+  const handleDeleteGraph = async (graphId) => {
+    try {
+      const apiService = (await import('../services/apiService')).default;
+      const result = await apiService.deleteCustomGraph(graphId);
+      
+      if (result.status === 'success') {
+        // Clear edit mode if deleted graph was being edited
+        if (editGraphId === graphId) {
+          setEditGraphId(null);
+          setEditGraphData(null);
+        }
+        // Refresh the saved graphs list
+        refreshSavedGraphs();
+      } else {
+        alert('Failed to delete graph: ' + result.message);
+      }
+    } catch (error) {
+      console.error('Error deleting graph:', error);
+      alert('Failed to delete graph');
+    }
+  };
+
   // Handle successful save - refresh the list
-  const handleSaveSuccess = () => {
+  const handleSaveSuccess = (message) => {
+    // Clear edit mode when successfully saved
+    setEditGraphId(null);
+    setEditGraphData(null);
     refreshSavedGraphs();
     setIsSaveGraphModalOpen(false);
   };
@@ -357,6 +389,7 @@ const CustomGraphs = () => {
                   savedGraphs={savedGraphs}
                   loading={loadingSavedGraphs}
                   onGraphClick={handleSavedGraphClick}
+                  onGraphDelete={handleDeleteGraph}
                 />
               </div>
             </div>
@@ -377,14 +410,25 @@ const CustomGraphs = () => {
       </Modal>
 
       {/* Modal for Save Graph Form */}
-      <Modal isOpen={isSaveGraphModalOpen} onClose={() => setIsSaveGraphModalOpen(false)} size="large">
+      <Modal isOpen={isSaveGraphModalOpen} onClose={() => {
+        setIsSaveGraphModalOpen(false);
+        // Clear edit mode when modal is closed
+        setEditGraphId(null);
+        setEditGraphData(null);
+      }} size="large">
         <CustomGraphsForm
-          onClose={() => setIsSaveGraphModalOpen(false)}
+          onClose={() => {
+            setIsSaveGraphModalOpen(false);
+            setEditGraphId(null);
+            setEditGraphData(null);
+          }}
           machineName={machineName}
           selectedGraphs={selectedGraphs}
           selectedSeries={selectedSeries}
           graphConfigs={graphConfigs}
           onSaveSuccess={handleSaveSuccess}
+          editGraphId={editGraphId}
+          editGraphData={editGraphData}
         />
       </Modal>
     </Layout>

@@ -13,4 +13,6 @@ urlpatterns = [
     path('available-series/', views.get_available_series, name='get_available_series'),
     path('save-custom-graph/', views.save_custom_graph, name='save_custom_graph'),
     path('get-custom-graphs/', views.get_custom_graphs, name='get_custom_graphs'),
+    path('update-custom-graph/<int:graph_id>/', views.update_custom_graph, name='update_custom_graph'),
+    path('delete-custom-graph/<int:graph_id>/', views.delete_custom_graph, name='delete_custom_graph'),
 ]

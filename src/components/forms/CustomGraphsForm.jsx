@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../../services/apiService';
 
-const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries, graphConfigs, onSaveSuccess }) => {
+const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries, graphConfigs, onSaveSuccess, editGraphId, editGraphData }) => {
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     title: '',
@@ -11,6 +11,7 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const isEditMode = !!editGraphId;
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -28,6 +29,17 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
     fetchUsers();
   }, []);
 
+  // Populate form when in edit mode
+  useEffect(() => {
+    if (isEditMode && editGraphData) {
+      setFormData({
+        title: editGraphData.vTitle || '',
+        user_id: editGraphData.iUser_id || '',
+      });
+      setAddToDashboard(editGraphData.cAddToDashboard || 'N');
+    }
+  }, [isEditMode, editGraphData]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -36,7 +48,7 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e, saveAndNext = false) => {
     e.preventDefault();
     
     // Validation
@@ -56,24 +68,42 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
     try {
       // Prepare data to save
       const graphData = {
-        machine_name: machineName,
         title: formData.title,
         user_id: formData.user_id,
         graph_types: selectedGraphs, // Array of graph IDs
         series: selectedSeries, // Object with graphId as key and series array as value
         add_to_dashboard: addToDashboard,
-
       };
 
-      const result = await apiService.saveCustomGraph(graphData);
+      let result;
+      
+      // If in edit mode and "Save" button is clicked, update existing record
+      if (isEditMode && !saveAndNext) {
+        result = await apiService.updateCustomGraph(editGraphId, graphData);
+      } else {
+        // If "Save & Next" or creating new, save as new record
+        graphData.machine_name = machineName;
+        result = await apiService.saveCustomGraph(graphData);
+      }
       
       if (result.status === 'success') {
         setSuccess(true);
+        const successMessage = isEditMode && !saveAndNext 
+          ? 'Custom graph updated successfully!'
+          : 'Custom graph saved successfully!';
+        
         setTimeout(() => {
           if (onSaveSuccess) {
-            onSaveSuccess(); // Trigger refresh of saved graphs list
+            onSaveSuccess(successMessage); // Trigger refresh of saved graphs list
           }
-          onClose();
+          if (saveAndNext) {
+            // Reset form for next entry
+            setFormData({ title: '', user_id: formData.user_id });
+            setAddToDashboard('N');
+            setSuccess(false);
+          } else {
+            onClose();
+          }
         }, 1500);
       } else {
         throw new Error(result.message || 'Failed to save custom graph');
@@ -109,7 +139,9 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
 
   return (
     <div className="custom-graph-form bg-white border rounded-lg p-6 overflow-hidden dark:bg-gray-800 dark:shadow-gray-900/50">
-      <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Save Custom Graph</h2>
+      <h2 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">
+        {isEditMode ? 'Edit Custom Graph' : 'Save Custom Graph'}
+      </h2>
       {error && (
         <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
           {error}
@@ -122,7 +154,7 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
         {/* Machine Name (Read-only) */}
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
@@ -270,20 +302,28 @@ const CustomGraphsForm = ({ onClose, machineName, selectedGraphs, selectedSeries
         <hr className='my-0 border-gray-300 dark:border-gray-600'/>
         {/* Form Actions */}
         <div className="flex justify-end gap-3 pt-0">
-          <button
+          {/* <button
             type="button"
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
             disabled={loading}
           >
             Cancel
-          </button>
+          </button> */}
           <button
             type="submit"
             disabled={loading}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-md transition-colors"
           >
-            {loading ? 'Saving...' : 'Save'}
+            {loading ? (isEditMode ? 'Updating...' : 'Saving...') : (isEditMode ? 'Update' : 'Save')}
+          </button>
+          <button
+            type="button"
+            onClick={(e) => handleSubmit(e, true)}
+            disabled={loading}
+            className="px-4 py-2 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+          >
+            {loading ? 'Saving...' : 'Save & Next'}
           </button>
         </div>
       </form>

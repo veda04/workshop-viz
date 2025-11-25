@@ -789,3 +789,111 @@ def get_custom_graphs(request):
             'message': f'Internal server error: {str(e)}',
             'data': []
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['PUT'])
+def update_custom_graph(request, graph_id):
+    """Update an existing custom graph"""
+    try:
+        data = request.data
+        title = data.get('title', '')
+        user_id = data.get('user_id', '')
+        add_to_dashboard = data.get('add_to_dashboard', 'N')
+        graph_types = data.get('graph_types', [])
+        series = data.get('series', {})
+        
+        # Validation
+        if not title:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Graph title is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'User ID is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if add_to_dashboard not in ['Y', 'N']:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'add_to_dashboard must be either "Y" or "N"',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not graph_types or len(graph_types) == 0:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'At least one graph type must be selected',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Convert graph_types and series to JSON strings
+        graph_types_json = json.dumps(graph_types)
+        series_json = json.dumps(series)
+        
+        logger.info(f"Updating custom graph {graph_id}: {title}")
+        
+        # Update in database
+        mysql_service = MySQLService()
+        success = mysql_service.update_custom_graph(
+            graph_id,
+            title,
+            graph_types_json,
+            series_json,
+            user_id,
+            add_to_dashboard
+        )
+        
+        if success:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Custom graph updated successfully',
+                'data': {'graph_id': graph_id}
+            }, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to update custom graph',
+                'data': {}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    except Exception as e:
+        logger.error(f"Error updating custom graph: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['DELETE'])
+def delete_custom_graph(request, graph_id):
+    """Delete a custom graph"""
+    try:
+        logger.info(f"Deleting custom graph {graph_id}")
+        
+        mysql_service = MySQLService()
+        success = mysql_service.delete_custom_graph(graph_id)
+        
+        if success:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Custom graph deleted successfully',
+                'data': {}
+            }, status=status.HTTP_200_OK)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Custom graph not found or already deleted',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+    
+    except Exception as e:
+        logger.error(f"Error deleting custom graph: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

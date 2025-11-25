@@ -232,6 +232,51 @@ class MySQLService:
         finally:
             self.close()
 
+    def update_custom_graph(self, graph_id, title, graph_types_json, series_json, user_id, add_to_dashboard):
+        """Update an existing custom graph"""
+        try:
+            if not self.connect():
+                return False
+            cursor = self.connection.cursor()
+            query = """
+                UPDATE machine_custom_graphs 
+                SET vTitle = %s, 
+                    vGraph_types = %s, 
+                    vSeries = %s, 
+                    iUser_id = %s, 
+                    cAddToDashboard = %s,
+                    dtModified = NOW()
+                WHERE iGraph_id = %s
+            """
+            cursor.execute(query, (title, graph_types_json, series_json, user_id, add_to_dashboard, graph_id))
+            self.connection.commit()
+            rows_affected = cursor.rowcount
+            cursor.close()
+            return rows_affected > 0
+        except Exception as e:
+            logger.error(f"Error updating custom graph: {str(e)}")
+            return False
+        finally:
+            self.close()
+
+    def delete_custom_graph(self, graph_id):
+        """Delete a custom graph"""
+        try:
+            if not self.connect():
+                return False
+            cursor = self.connection.cursor()
+            query = "DELETE FROM machine_custom_graphs WHERE iGraph_id = %s"
+            cursor.execute(query, (graph_id,))
+            self.connection.commit()
+            rows_affected = cursor.rowcount
+            cursor.close()
+            return rows_affected > 0
+        except Exception as e:
+            logger.error(f"Error deleting custom graph: {str(e)}")
+            return False
+        finally:
+            self.close()
+
     def close(self):
         """Close the MySQL connection"""
         if self.connection and self.connection.is_connected():

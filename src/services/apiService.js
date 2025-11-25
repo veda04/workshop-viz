@@ -96,6 +96,21 @@ class ApiService {
     });
     return this.fetchWithErrorHandling(url);
   }
+
+  async updateCustomGraph(graphId, graphData) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.updateCustomGraph}${graphId}/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'PUT',
+      body: JSON.stringify(graphData),
+    });
+  }
+
+  async deleteCustomGraph(graphId) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.deleteCustomGraph}${graphId}/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'DELETE',
+    });
+  }
 }
 
 export default new ApiService();

@@ -1,7 +1,8 @@
 import React from 'react';
 import LoadingSpinner from './common/LoadingSpinner';
+import { TrashIcon } from '@heroicons/react/24/outline'
 
-const SavedGraphsSection = ({ savedGraphs, loading, onGraphClick }) => {
+const SavedGraphsSection = ({ savedGraphs, loading, onGraphClick, onGraphDelete }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -42,13 +43,14 @@ const SavedGraphsSection = ({ savedGraphs, loading, onGraphClick }) => {
           key={graph.iGraph_id}
           graph={graph}
           onClick={() => onGraphClick(graph)}
+          onDelete={() => onGraphDelete(graph.iGraph_id)}
         />
       ))}
     </div>
   );
 };
 
-const SavedGraphCard = ({ graph, onClick }) => {
+const SavedGraphCard = ({ graph, onClick, onDelete }) => {
   const isAddedToDashboard = graph.cAddToDashboard === 'Y';
   
   // Parse JSON if needed
@@ -61,12 +63,27 @@ const SavedGraphCard = ({ graph, onClick }) => {
     : graph.vSeries;
   
   const seriesCount = Object.values(series || {}).flat().length;
+
+  const handleDelete = (e) => {
+    e.stopPropagation(); // Prevent triggering the card click
+    if (window.confirm('Are you sure you want to delete this custom graph?')) {
+      onDelete();
+    }
+  };
   
   return (
     <div
       onClick={onClick}
       className="relative bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition-all duration-200 cursor-pointer border-2 border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 overflow-hidden group"
     >
+      {/* delete icon */}
+      <button 
+        onClick={handleDelete}
+        className="absolute top-3 right-2 z-10 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+        title="Delete graph"
+      >
+        <TrashIcon className="w-5 h-5" />
+      </button>
       {/* Card Content */}
       <div className="p-4">
         <h4 className="text-base font-semibold text-gray-800 dark:text-white mb-3 pr-8 truncate">
