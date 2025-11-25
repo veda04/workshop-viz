@@ -616,3 +616,4 @@ def getCustomGraphData(data):
 	Returns:
 		list: A list of data points for the custom graph.
 	"""
+	pprint.pprint(data, indent=2, width=120)

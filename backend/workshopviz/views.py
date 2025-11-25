@@ -562,7 +562,7 @@ def custom_graph_data(request):
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
 
-        print("******* Custom graph data request:", machine_name, selected_graphs, selected_series, time_range)
+        #print("******* Custom graph data request:", machine_name, selected_graphs, selected_series, time_range)
         
         if not selected_graphs:
             return JsonResponse({
@@ -585,9 +585,35 @@ def custom_graph_data(request):
                 'data': {}
             }, status=status.HTTP_404_NOT_FOUND)
         
+        # Load the config file to get graph names
+        with open(file_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
+        machine_config = config_data.get(machine_name, {})
+        data_types = list(machine_config.get('Data', {}).items())
+        
+        # Build graph info with IDs and names
+        graphs_info = []
+        for graph_id in selected_graphs:
+            graph_index = int(graph_id) - 1
+            if graph_index >= 0 and graph_index < len(data_types):
+                data_type_name, data_type_config = data_types[graph_index]
+                graphs_info.append({
+                    'id': graph_id,
+                    'name': data_type_name
+                })
+        
+        custom_graph_config_data = {
+            'machine_name': machine_name,
+            'date_from': custom_date_from,
+            'date_to': custom_date_to,
+            'graphs': graphs_info,  # Now includes both id and name
+            'series': selected_series
+        }
+
         # Get full dashboard data
-        machine_data = getCustomGraphData(request.data, machine_name)
-        print("******* Machine data retrieved for custom graph data:", machine_data) 
+        machine_data = getCustomGraphData(custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
+        pprint.pprint( machine_data, indent=2, width=120) 
         
         # Filter data based on selected graphs and series
         combined_data = {
