@@ -61,7 +61,7 @@ class ApiService {
     return this.fetchWithErrorHandling(url);
   }
 
-  async getCustomGraphData(requestData, machineName) {
+  async generateCustomGraphData(requestData, machineName) {
     console.log('Request Data for Custom Graph:', requestData);
     const url = `${API_BASE_URL}${API_ENDPOINTS.customGraphData}`;
     return this.fetchWithErrorHandling(url, {

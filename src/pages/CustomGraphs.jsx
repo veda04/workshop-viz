@@ -156,7 +156,7 @@ const CustomGraphs = () => {
           <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Select Graph Types
+                Select Data Types
                 <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
                   ({selectedGraphs.length}/2)
                 </span>
@@ -195,7 +195,7 @@ const CustomGraphs = () => {
               </div>
 
               {/* Time Range Selection */}
-              <div className="mt-6">
+              {/* <div className="mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   Time Range
                 </h3>
@@ -211,7 +211,7 @@ const CustomGraphs = () => {
                   <option value="12h">Last 12 hours</option>
                   <option value="24h">Last 24 hours</option>
                 </select>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -256,9 +256,14 @@ const CustomGraphs = () => {
                             const isLoading = loadingSeries[graphId];
                             
                             return (
-                              <div key={graphId} className="pt-4 border-t border-gray-200 dark:border-gray-700 first:border-t-0 first:pt-0">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                                  {config?.title} - Select Series
+                              <div key={graphId} className="pt-4 border-t border-gray-200 dark:border-gray-700 first:border-t first:pt-4">
+                                <h3 className="text-base text-gray-900 dark:text-white mb-4 flex items-center">
+                                  <span 
+                                    className="inline-flex items-center px-2 py-1 mr-0 rounded-md text-xs font-medium bg-blue-100 
+                                    text-blue-800 dark:bg-blue-900 dark:text-blue-200 border border-blue-300 dark:border-blue-700 shadow-sm">
+                                      {config?.title}  
+                                  </span> 
+                                  <span className="ml-1">{config?.pivot ? ': Select ' + config.pivot : ''}</span>
                                 </h3>
                                 {isLoading ? (
                                   <div className="flex justify-start items-center flex-col py-8">

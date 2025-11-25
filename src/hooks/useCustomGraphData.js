@@ -63,7 +63,7 @@ export const useCustomGraphData = (machineName) => {
   const fetchAvailableSeries = useCallback(async (graphId) => {
     try {
       setLoadingSeries(prev => ({ ...prev, [graphId]: true }));
-      const response = await apiService.getAvailableSeries(graphId, machineName, '1h');
+      const response = await apiService.getAvailableSeries(graphId, machineName, '3h');
       
       if (response.status === 'success') {
         setAvailableSeries(prev => ({
@@ -149,7 +149,7 @@ export const useCustomGraphData = (machineName) => {
       setGeneratingGraph(true);
       setError(null);
       
-      const response = await apiService.getCustomGraphData({
+      const response = await apiService.generateCustomGraphData({
         graphs: selectedGraphs,
         series: selectedSeries,
         range: timeRange,

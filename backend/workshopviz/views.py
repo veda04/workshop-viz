@@ -14,7 +14,25 @@ from django.conf import settings
 import os
 from influxdb_client import InfluxDBClient
 from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
-from helper.dashboard import getInfluxData
+from helper.dashboard import getInfluxData, getDataSeries, getCustomGraphData
+import pprint
+import pandas as pd
+from django.shortcuts import render
+from reactivex import catch
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from django.http import JsonResponse
+from .influx_service import InfluxDBService
+from .mysql_service import MySQLService
+import json
+from datetime import datetime, timedelta, timezone
+import logging
+from django.conf import settings
+import os
+from influxdb_client import InfluxDBClient
+from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
+from helper.dashboard import getDataSeries, getInfluxData
 import pprint
 import pandas as pd
 
@@ -380,13 +398,13 @@ def add_notes(request):
             'message': f'Internal server error: {str(e)}',
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+    
 @api_view(['GET'])
 def get_graph_configurations(request):
     """Get available graph configurations from config file"""
     try:
         machine_name = request.GET.get('machine_name')
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}-v2.json")    # changed the config file to -v2.json
         
         if not os.path.exists(file_path):
             return JsonResponse({
@@ -397,28 +415,37 @@ def get_graph_configurations(request):
         
         with open(file_path, 'r', encoding='utf-8') as f:
             config_data = json.load(f)
-        # Extract only Graph type configurations
+        
+        # The JSON structure has the machine name as the top-level key. e.g., {"Hurco": {"Data": {...}}}
+        machine_config = config_data.get(machine_name, {})
+        
+        # Extract graph configurations from the 'Data' section
         graph_configs = []
-        for key, value in config_data.items():
-            if isinstance(value, dict) and value.get('Type') == 'Graph':
-                # Get available series from the Pivot field in Queries
-                available_series = []
-                if 'Queries' in value:
-                    for query in value['Queries']:
-                        pivot = query.get('Pivot')
-                        if pivot and pivot != False:
-                            # For now, we'll mark this as a series group
-                            # The actual series will be fetched when data is retrieved
-                            available_series.append(pivot)
+        
+        if 'Data' in machine_config and isinstance(machine_config['Data'], dict):
+            for idx, (title, config) in enumerate(machine_config['Data'].items(), start=1):
+                # Extract unit and pivot information
+                bucket = config.get('Bucket', '')
+                measurement = config.get('Measurement', '')
+                unit = config.get('Units', '')
+                pivot = config.get('Pivot', None)
+                scale = config.get('Scale', 'linear')
+                
+            
                 graph_configs.append({
-                    'id': key,
-                    'title': value.get('Title', f'Graph {key}'),
-                    'unit': value['Queries'][0].get('Units', '') if value.get('Queries') else '',
-                    'defaultRange': value.get('DefaultRange', '3h'),
-                    'pivot': value['Queries'][0].get('Pivot') if value.get('Queries') else None,
+                    'id': str(idx),  # Use sequential IDs
+                    'title': title,  # Use the key as title (e.g., 'Acceleration', 'Air Flow', 'Air Pressure')
+                    'unit': unit,
+                    'bucket': bucket,
+                    'measurement': measurement,
+                    'pivot': pivot,
+                    'scale': scale,
+                    'timeRange': '3h',  # Default time range
                     'availableSeries': []  # Will be populated dynamically
                 })
         
+        logger.info(f"Generated {len(graph_configs)} graph configurations with titles: {[g['title'] for g in graph_configs]}")
+
         return JsonResponse({
             'status': 'success',
             'message': 'Graph configurations retrieved successfully',
@@ -432,9 +459,101 @@ def get_graph_configurations(request):
             'message': f'Internal server error: {str(e)}',
             'data': []
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['GET'])
+def get_available_series(request):
+    """Get available series for a specific graph"""
+    try:
+        machine_name = request.GET.get('machine_name')
+        graph_id = request.GET.get('graph_id')
+        time_range = request.GET.get('range', '3h')
+        
+        if not graph_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Graph ID is required',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Load the configuration file
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}-v2.json")
+        
+        if not os.path.exists(file_path):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Configuration file not found for machine: {machine_name}',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Load the JSON configuration
+        with open(file_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
+        # Extract machine configuration
+        machine_config = config_data.get(machine_name, {})
+        
+        if 'Data' not in machine_config or not isinstance(machine_config['Data'], dict):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid configuration structure',
+                'data': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Get the data type configuration based on graph_id
+        # graph_id corresponds to the index in the Data dictionary (1-indexed)
+        data_types = list(machine_config['Data'].items())
+        graph_index = int(graph_id) - 1
+        
+        if graph_index < 0 or graph_index >= len(data_types):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Invalid graph ID: {graph_id}',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        data_type_name, data_type_config = data_types[graph_index]
+        
+        # pprint.pprint(f"******** Getting available series for: {data_type_name} (graph_id: {graph_id})")
+        
+        available_series = []
+        
+        # Check if this data type has Predicates - if yes, use getDataSeries
+        if 'Predicates' in data_type_config:
+            pprint.pprint(f"Using getDataSeries for {data_type_name} (has Predicates)")
+            available_series = getDataSeries(data_type_config)
+
+            #pprint.pprint(f"Available series from getDataSeries: {available_series}")
+            
+            # getDataSeries returns False if Predicates not found (shouldn't happen here)
+            if available_series is False:
+                available_series = []
+        else:
+            # No Predicates - this means it's a simple measurement without pivot
+            # In this case, there's typically only one series or we can't determine series dynamically
+            logger.info(f"No Predicates found for {data_type_name}, returning empty or single series")
+            # For measurements without Predicates and Pivot, we might just return the measurement name
+            # or an empty list as the frontend should handle this case
+            available_series = []
+        
+        logger.info(f"Available series for graph {graph_id} ({data_type_name}): {available_series}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Available series retrieved successfully',
+            'data_for': data_type_name,
+            'data': available_series
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving available series: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['POST'])
-def get_custom_graph_data(request):
+def custom_graph_data(request):
     """Get custom graph data based on selected graphs and series"""
     try:
         data = request.data
@@ -442,6 +561,8 @@ def get_custom_graph_data(request):
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
+
+        print("******* Custom graph data request:", machine_name, selected_graphs, selected_series, time_range)
         
         if not selected_graphs:
             return JsonResponse({
@@ -455,7 +576,7 @@ def get_custom_graph_data(request):
         custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
         custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}-v2.json")
         
         if not os.path.exists(file_path):
             return JsonResponse({
@@ -465,7 +586,8 @@ def get_custom_graph_data(request):
             }, status=status.HTTP_404_NOT_FOUND)
         
         # Get full dashboard data
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
+        machine_data = getCustomGraphData(request.data, machine_name)
+        print("******* Machine data retrieved for custom graph data:", machine_data) 
         
         # Filter data based on selected graphs and series
         combined_data = {
@@ -532,77 +654,6 @@ def get_custom_graph_data(request):
             'message': f'Internal server error: {str(e)}',
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-@api_view(['GET'])
-def get_available_series(request):
-    """Get available series for a specific graph"""
-    try:
-        machine_name = request.GET.get('machine_name')
-        graph_id = request.GET.get('graph_id')
-        time_range = request.GET.get('range', '1h')
-        
-        if not graph_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Graph ID is required',
-                'data': []
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Calculate time range
-        delta = parse_range_to_timedelta(time_range)
-        custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
-        custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
-        
-        if not os.path.exists(file_path):
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Configuration file not found for machine: {machine_name}',
-                'data': []
-            }, status=status.HTTP_404_NOT_FOUND)
-        
-        # Get data for this specific graph
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
-        
-        available_series = []
-        
-        # machine_data is a list, find the item that matches the graph_id
-        # The index in the list corresponds to the graph ID (index 0 = graph 1)
-        graph_index = int(graph_id) - 1
-        
-        if graph_index >= 0 and graph_index < len(machine_data):
-            item = machine_data[graph_index]
-            
-            # Check if this item has config and Series
-            if 'config' in item and 'Series' in item['config']:
-                available_series = item['config']['Series']
-            # Fallback: extract from data if Series not in config
-            elif 'data' in item and item['data']:
-                for df_data in item['data']:
-                    if df_data and len(df_data) > 0:
-                        # Get all columns except 'time'
-                        series_names = [key for key in df_data[0].keys() if key.lower() not in ['time', 'timestamp', '_time']]
-                        available_series.extend(series_names)
-                # Remove duplicates while preserving order
-                available_series = list(dict.fromkeys(available_series))
-        
-        logger.info(f"Available series for graph {graph_id}: {available_series}")
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Available series retrieved successfully',
-            'data': available_series
-        }, status=status.HTTP_200_OK)
-    
-    except Exception as e:
-        logger.error(f"Error retrieving available series: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}',
-            'data': []
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 @api_view(['POST'])
 def save_custom_graph(request):

@@ -564,3 +564,55 @@ def _getPivotKey(data,specifiedTags):
 	print("Pivot key:", pivotKey)
 	return pivotKey
 """
+
+def getDataSeries(data):
+ """
+ Processes a JSON-formatted data type (eg. Hurco -> Data -> Temperature) to extract series names.
+
+ Parameters:
+  data (dict): A dictionary containing the data type specification
+   
+ Returns:
+  If there are predicates in the data dict, it will return all the series for that measurement with the predicates applied.
+  If there are not predicates, it will return False (However, logic higher up the stack will likely check first and prevent from running)
+ """
+# print("Getting data series for data:", data)
+ if("Predicates" not in data):
+  return False
+ series = []
+ predicateStrings =[]
+
+ for predicate in data["Predicates"].keys():
+  for predicateValue in data["Predicates"][predicate]:
+   if(predicateValue[0] == "/" and predicateValue[-1] == "/"):
+    #This is a regex
+    predicateStrings.append(f"r.{predicate} =~ {predicateValue}")
+   else:
+    predicateStrings.append(f"r.{predicate} == \"{predicateValue}\"")
+ predicateString = " or ".join(predicateStrings)
+ influxQuery = f"import \"influxdata/influxdb/schema\"\
+     schema.tagValues(\
+      bucket: \"{data['Bucket']}\", \
+      predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
+         tag: \"{data["Pivot"]}\")"
+ results = _runQuery(influxQuery)
+
+ pprint.pprint(results)
+ 
+ for table in results:
+  for record in table.records:
+   series.append(record.values.get("_value"))
+ return series
+
+
+def getCustomGraphData(data):
+	"""
+	Retrieves custom graph data based on the provided request data and machine name.
+
+	Parameters:
+		requestData (dict): The request data containing graph configuration.
+		machine_name (str): The name of the machine for which to retrieve data.
+
+	Returns:
+		list: A list of data points for the custom graph.
+	"""

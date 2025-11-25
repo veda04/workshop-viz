@@ -12,8 +12,6 @@ export const API_ENDPOINTS = {
   availableSeries: '/api/available-series/',
   saveCustomGraph: '/api/save-custom-graph/',
   getCustomGraph: '/api/get-custom-graphs/',
-  updateCustomGraph: '/api/update-custom-graph/',
-  deleteCustomGraph: '/api/delete-custom-graph/',
 };
 
 export const buildUrl = (endpoint, params = {}) => {
