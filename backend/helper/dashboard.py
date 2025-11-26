@@ -366,8 +366,14 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 
 	with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
 		configFile = f.read()
+	
+	#  if configFile is empty
+	if not configFile:
+		raise ValueError("Configuration file is empty")
 
 	jsonQuery = json.loads(configFile)
+
+	print("Loaded JSON Query Configuration:", jsonQuery)
 
 	# inject custom date range into each query
 	if custom_date_from or custom_date_to:
@@ -458,7 +464,7 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	results.append({
 		'sensor_list': sensor_list,
 	})
-	#print(results)
+	# print('*******Results:', results)
 	return results
 
 	# dummy json

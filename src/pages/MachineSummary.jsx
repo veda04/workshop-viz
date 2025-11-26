@@ -1,17 +1,20 @@
 import React, { useState } from 'react';
-import Layout from '../layouts/Layout';
-import Modal from '../Modal';
-import Sensors from './Sensors';
-import DashboardBlock from './DashboardBlock';
-import LoadingSpinner from '../common/LoadingSpinner';
-import ErrorMessage from '../common/ErrorMessage';
-import { useDashboardData } from '../../hooks/useDashboardData';
-import { useModalManager } from '../../hooks/useModalManager';
-import {getUnitByTitle} from '../../utils/unitUtils';
-import { getFixedColors, getRandomColors} from '../../utils/chartUtils';
+import { useSearchParams } from 'react-router-dom';
+import Layout from '../components/layouts/Layout';
+import Modal from '../components/Modal';
+import Sensors from '../components/dashboard/Sensors';
+import DashboardBlock from '../components/dashboard/DashboardBlock';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import ErrorMessage from '../components/common/ErrorMessage';
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useModalManager } from '../hooks/useModalManager';
+import {getUnitByTitle} from '../utils/unitUtils';
+import { getFixedColors, getRandomColors} from '../utils/chartUtils';
 
 const MachineSummary = () => {
-  const {dashboardData, loading, error } = useDashboardData('Hurco');
+  const [searchParams] = useSearchParams();
+  const machineName = searchParams.get('machineName'); 
+  const {dashboardData, loading, error } = useDashboardData(machineName);
   const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
 
   const {
@@ -25,6 +28,8 @@ const MachineSummary = () => {
   return (
     <Layout> 
       <div className="dash-cover p-6 space-y-6">
+        {/* Machine Name Header */}
+
         <div className="flex flex-wrap gap-4">
           {loading && dashboardData.length === 0 && (
             <LoadingSpinner message="Loading dashboard data..." />

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../../services/apiService';
 
-const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
+const NotesForm = ({ onClose, machineName }) => {
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
     machine_name: machineName,

@@ -111,6 +111,11 @@ class ApiService {
       method: 'DELETE',
     });
   }
+
+  async getConfigMachineList() {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.configMachineList}`;
+    return this.fetchWithErrorHandling(url);
+  }
 }
 
 export default new ApiService();

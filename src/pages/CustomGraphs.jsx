@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/layouts/Layout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -11,7 +12,8 @@ import { useCustomGraphData } from '../hooks/useCustomGraphData';
 import { getFixedColors } from '../utils/chartUtils';
 
 const CustomGraphs = () => {
-  const machineName = 'Hurco'; // TODO: Replace with selected machine name
+  const [searchParams] = useSearchParams();
+  const machineName = searchParams.get('machineName');
   
   // Use custom hook for graph data management
   const {

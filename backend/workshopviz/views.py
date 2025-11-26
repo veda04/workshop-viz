@@ -134,7 +134,7 @@ def parse_range_to_timedelta(range_str):
 @api_view(['GET'])
 def get_dashboard_config(request):
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
+        machine_name = request.GET.get('machine_name')
         selected_range = request.GET.get('range', None)
         custom_from = request.GET.get('from', None)
         custom_to = request.GET.get('to', None) 
@@ -207,7 +207,7 @@ def get_dashboard_config(request):
 def get_current_booking(request):
     """Get current booking information for a machine"""
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
+        machine_name = request.GET.get('machine_name')
 
         mysql_service = MySQLService()
         asset_id = mysql_service.get_machine_id(machine_name)
@@ -519,7 +519,7 @@ def get_available_series(request):
         
         # Check if this data type has Predicates - if yes, use getDataSeries
         if 'Predicates' in data_type_config:
-            pprint.pprint(f"Using getDataSeries for {data_type_name} (has Predicates)")
+            #pprint.pprint(f"Using getDataSeries for {data_type_name} (has Predicates)")
             available_series = getDataSeries(data_type_config)
 
             #pprint.pprint(f"Available series from getDataSeries: {available_series}")
@@ -592,28 +592,31 @@ def custom_graph_data(request):
         machine_config = config_data.get(machine_name, {})
         data_types = list(machine_config.get('Data', {}).items())
         
-        # Build graph info with IDs and names
+        # Build graph info with IDs and names and series 
         graphs_info = []
         for graph_id in selected_graphs:
             graph_index = int(graph_id) - 1
             if graph_index >= 0 and graph_index < len(data_types):
                 data_type_name, data_type_config = data_types[graph_index]
                 graphs_info.append({
-                    'id': graph_id,
-                    'name': data_type_name
+                    'id': int(graph_id),
+                    'name': data_type_name,
+                    'series': selected_series.get(str(graph_id), [])
                 })
-        
+
         custom_graph_config_data = {
-            'machine_name': machine_name,
             'date_from': custom_date_from,
             'date_to': custom_date_to,
-            'graphs': graphs_info,  # Now includes both id and name
-            'series': selected_series
+            'data_types': graphs_info,  # Now includes both id and name and series 
+            'machine_name': machine_name,
         }
+
+        pprint.pprint("****** Custom Graph Config Data  :")        
+        #pprint.pprint( custom_graph_config_data, indent=2, width=120)
 
         # Get full dashboard data
         machine_data = getCustomGraphData(custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
-        pprint.pprint( machine_data, indent=2, width=120) 
+        #pprint.pprint( machine_data, indent=2, width=120) 
         
         # Filter data based on selected graphs and series
         combined_data = {
@@ -799,7 +802,7 @@ def save_custom_graph(request):
 def get_custom_graphs(request):
     """Get saved custom graphs for a machine"""
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco') # Need to change th machine name 
+        machine_name = request.GET.get('machine_name') 
         if not machine_name:
             return JsonResponse({
                 'status': 'error',
@@ -973,4 +976,42 @@ def delete_custom_graph(request, graph_id):
             'status': 'error',
             'message': f'Internal server error: {str(e)}',
             'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_config_machine_list(request):
+    """Get list of available machines from config directory"""
+    try:
+        config_dir = MACHINE_CONFIG_PATH
+        
+        if not os.path.exists(config_dir):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Config directory not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all JSON files in config directory
+        json_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
+        
+        # Filter out files with '-' in name and remove .json extension
+        machine_names = [
+            os.path.splitext(f)[0] 
+            for f in json_files 
+            if '-' not in f
+        ]
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Machine list retrieved successfully',
+            'data': machine_names
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving machine list: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

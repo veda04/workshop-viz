@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useBookingData } from '../../hooks/useBookingData';
-import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon, HomeIcon } from '@heroicons/react/24/outline';
 import { useDarkMode } from '../../context/DarkModeContext';
 import SideMenu from './SideMenu';
 
-const Header = () => {
+const Header = ({ machineName }) => {
   const [airValveOpen, setAirValveOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -13,7 +13,7 @@ const Header = () => {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
-  const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
+  //const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
   const { bookingData, loading, error } = useBookingData(machineName);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
@@ -114,9 +114,8 @@ const Header = () => {
           >
             <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
           </button>
-          
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2">
-             <a href="/machine-summary" className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+             <a href={`/machine-summary?machineName=${machineName}`} className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
                 {machineName}
               </a>
           </h1>
@@ -238,7 +237,7 @@ const Header = () => {
           </div>
         </div>
         
-        <div className="text-right flex items-center space-x-2 pr-10">
+        <div className="text-right flex items-center space-x-2 pr-0">
           <div className="text-xl text-gray-600 dark:text-gray-300 uppercase tracking-wide transition-colors">
             {currentDate} | {currentTime} 
           </div>
@@ -261,13 +260,21 @@ const Header = () => {
             </button>
           </div>
           <button
-            className="fixed top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
-            title="Add Note"
+            className="top-6_7 right-6 z-50 p-1 bg-yellow-500 dark:bg-yellow-600 text-white rounded-lg shadow hover:bg-yellow-600 dark:hover:bg-yellow-700 transition-colors"
+            title="Make Notes"
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('openNotesModal'))}
           >
             <PencilSquareIcon className="w-6 h-6 text-white" />
           </button>
+          <a
+            href="/home"
+            title="Go to Home"
+            className="bg-green-500 dark:bg-green-600 p-1 rounded-lg shadow-md flex items-center space-x-2 transition-colors"
+            aria-label="Go to home"
+          >
+            <HomeIcon className="w-6 h-6 text-white" />
+          </a>
         </div>
       </div>
       {/* check if bookingData is available */}
@@ -304,8 +311,7 @@ const Header = () => {
       </div>
 
       {/* Side Menu Component */}
-      <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} />
-      
+      <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} machineName={machineName} />
     </div>
   );
 };

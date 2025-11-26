@@ -1,9 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Header from './Header';
 import Modal from '../Modal';
 import NotesForm from '../forms/NotesForm';
 
 const Layout = ({ children, showHeader = true }) => {
+  const [searchParams] = useSearchParams();
+  const machineName = searchParams.get('machineName');
+
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
   // Add event listener for opening notes modal
@@ -22,14 +26,14 @@ const Layout = ({ children, showHeader = true }) => {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen transition-colors duration-200">
-      {showHeader && <Header />}
+      {showHeader && <Header machineName={machineName} />}
       <main>
         {children}
       </main>
 
       {/* Global Notes Modal - accessible from all pages via Header button */}
       <Modal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} size="large">
-        <NotesForm onClose={() => setIsNotesModalOpen(false)} />
+        <NotesForm onClose={() => setIsNotesModalOpen(false)} machineName={machineName} />
       </Modal>
     </div>
   );

@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
   availableSeries: '/api/available-series/',
   saveCustomGraph: '/api/save-custom-graph/',
   getCustomGraph: '/api/get-custom-graphs/',
+  configMachineList: '/api/config-machine-list/',    // for getting list of machines listed in config on home page
 };
 
 export const buildUrl = (endpoint, params = {}) => {
