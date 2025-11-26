@@ -79,7 +79,7 @@ const SavedGraphCard = ({ graph, onClick, onDelete }) => {
       {/* delete icon */}
       <button 
         onClick={handleDelete}
-        className="absolute top-3 right-2 z-10 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+        className="absolute top-3 right-2 z-10 text-red-600 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
         title="Delete graph"
       >
         <TrashIcon className="w-5 h-5" />
