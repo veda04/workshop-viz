@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import RGL, { WidthProvider } from "react-grid-layout";
 import _ from "lodash";
 import 'react-grid-layout/css/styles.css';
@@ -19,24 +19,7 @@ const ReactGridLayout = WidthProvider(RGL);
 const MachineSummary = () => {
   const {dashboardData, loading, error } = useDashboardData('Hurco');
   const [blockLoadingStates, setBlockLoadingStates] = useState({});
-
-  const [layout, setLayout] = useState(
-    dashboardData.map((item, index) => {
-      const y = _.result(item, "y") || Math.ceil(Math.random() * 4) + 1;
-      return {
-        i: `block-${index}`,
-        x: (index * 2) % 12,
-        y: Math.floor(index / 6) * y,
-        w: item.config?.Type === 'Graph' ? 5 : item.config?.Type === 'Stat' ? 3 : 4,
-        h: item.config?.Type === 'Stat' ? 1 : 2,
-      };
-    })
-  );
-
-  const onLayoutChange = (newLayout) => {
-    setLayout(newLayout);
-    localStorage.setItem('dashboardLayout', JSON.stringify(newLayout));
-  };
+  const [layout, setLayout] = useState([]);
 
   const {
     modalContent,
@@ -45,6 +28,50 @@ const MachineSummary = () => {
     handleChartClick,
     handleCardClick,
   } = useModalManager(dashboardData, getUnitByTitle);
+
+  // Generate initial layout based on dashboard data
+  useEffect(() => {
+    if (dashboardData && dashboardData.length > 0) {
+      const generatedLayout = dashboardData.map((item, index) => {
+        const type = item.config?.Type;
+        
+        // Stat blocks: 25% width = 3 cols out of 12
+        // Graph blocks: 33.333% width = 4 cols out of 12
+        const width = type === 'Stat' ? 3 : type === 'Graph' ? 4 : 4;
+        const height = type === 'Stat' ? 4 : type === 'Graph' ? 8 : 6;
+        
+        // Calculate position
+        let x, y;
+        if (type === 'Stat') {
+          // Stats: 4 per row (3 cols each)
+          x = (index * 3) % 12;
+          y = Math.floor((index * 3) / 12) * height;
+        } else if (type === 'Graph') {
+          // Graphs: 3 per row (4 cols each)
+          const graphIndex = dashboardData.slice(0, index).filter(d => d.config?.Type === 'Graph').length;
+          x = (graphIndex * 4) % 12;
+          y = Math.floor((graphIndex * 4) / 12) * height;
+        } else {
+          x = (index * 4) % 12;
+          y = Math.floor((index * 4) / 12) * height;
+        }
+        
+        return {
+          i: index.toString(),
+          x: x,
+          y: y,
+          w: width,
+          h: height,
+        };
+      });
+      
+      setLayout(generatedLayout);
+    }
+  }, [dashboardData]);
+
+  const onLayoutChange = (newLayout) => {
+    setLayout(newLayout);
+  };
 
   return (
     <Layout> 
@@ -55,43 +82,36 @@ const MachineSummary = () => {
         {error && (
           <ErrorMessage message={error} />
         )}
-        
-        {!error && dashboardData && dashboardData.length > 0 && (
+        {!error && dashboardData && layout.length > 0 && (
           <ReactGridLayout
             className="layout"
             layout={layout}
-            rowHeight={300}
-            rowWidth={3000}
             cols={12}
+            rowHeight={25}
             onLayoutChange={onLayoutChange}
+            containerPadding={[0, 0]}
+            margin={[16, 16]}
             isDraggable={true}
             isResizable={true}
-            compactType={null}
-            preventCollision={false}
           >
             {dashboardData.map((item, index) => (
               <div
-                key={`block-${index}`}
-                className={`sub-blocks bg-white ${
-                item.config?.Type === 'Graph' ? 'w-full md:w-[calc(33.333%-0.69rem)] lg:w-[calc(33.333%-0.69rem)]' : 
-                item.config?.Type === 'Stat' ? 'w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]' : 
-                'w-full md:w-[calc(33.333%-1rem)]'
-              } mb-4`}
+                key={index}
+                className="sub-blocks"
                 data-graph-type={item.config?.Type}
                 data-graph-title={item.config?.Title}
               >
-                {/* {index} */}
                 <DashboardBlock
-                config={item.config}
-                initialData={item.data}
-                blockIndex={index}
-                getUnitByTitle={getUnitByTitle}
-                handleCardClick={handleCardClick}
-                handleChartClick={handleChartClick}
-                getRandomColors={getRandomColors}
-                getFixedColors={getFixedColors}
-                isLoading={blockLoadingStates[index]}
-              />
+                  config={item.config}
+                  initialData={item.data}
+                  blockIndex={index}
+                  getUnitByTitle={getUnitByTitle}
+                  handleCardClick={handleCardClick}
+                  handleChartClick={handleChartClick}
+                  getRandomColors={getRandomColors}
+                  getFixedColors={getFixedColors}
+                  isLoading={blockLoadingStates[index]}
+                />
               </div>
             ))}
           </ReactGridLayout>
@@ -99,8 +119,8 @@ const MachineSummary = () => {
 
         {/* Sensors Section */}
         {!error && dashboardData && dashboardData.map((item, index) => (
-          item.sensor_list ? (
-            <div className="-mt-10 p-0 gap-0 space-y-0" key={`sensor-${index}`}>
+          item.sensor_list? (
+            <div className="-mt-10 p-0 gap-0 space-y-0" key={index}>
               <Sensors sensorData={item.sensor_list} />
             </div>
           ) : null
