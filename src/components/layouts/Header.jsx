@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useBookingData } from '../../hooks/useBookingData';
-import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon, Cog6ToothIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon, Squares2X2Icon, CheckIcon } from '@heroicons/react/24/outline';
 import { useDarkMode } from '../../context/DarkModeContext';
 import { useEditLayout } from '../../context/EditLayoutContext';
 import SideMenu from './SideMenu';
@@ -254,7 +254,7 @@ const Header = () => {
               {isEditMode ? (
                 <CheckIcon className="w-6 h-6 text-white" />
               ) : (
-                <Cog6ToothIcon className="w-6 h-6 text-white" />
+                <Squares2X2Icon className="w-6 h-6 text-white" />
               )}
             </button>
           </div>
