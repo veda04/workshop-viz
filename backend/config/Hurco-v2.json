@@ -24,7 +24,8 @@
         ],
         "Units": "g",
         "Pivot": "Axis",
-        "Scale": "/10000.0"
+        "Scale": "/10000.0",
+        "Sample_Interval": "15s"
       },
       "Current": {
         "Bucket": "Machines_Summary",
@@ -42,7 +43,8 @@
         ],
         "Units": "A",
         "Pivot": "Phase",
-        "Scale": "/1000.0"
+        "Scale": "/1000.0",
+        "Sample_Interval": "15s"
       },
       "Temperature": {
         "Bucket": "Machines",
@@ -60,90 +62,73 @@
           "Node"
         ],
         "Units": "°C",
-        "Pivot": "Name"
+        "Pivot": "Name",
+        "Sample_Interval": "5s"
       },
       "Coolant Temperature": {
         "Bucket": "Machines",
         "Measurement": "Coolant",
         "Filters": {
           "_field": "Temperature",
-          "Machine": [
-            "Hurco"
-          ]
+          "Machine": "Hurco"
         },
         "Units": "°C",
-        "Scale": "/10.0"
+        "Scale": "/10.0",
+        "Sample_Interval": "2s"
       },
       "Coolant Level": {
         "Bucket": "Machines",
         "Measurement": "Coolant",
         "Filters": {
           "_field": "Level",
-          "Machine": [
-            "Hurco"
-          ]
+          "Machine": "Hurco"
         },
         "Units": "mm",
-        "Scale": "/100.0"
+        "Scale": "/100.0",
+        "Sample_Interval": "2s"
       },
       "Coolant Flow": {
         "Bucket": "Machines",
         "Measurement": "Instantaneous_flow",
         "Filters": {
           "_field": "Level",
-          "Machine": [
-            "Hurco"
-          ]
+          "Machine": "Hurco"
         },
         "Units": "L/mm",
-        "Scale": "/100.0"
+        "Scale": "/100.0",
+        "Sample_Interval": "2s"
       },
       "Coolant Concentration": {
         "Bucket": "Machines",
         "Measurement": "Concentration",
         "Filters": {
           "_field": "Level",
-          "Machine": [
-            "Hurco"
-          ]
+          "Machine": "Hurco"
         },
         "Units": "Brix(%)",
-        "Scale": "/100.0"
-      },
-      "Coolant Probing": {
-        "Bucket": "Machines",
-        "Measurement": "Concentration",
-        "Filters": {
-          "_field": "Level",
-          "Machine": [
-            "Hurco"
-          ]
-        },
-        "Units": "Brix(%)",
-        "Scale": "/100.0"
+        "Scale": "/100.0",
+        "Sample_Interval": "2s"
       },
       "Air Flow": {
         "Bucket": "Machines",
         "Measurement": "AirQuality",
         "Filters": {
-          "_field": "int._flow",
-          "Machine": [
-            "Hurco"
-          ]
+          "_field": "inst._flow",
+          "Machine": "Hurco"
         },
-        "Units": "L/m"
+        "Units": "L/m",
+        "Sample_Interval": "2s"
       },
       "Air Pressure": {
         "Bucket": "Machines",
         "Measurement": "AirQuality",
         "Filters": {
           "_field": "current_pressure",
-          "Machine": [
-            "Hurco"
-          ]
+          "Machine": "Hurco"
         },
         "Units": "bar",
-        "Scale": "/100.0"
+        "Scale": "/100.0",
+        "Sample_Interval": "2s"
       }
     }
   }
