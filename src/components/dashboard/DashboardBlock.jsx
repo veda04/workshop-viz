@@ -69,6 +69,16 @@ const DashboardBlock = ({
       />
     );
   }
+  if (config?.Type === 'Info') {
+    return (
+      <DataCard
+        title={config?.Title}
+        value={data?.[0]?.[0]?.value || 'N/A'}
+        textColor={config?.TextColor || getRandomColors(1)}
+        onClick={config?.Maximisable ? () => handleCardClick({ config, data }) : undefined}
+      />
+    );
+  }
   /*
    * commented as the air flow will be displayed in the header
    * if (config?.Type === 'Info') {
