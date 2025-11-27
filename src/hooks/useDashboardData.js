@@ -1,7 +1,7 @@
 import {useState, useEffect} from 'react';
 import apiService from '../services/apiService';
 
-export const useDashboardData = (machineName) => {
+export const useDashboardData = (machineName, isEditMode = false) => {
     const [dashboardData, setDashboardData] = useState([]);
     const [loading, setLoading] = useState(true); // Keep for initial load
     const [error, setError] = useState(null);
@@ -36,15 +36,21 @@ export const useDashboardData = (machineName) => {
     useEffect(() => {
         fetchDashboardData(currentRangeParams); // Initial data fetch with default 3-hour range when component mounts
     
-        // set up auto refresh intervals (60 seconds)
-        const refreshInterval = setInterval(() => {
-          console.log('Auto-refreshing dashboard data...');
-          fetchDashboardData(currentRangeParams);
-        }, 60000); // 60 seconds
+        // set up auto refresh intervals (60 seconds) - but only if NOT in edit mode
+        let refreshInterval;
+        if (!isEditMode) {
+          refreshInterval = setInterval(() => {
+            console.log('Auto-refreshing dashboard data...');
+            fetchDashboardData(currentRangeParams);
+          }, 30000); // 60 seconds
+        }
     
         // Event handler for range changes from the Header component
         // Listens for custom 'rangeChanged' events dispatched when user selects a new time range
         const handleRangeChange = (event) => {
+          // Don't handle range changes in edit mode
+          if (isEditMode) return;
+          
           const { type, range, from, to } = event.detail;
           let rangeParams = '';
           
@@ -68,9 +74,11 @@ export const useDashboardData = (machineName) => {
         // Cleanup: Remove event listener when component unmounts to prevent memory leaks
         return () => {
           window.removeEventListener('rangeChanged', handleRangeChange);
-          clearInterval(refreshInterval);
+          if (refreshInterval) {
+            clearInterval(refreshInterval);
+          }
         };
-      }, [currentRangeParams, machineName]);  // Re-run effect when currentRangeParams change
+      }, [currentRangeParams, machineName, isEditMode]);  // Re-run effect when currentRangeParams or isEditMode change
 
       return {dashboardData, loading, error, setCurrentRangeParams};
 };

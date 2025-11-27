@@ -134,7 +134,7 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
     <div 
       className={`
         bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-${heightOuter}
-        backdrop-blur-sm bg-opacity-90 overflow-hidden relative transition-colors
+        backdrop-blur-sm bg-opacity-90 overflow-hidden relative
         ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
       `}
       onClick={handleChartClick}

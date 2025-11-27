@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useBookingData } from '../../hooks/useBookingData';
-import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIcon, Cog6ToothIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { useDarkMode } from '../../context/DarkModeContext';
+import { useEditLayout } from '../../context/EditLayoutContext';
 import SideMenu from './SideMenu';
 
 const Header = () => {
@@ -12,6 +13,7 @@ const Header = () => {
   const [customTo, setCustomTo] = useState('');
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const { isEditMode, toggleEditMode } = useEditLayout();
 
   const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
   const { bookingData, loading, error } = useBookingData(machineName);
@@ -241,6 +243,20 @@ const Header = () => {
         <div className="text-right flex items-center space-x-2 pr-10">
           <div className="text-xl text-gray-600 dark:text-gray-300 uppercase tracking-wide transition-colors">
             {currentDate} | {currentTime} 
+          </div>
+          {/* Edit Layout Button */}
+          <div className={`${isEditMode ? 'bg-green-500 dark:bg-green-600' : 'bg-purple-500 dark:bg-purple-600'} px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors`}>
+            <button 
+              className={`text-white font-medium ${isEditMode ? 'hover:bg-green-600 hover:dark:bg-green-700' : 'hover:bg-purple-600 hover:dark:bg-purple-700'} p-1 rounded-lg transition-colors`}
+              title={isEditMode ? "Save Layout" : "Edit Layout"} 
+              onClick={toggleEditMode}
+            >
+              {isEditMode ? (
+                <CheckIcon className="w-6 h-6 text-white" />
+              ) : (
+                <Cog6ToothIcon className="w-6 h-6 text-white" />
+              )}
+            </button>
           </div>
           <div className="bg-gray-500 dark:bg-yellow-400 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
             <button 

@@ -12,7 +12,8 @@ const DashboardBlock = ({
   handleChartClick, 
   getRandomColors,
   getFixedColors,
-  isLoading = false 
+  isLoading = false,
+  isEditMode = false
 }) => {
   const [data, setData] = useState(initialData);
   const [chartColors] = useState(config?.Color || getFixedColors(12));
@@ -46,7 +47,8 @@ const DashboardBlock = ({
         unit={config?.Units || getUnitByTitle(config?.Title || '')}
         heightOuter={72}
         heightInner={56}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
+        onClick={isEditMode ? undefined : () => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
+        isEditMode={isEditMode}
       />
     );
   }
@@ -57,7 +59,8 @@ const DashboardBlock = ({
         value={data?.[0]?.[0]?.value || 'N/A'}
         textColor={config?.TextColor || getRandomColors(1)}
         unit={data?.[0]?.[0]?.value ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
-        onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
+        onClick={isEditMode ? undefined : (config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined)}
+        isEditMode={isEditMode}
       />
     );
   }
@@ -65,7 +68,8 @@ const DashboardBlock = ({
     return (
       <UsageChart
         title={config?.Title}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
+        onClick={isEditMode ? undefined : () => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
+        isEditMode={isEditMode}
       />
     );
   }
@@ -75,7 +79,8 @@ const DashboardBlock = ({
         title={config?.Title}
         value={data?.[0]?.[0]?.value || 'N/A'}
         textColor={config?.TextColor || getRandomColors(1)}
-        onClick={config?.Maximisable ? () => handleCardClick({ config, data }) : undefined}
+        onClick={isEditMode ? undefined : (config?.Maximisable ? () => handleCardClick({ config, data }) : undefined)}
+        isEditMode={isEditMode}
       />
     );
   }

@@ -113,6 +113,108 @@
 }
 
 .react-grid-item.react-grid-placeholder {
+  background: rgb(147, 51, 234, 0.3);
+  opacity: 0.3;
+  transition-duration: 100ms;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  -o-user-select: none;
+  user-select: none;
+  border-radius: 0.5rem;
+  border: 2px dashed rgb(147, 51, 234);
+}
+
+.react-grid-item > .react-resizable-handle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  content: "";
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  border-right: 2px solid rgba(147, 51, 234, 0.7);
+  border-bottom: 2px solid rgba(147, 51, 234, 0.7);
+}
+
+.dark .react-grid-item > .react-resizable-handle::after {
+  border-right: 2px solid rgba(192, 132, 252, 0.7);
+  border-bottom: 2px solid rgba(192, 132, 252, 0.7);
+}
+
+.react-resizable-hide > .react-resizable-handle {
+  display: none;
+}
+
+.sub-blocks {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.sub-blocks.cursor-move {
+  cursor: move;
+}
+
+/* Disable pointer events on content in edit mode, but allow resize handles */
+.sub-blocks.cursor-move > *:not(.react-resizable-handle) {
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Ensure resize handle is always interactive in edit mode */
+.react-grid-item.react-grid-item--editing .react-resizable-handle {
+  pointer-events: auto !important;
+}
+
+.sub-blocks.cursor-move .react-resizable-handle {
+  pointer-events: auto !important;
+  cursor: se-resize !important;
+}
+
+/* React Grid Layout Styles */
+.react-grid-layout {
+  position: relative;
+}
+
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item img {
+  pointer-events: none;
+  user-select: none;
+}
+
+.react-grid-item.cssTransforms {
+  transition-property: transform, width, height;
+}
+
+.react-grid-item.resizing {
+  transition: none;
+  z-index: 100;
+  will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+  will-change: transform;
+}
+
+.react-grid-item.dropping {
+  visibility: hidden;
+}
+
+.react-grid-item.react-grid-placeholder {
   background: rgb(59, 130, 246, 0.2);
   opacity: 0.2;
   transition-duration: 100ms;
@@ -129,6 +231,11 @@
   position: absolute;
   width: 20px;
   height: 20px;
+  bottom: 0;
+  right: 0;
+  cursor: se-resize;
+  z-index: 10;
+  pointer-events: auto;
 }
 
 .react-grid-item > .react-resizable-handle::after {
@@ -136,15 +243,15 @@
   position: absolute;
   right: 3px;
   bottom: 3px;
-  width: 5px;
-  height: 5px;
-  border-right: 2px solid rgba(0, 0, 0, 0.4);
-  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
+  width: 8px;
+  height: 8px;
+  border-right: 3px solid rgba(147, 51, 234, 0.7);
+  border-bottom: 3px solid rgba(147, 51, 234, 0.7);
 }
 
 .dark .react-grid-item > .react-resizable-handle::after {
-  border-right: 2px solid rgba(255, 255, 255, 0.4);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.4);
+  border-right: 3px solid rgba(192, 132, 252, 0.8);
+  border-bottom: 3px solid rgba(192, 132, 252, 0.8);
 }
 
 .react-resizable-hide > .react-resizable-handle {
@@ -155,5 +262,6 @@
   height: 100%;
   width: 100%;
   cursor: move;
-  overflow: hidden;
+  overflow: visible;
+  /* overflow: hidden; */
 }
