@@ -471,7 +471,7 @@ def _reduceData(data,limitNumber,limitType):
 	
 	return reducedData
 
-def runJSONQuery(config, jsonQuery):
+def runJSONQuery(config, query):
 	"""
 	Processes a JSON-formatted query request by building and executing InfluxDB queries,
 	applying optional pivoting and data reduction.
@@ -487,9 +487,10 @@ def runJSONQuery(config, jsonQuery):
 		list: A list of processed DataFrames (or None for queries that return no data),
 			  each corresponding to one entry in the "Queries" list.
 	"""
+	# print("Running JSON Query...")
 	pivotedData = []
 	machine = query["machine_name"]
-	for type in jsonQuery["data_types"]:
+	for type in query["data_types"]:
 		typename = type["name"]
 		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("minimised",False))
 		data = _runQuery(influxQuery)
@@ -504,7 +505,7 @@ def runJSONQuery(config, jsonQuery):
 		pivotedData.append(data)
 	return pivotedData
 
-def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone='Europe/London', custom_graph_config_data=None):
+def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone='Europe/London'):
 	if not filePath:
 		raise ValueError("File path cannot be empty or None")
 	if not isinstance(filePath, str):
@@ -523,13 +524,6 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	if not configFile:
 		raise ValueError("Configuration file is empty")
 	
-	# print("Getting Influx Data...")
-	# print("File Path: ", configFile)
-	# print("Custom Date From: ", custom_date_from)
-	# print("Custom Date To: ", custom_date_to)
-	# print("Timezone: ", timezone)
-	# print("Custom Graph Config Data: ", custom_graph_config_data)
-
 	jsonQuery = json.loads(configFile)
 
 	# inject custom date range into each query
@@ -722,17 +716,32 @@ def getDataSeries(data):
 
 
 def getCustomGraphData(data):
-	"""
-	Retrieves custom graph data based on the provided request data and machine name.
-
-	Parameters:
-		requestData (dict): The request data containing graph configuration.
-		machine_name (str): The name of the machine for which to retrieve data.
-
-	Returns:
-		list: A list of data points for the custom graph.
-	"""
-	pprint.pprint(data, indent=2, width=120)
+	try:
+		# validate data is json and not empty
+		if not data:
+			raise ValueError("Data cannot be empty or None")
+		if not isinstance(data, dict):
+			raise TypeError("Data must be a dictionary")
+		
+		jsonQuery = data
+		
+		# jsonQuery = json.loads(queryFile)	
+		machine = jsonQuery.get("machine_name")
+		if not machine:
+			raise ValueError("machine_name is required in the data")
+		
+		f = open("D:\\workshopviz\\.local\\NewHurcoConfig.json",'r')
+		configFile = f.read()
+		f.close()
+		jsonConfig = json.loads(configFile)
+		time_start = perf_counter()
+		output_result = runJSONQuery(jsonConfig[machine]["Data"],jsonQuery)
+		time_end = perf_counter()
+		print(f"Total Execution Time: {time_end - time_start} seconds")
+		return output_result
+	except Exception as e:
+		print(f"Error in getCustomGraphData: {e}")
+		return None
 
 if __name__ == "__main__":
 

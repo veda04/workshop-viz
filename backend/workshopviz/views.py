@@ -14,7 +14,7 @@ from django.conf import settings
 import os
 from influxdb_client import InfluxDBClient
 from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
-from helper.dashboard import getInfluxData, getDataSeries
+from helper.dashboard import getCustomGraphData, getInfluxData, getDataSeries
 import pprint
 import pandas as pd
 from django.shortcuts import render
@@ -609,13 +609,15 @@ def custom_graph_data(request):
             'date_to': custom_date_to,
             'data_types': graphs_info,  # Now includes both id and name and series 
             'machine_name': machine_name,
+            "type": "graph"
         }
 
-        #pprint.pprint("****** Custom Graph Config Data  :")        
-        #pprint.pprint( custom_graph_config_data, indent=2, width=120)
+        # pprint.pprint("****** Custom Graph Config Data  :")        
+        # pprint.pprint( custom_graph_config_data, indent=2, width=120)
 
         # Get full dashboard data
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to, custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
+        # machine_data = getInfluxData(file_path, custom_date_from, custom_date_to, custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
+        machine_data = getCustomGraphData(custom_graph_config_data)
         pprint.pprint("****** Machine Data  ******:")
         pprint.pprint( machine_data, indent=2, width=120) 
         
