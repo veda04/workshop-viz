@@ -244,20 +244,6 @@ const Header = () => {
           <div className="text-xl text-gray-600 dark:text-gray-300 uppercase tracking-wide transition-colors">
             {currentDate} | {currentTime} 
           </div>
-          {/* Edit Layout Button */}
-          <div className={`${isEditMode ? 'bg-green-500 dark:bg-green-600' : 'bg-purple-500 dark:bg-purple-600'} px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors`}>
-            <button 
-              className={`text-white font-medium ${isEditMode ? 'hover:bg-green-600 hover:dark:bg-green-700' : 'hover:bg-purple-600 hover:dark:bg-purple-700'} p-1 rounded-lg transition-colors`}
-              title={isEditMode ? "Save Layout" : "Edit Layout"} 
-              onClick={toggleEditMode}
-            >
-              {isEditMode ? (
-                <CheckIcon className="w-6 h-6 text-white" />
-              ) : (
-                <Squares2X2Icon className="w-6 h-6 text-white" />
-              )}
-            </button>
-          </div>
           <div className="bg-gray-500 dark:bg-yellow-400 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
             <button 
               className="text-white font-medium hover:bg-gray-600 hover:dark:bg-yellow-500 p-1 rounded-lg transition-colors" 
@@ -274,6 +260,20 @@ const Header = () => {
           <div className="bg-indigo-500 dark:bg-indigo-600 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
             <button className="text-white font-medium hover:bg-indigo-700 p-1 rounded-lg transition-colors" title="Refresh" onClick={() => window.location.reload()}>
               <ArrowPathIcon className="w-6 h-6 text-white" />
+            </button>
+          </div>
+          {/* Edit Layout Button */}
+          <div className={`${isEditMode ? 'bg-green-500 dark:bg-green-600' : 'bg-purple-500 dark:bg-purple-600'} px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors`}>
+            <button 
+              className={`text-white font-medium ${isEditMode ? 'hover:bg-green-600 hover:dark:bg-green-700' : 'hover:bg-purple-600 hover:dark:bg-purple-700'} p-1 rounded-lg transition-colors`}
+              title={isEditMode ? "Save Layout" : "Edit Layout"} 
+              onClick={toggleEditMode}
+            >
+              {isEditMode ? (
+                <CheckIcon className="w-6 h-6 text-white" />
+              ) : (
+                <Squares2X2Icon className="w-6 h-6 text-white" />
+              )}
             </button>
           </div>
           <button
