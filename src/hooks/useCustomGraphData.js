@@ -6,6 +6,7 @@ export const useCustomGraphData = (machineName) => {
   const [selectedGraphs, setSelectedGraphs] = useState([]);
   const [availableSeries, setAvailableSeries] = useState({});
   const [selectedSeries, setSelectedSeries] = useState({});
+  const [selectedType, setSelectedType] = useState('Graph');
   const [graphData, setGraphData] = useState(null);
   const [timeRange, setTimeRange] = useState('3h');
   const [loading, setLoading] = useState(true);
@@ -150,6 +151,7 @@ export const useCustomGraphData = (machineName) => {
       setError(null);
       
       const response = await apiService.generateCustomGraphData({
+        type: selectedType,
         graphs: selectedGraphs,
         series: selectedSeries,
         range: timeRange,
@@ -183,7 +185,7 @@ export const useCustomGraphData = (machineName) => {
     } finally {
       setGeneratingGraph(false);
     }
-  }, [selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs]);
+  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs]);
 
   // Load a saved graph configuration
   const loadSavedGraph = useCallback(async (savedGraph) => {
@@ -211,6 +213,7 @@ export const useCustomGraphData = (machineName) => {
 
       // Generate the graph with saved configuration
       const response = await apiService.getCustomGraphData({
+        type: selectedType,
         graphs: graphTypes,
         series: series,
         range: timeRange,
@@ -266,6 +269,8 @@ export const useCustomGraphData = (machineName) => {
     selectedGraphs,
     availableSeries,
     selectedSeries,
+    selectedType,
+    setSelectedType,
     graphData,
     timeRange,
     loading,

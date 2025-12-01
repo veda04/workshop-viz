@@ -715,7 +715,7 @@ def getDataSeries(data):
 	return series
 
 
-def getCustomGraphData(data):
+def getCustomGraphData(data, filePath=None):
 	try:
 		# validate data is json and not empty
 		if not data:
@@ -730,18 +730,39 @@ def getCustomGraphData(data):
 		if not machine:
 			raise ValueError("machine_name is required in the data")
 		
-		f = open("D:\\workshopviz\\.local\\NewHurcoConfig.json",'r')
-		configFile = f.read()
+		if not filePath:
+			raise ValueError("File path cannot be empty or None")
+		if not isinstance(filePath, str):
+			raise TypeError("File path must be a string")
+		if not filePath.endswith('.json'):
+			raise ValueError("File path must point to a JSON file")
+		
+		# check if file exists
+		if not os.path.exists(filePath):
+			raise FileNotFoundError(f"File not found at path: {filePath}")
+
+		with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
+			configFile = f.read()
+
+		# f = open("D:\\projects\\workshop-viz\\backend\\config\\Hurco-v2.json",'r')
+		# configFile = f.read()
 		f.close()
 		jsonConfig = json.loads(configFile)
 		time_start = perf_counter()
 		output_result = runJSONQuery(jsonConfig[machine]["Data"],jsonQuery)
 		time_end = perf_counter()
 		print(f"Total Execution Time: {time_end - time_start} seconds")
-		return output_result
+		# Preprocess the results if needed
+		processed_data = preprocessResults(output_result)
+		return processed_data
 	except Exception as e:
 		print(f"Error in getCustomGraphData: {e}")
 		return None
+
+def preprocessResults(results):
+
+	
+	return results
 
 if __name__ == "__main__":
 

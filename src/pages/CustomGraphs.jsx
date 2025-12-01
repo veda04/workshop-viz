@@ -36,6 +36,8 @@ const CustomGraphs = () => {
     clearError,
     loadSavedGraph,
     refreshSavedGraphs,
+    selectedType,
+    setSelectedType
   } = useCustomGraphData(machineName);
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
@@ -44,6 +46,7 @@ const CustomGraphs = () => {
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const [editGraphId, setEditGraphId] = useState(null);
   const [editGraphData, setEditGraphData] = useState(null);
+  const custom_types = ['graph', 'stats', 'info'];
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -155,48 +158,68 @@ const CustomGraphs = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-10 gap-6">
           {/* Left Panel - Graph Selection */}
-          <div className="lg:col-span-2">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Select Data Types
-                <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
-                  ({selectedGraphs.length}/2)
-                </span>
-              </h2>
-              <div className="space-y-3">
-                {graphConfigs.map((config) => (
-                  <div
-                    key={config.id}
-                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedGraphs.includes(config.id)
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                    } ${selectedGraphs.length >= 2 && !selectedGraphs.includes(config.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    onClick={() => handleGraphSelection(config.id)}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-base text-gray-900 dark:text-white">
-                          {config.title} <span className="text-xs text-gray-500 dark:text-gray-400">({config.unit})</span>
-                        </h3>
-                      </div>
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        selectedGraphs.includes(config.id)
-                          ? 'border-blue-500 bg-blue-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}>
-                        {selectedGraphs.includes(config.id) && (
-                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
+                <div className="lg:col-span-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                      Select Type
+                    </h2>
+                    <div className="space-y-3">
+                      <select
+                      value={selectedType}
+                      onChange={(e) => setSelectedType(e.target.value)}
+                        className="w-full px-4 py-2 font-base rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-700 text-gray-900 
+                        dark:text-white focus:ring-2 focus:ring-blue-600"
+                      >
+                        {custom_types.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                        ))}
+                      </select>
                     </div>
                   </div>
-                ))}
-              </div>
 
-              {/* Time Range Selection */}
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Select Data Types
+                  <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+                    ({selectedGraphs.length}/2)
+                  </span>
+                  </h2>
+                  <div className="space-y-3">
+                  {graphConfigs.map((datatypes) => (
+                    <div
+                    key={datatypes.id}
+                    className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                      selectedGraphs.includes(datatypes.id)
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    } ${selectedGraphs.length >= 2 && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    onClick={() => handleGraphSelection(datatypes.id)}
+                    >
+                    <div className="flex items-center justify-between">
+                      <div>
+                      <h3 className="font-base text-gray-900 dark:text-white">
+                        {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
+                      </h3>
+                      </div>
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                      selectedGraphs.includes(datatypes.id)
+                        ? 'border-blue-500 bg-blue-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                      }`}>
+                      {selectedGraphs.includes(datatypes.id) && (
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                      </div>
+                    </div>
+                    </div>
+                  ))}
+                  </div>
+
+                  {/* Time Range Selection */}
               {/* <div className="mt-6">
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                   Time Range
@@ -381,7 +404,7 @@ const CustomGraphs = () => {
           </div>
 
           {/* Right Panel - Saved Custom Graphs */}
-          <div className="lg:col-span-2">
+          {/* <div className="lg:col-span-2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md py-6 pl-6">
               <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 text-center pr-6">
                 Customized Graphs
@@ -400,7 +423,7 @@ const CustomGraphs = () => {
                 />
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 

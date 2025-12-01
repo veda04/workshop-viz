@@ -201,7 +201,6 @@ def get_dashboard_config(request):
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 # get the current booking for a machine
 @api_view(['GET'])
 def get_current_booking(request):
@@ -558,6 +557,7 @@ def custom_graph_data(request):
     try:
         data = request.data
         machine_name = data.get('machine_name')
+        selected_type = data.get('type', None)
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
@@ -600,6 +600,7 @@ def custom_graph_data(request):
                 data_type_name, data_type_config = data_types[graph_index]
                 graphs_info.append({
                     'id': int(graph_id),
+                    'machineName': machine_name,
                     'name': data_type_name,
                     'series': selected_series.get(str(graph_id), [])
                 })
@@ -608,18 +609,18 @@ def custom_graph_data(request):
             'date_from': custom_date_from,
             'date_to': custom_date_to,
             'data_types': graphs_info,  # Now includes both id and name and series 
-            'machine_name': machine_name,
-            "type": "graph"
+            # 'machine_name': machine_name,
+            "type": selected_type
         }
 
-        # pprint.pprint("****** Custom Graph Config Data  :")        
-        # pprint.pprint( custom_graph_config_data, indent=2, width=120)
+        pprint.pprint("****** Custom Graph Config Data  :")        
+        pprint.pprint( custom_graph_config_data, indent=2, width=120)
 
         # Get full dashboard data
         # machine_data = getInfluxData(file_path, custom_date_from, custom_date_to, custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
-        machine_data = getCustomGraphData(custom_graph_config_data)
-        pprint.pprint("****** Machine Data  ******:")
-        pprint.pprint( machine_data, indent=2, width=120) 
+        machine_data = getCustomGraphData(custom_graph_config_data, file_path)
+        #pprint.pprint("****** Machine Data  ******:")
+        #pprint.pprint( machine_data, indent=2, width=120) 
         
         # Filter data based on selected graphs and series
         combined_data = {
