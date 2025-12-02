@@ -109,7 +109,7 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
   return (
     <div className="bg-white dark:bg-gray-900 backdrop-blur-sm shadow-lg border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 fixed top-0 left-0 right-0 z-40 transition-colors duration-200">
       <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 relative">
           {/* Hamburger Menu Button */}
                 <button
                 onClick={() => setIsSideMenuOpen(true)}
@@ -118,9 +118,9 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
                 >
                 <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                 </button>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white pr-2">
+                <h1 className="text-4xl font-bold text-gray-900 capitalize dark:text-white pr-2">
                  <a href={`/dashboard-summary`} className="text-4xl font-bold text-gray-900 dark:text-white pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                  {displayTitle} {machineName} {machineName && <span className="text-xl dark:text-gray-400">({machineName})</span>}
+                  {displayTitle} {machineName && <span className="">| {machineName}</span>}
                   </a>
                 </h1>
                 {!isNewDashboard && (
@@ -175,7 +175,7 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
                 </>
                 )}
                 {showCustomRange && (
-                <div className="absolute top-14 left-64 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 p-4 transition-colors">
+                <div className="absolute top-10 right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg z-50 p-4 transition-colors">
                   <div className="flex flex-col gap-4">
                   <div className="flex gap-4 items-center">
                     <label className="font-medium text-gray-700 dark:text-gray-300 w-16">From</label>
