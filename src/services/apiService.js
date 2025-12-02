@@ -1,5 +1,4 @@
 import { API_BASE_URL, API_ENDPOINTS, buildUrl } from '../config/api';
-
 class ApiService {
   async fetchWithErrorHandling(url, options = {}) {
     try {
@@ -27,13 +26,9 @@ class ApiService {
     }
   }
 
-  async getDashboardConfig(machineName, rangeParams = '') {
-    const url = buildUrl(API_ENDPOINTS.dashboardConfig, {
-      machine_name: machineName,
-    }) + rangeParams;
-    return this.fetchWithErrorHandling(url);
-  }
-
+  // ============================================================================
+  // Influx DB related APIs
+  // ============================================================================
   async getCurrentBooking(machineName) {
     const url = buildUrl(API_ENDPOINTS.currentBooking, {
       machine_name: machineName,
@@ -54,68 +49,29 @@ class ApiService {
     });
   }
 
-  async getGraphConfigurations(machineName) {
-    const url = buildUrl(API_ENDPOINTS.graphConfigurations, {
-      machine_name: machineName,
-    });
+  async getMachinesWithConfig() {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.machinesWithConfig}`;
     return this.fetchWithErrorHandling(url);
   }
 
-  async generateCustomGraphData(requestData, machineName) {
-    console.log('Request Data for Custom Graph:', requestData);
-    const url = `${API_BASE_URL}${API_ENDPOINTS.customGraphData}`;
+  async createDashboard(dashboardData) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.createDashboard}`;
     return this.fetchWithErrorHandling(url, {
       method: 'POST',
-      body: JSON.stringify({
-        machine_name: machineName,
-        ...requestData,
-      }),
+      body: JSON.stringify(dashboardData),
     });
   }
 
-  async getAvailableSeries(graphId, machineName, range = '1h') {
-    const url = buildUrl(API_ENDPOINTS.availableSeries, {
-      machine_name: machineName,
-      graph_id: graphId,
-      range: range,
-    });
-    return this.fetchWithErrorHandling(url);
-  }
+  // ============================================================================
+  // Influx DB related APIs
+  // ============================================================================
 
-  async saveCustomGraph(graphData) {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.saveCustomGraph}`;
-    return this.fetchWithErrorHandling(url, {
-      method: 'POST',
-      body: JSON.stringify(graphData),
-    });
-  }
-
-  async getCustomGraphs(machineName) {
-    const url = buildUrl(API_ENDPOINTS.getCustomGraph, {
-      machine_name: machineName,
-    });
-    return this.fetchWithErrorHandling(url);
-  }
-
-  async updateCustomGraph(graphId, graphData) {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.updateCustomGraph}${graphId}/`;
-    return this.fetchWithErrorHandling(url, {
-      method: 'PUT',
-      body: JSON.stringify(graphData),
-    });
-  }
-
-  async deleteCustomGraph(graphId) {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.deleteCustomGraph}${graphId}/`;
-    return this.fetchWithErrorHandling(url, {
-      method: 'DELETE',
-    });
-  }
-
-  async getConfigMachineList() {
-    const url = `${API_BASE_URL}${API_ENDPOINTS.configMachineList}`;
-    return this.fetchWithErrorHandling(url);
-  }
+  // async getDashboardConfig(machineName, rangeParams = '') {
+  //   const url = buildUrl(API_ENDPOINTS.dashboardConfig, {
+  //     machine_name: machineName,
+  //   }) + rangeParams;
+  //   return this.fetchWithErrorHandling(url);
+  // }
 }
 
 export default new ApiService();

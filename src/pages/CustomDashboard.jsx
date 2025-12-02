@@ -11,7 +11,7 @@ import SavedGraphsSection from '../components/SavedGraphsSection';
 import { useCustomGraphData } from '../hooks/useCustomGraphData';
 import { getFixedColors } from '../utils/chartUtils';
 
-const CustomGraphs = () => {
+const CustomDashboard = () => {
   const [searchParams] = useSearchParams();
   const machineName = searchParams.get('machineName');
   
@@ -465,4 +465,4 @@ const CustomGraphs = () => {
   );
 };
 
-export default CustomGraphs;
+export default CustomDashboard;

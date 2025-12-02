@@ -7,6 +7,10 @@ import NotesForm from '../forms/NotesForm';
 const Layout = ({ children, showHeader = true }) => {
   const [searchParams] = useSearchParams();
   const machineName = searchParams.get('machineName');
+  const dashboardId = searchParams.get('dashboardId');
+  
+  // Determine if this is a new dashboard (has dashboardId but no machineName)
+  const isNewDashboard = dashboardId && !machineName;
 
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false);
 
@@ -26,7 +30,7 @@ const Layout = ({ children, showHeader = true }) => {
 
   return (
     <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen transition-colors duration-200">
-      {showHeader && <Header machineName={machineName} />}
+      {showHeader && <Header machineName={machineName} isNewDashboard={isNewDashboard} />}
       <main>
         {children}
       </main>

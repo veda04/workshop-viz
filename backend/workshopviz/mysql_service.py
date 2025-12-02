@@ -184,96 +184,63 @@ class MySQLService:
         finally:
             self.close()
 
-    def save_custom_graph(self, asset_id, title, graph_types_json, series_json, user_id, add_to_dashboard):
-        """Save custom graph configuration"""
-        try:
-            if not self.connect():
-                return False
-            cursor = self.connection.cursor()
-            query = """
-                INSERT INTO machine_custom_graphs 
-                (vTitle, iAsset_id, vGraph_types, vSeries, iUser_id, cAddToDashboard) 
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """
-            cursor.execute(query, (title, asset_id, graph_types_json, series_json, user_id, add_to_dashboard))
-            self.connection.commit()
-            graph_id = cursor.lastrowid
-            cursor.close()
-            return graph_id
-        except Exception as e:
-            logger.error(f"Error saving custom graph: {str(e)}")
-            return False
-        finally:
-            self.close()
-
-    # get the list of customised graphs for a machine
-    def get_custom_graphs(self, asset_id):
-        """Get the list of customised graphs for a machine"""
+    def get_machine_assets(self):
+        """Get all machine assets from the database that have asset type 'Machine'"""
         try:
             if not self.connect():
                 return None
+            
             cursor = self.connection.cursor(dictionary=True)
+            
+            # Query to get all assets of type 'Machine'
             query = """
-                SELECT 
-                    mcg.*,
-                    u.vName as vUserName
-                FROM machine_custom_graphs mcg
-                LEFT JOIN users u ON mcg.iUser_id = u.iUser_id
-                WHERE mcg.iAsset_id = %s
-                ORDER BY mcg.dtCreated DESC
+                SELECT DISTINCT a.iAsset_id, a.vName
+                FROM assets a
+                INNER JOIN asset_type_assoc asta ON a.iAsset_id = asta.iAsset_id
+                INNER JOIN asset_type ast ON asta.iAsset_type_id = ast.iAst_type_id
+                WHERE ast.vName = 'Machine' AND a.cStatus = 'A'
+                ORDER BY a.vName
             """
-            cursor.execute(query, (asset_id,))
+            
+            cursor.execute(query)
             results = cursor.fetchall()
             cursor.close()
+            
             return results
+            
         except Exception as e:
-            logger.error(f"Error getting custom graphs: {str(e)}")
+            logger.error(f"Error getting machine assets: {str(e)}")
             return None
         finally:
             self.close()
 
-    def update_custom_graph(self, graph_id, title, graph_types_json, series_json, user_id, add_to_dashboard):
-        """Update an existing custom graph"""
+    def create_dashboard(self, title, asset_id, user_id, category):
+        """Create a new dashboard entry in visualisation_dashboards table"""
         try:
             if not self.connect():
-                return False
-            cursor = self.connection.cursor()
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Insert query
             query = """
-                UPDATE machine_custom_graphs 
-                SET vTitle = %s, 
-                    vGraph_types = %s, 
-                    vSeries = %s, 
-                    iUser_id = %s, 
-                    cAddToDashboard = %s,
-                    dtModified = NOW()
-                WHERE iGraph_id = %s
+                INSERT INTO visualisation_dashboards 
+                (vTitle, iAsset_id, iUser_id, cCategory) 
+                VALUES (%s, %s, %s, %s)
             """
-            cursor.execute(query, (title, graph_types_json, series_json, user_id, add_to_dashboard, graph_id))
+            
+            cursor.execute(query, (title, asset_id, user_id, category))
             self.connection.commit()
-            rows_affected = cursor.rowcount
+            
+            # Get the inserted dashboard ID
+            dashboard_id = cursor.lastrowid
             cursor.close()
-            return rows_affected > 0
+            
+            return dashboard_id
+            
         except Exception as e:
-            logger.error(f"Error updating custom graph: {str(e)}")
-            return False
-        finally:
-            self.close()
-
-    def delete_custom_graph(self, graph_id):
-        """Delete a custom graph"""
-        try:
-            if not self.connect():
-                return False
-            cursor = self.connection.cursor()
-            query = "DELETE FROM machine_custom_graphs WHERE iGraph_id = %s"
-            cursor.execute(query, (graph_id,))
-            self.connection.commit()
-            rows_affected = cursor.rowcount
-            cursor.close()
-            return rows_affected > 0
-        except Exception as e:
-            logger.error(f"Error deleting custom graph: {str(e)}")
-            return False
+            logger.error(f"Error creating dashboard: {str(e)}")
+            return None
         finally:
             self.close()
 
