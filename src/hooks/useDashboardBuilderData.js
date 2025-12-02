@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../services/apiService';
 
-export const useCustomGraphData = (machineName) => {
+export const useDashboardBuilderData = (machineName) => {
   const [graphConfigs, setGraphConfigs] = useState([]);
   const [selectedGraphs, setSelectedGraphs] = useState([]);
   const [availableSeries, setAvailableSeries] = useState({});

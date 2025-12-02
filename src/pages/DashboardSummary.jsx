@@ -33,7 +33,8 @@ const DashboardSummary = () => {
   // Handle create new entry button click
   const handleCreateEntry = () => {
     // TODO: Open popup with DashboardBuilder content
-    console.log('Create new entry clicked');
+    // redirect to DashboardBuilder page with machineName and dashboardId params
+    window.location.href = `/dashboard-builder?machineName=${encodeURIComponent(machineName)}&dashboardId=${encodeURIComponent(dashboardId)}`;
   };
 
   return (

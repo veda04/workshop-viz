@@ -8,10 +8,10 @@ import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
 import CustomGraphsForm from '../components/forms/CustomGraphsForm';
 import SavedGraphsSection from '../components/SavedGraphsSection';
-import { useCustomGraphData } from '../hooks/useCustomGraphData';
+import { useDashboardBuilderData } from '../hooks/useDashboardBuilderData';
 import { getFixedColors } from '../utils/chartUtils';
 
-const CustomDashboard = () => {
+const DashboardBuilder = () => {
   const [searchParams] = useSearchParams();
   const machineName = searchParams.get('machineName');
   
@@ -38,7 +38,7 @@ const CustomDashboard = () => {
     refreshSavedGraphs,
     selectedType,
     setSelectedType
-  } = useCustomGraphData(machineName);
+  } = useDashboardBuilderData(machineName);
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isSaveGraphModalOpen, setIsSaveGraphModalOpen] = useState(false);
@@ -465,4 +465,4 @@ const CustomDashboard = () => {
   );
 };
 
-export default CustomDashboard;
+export default DashboardBuilder;

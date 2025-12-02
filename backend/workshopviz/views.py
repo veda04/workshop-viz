@@ -590,3 +590,64 @@ def create_dashboard(request):
             'message': f'Internal server error: {str(e)}',
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+def get_graph_configurations(request):
+    """Get available graph configurations from config file"""
+    try:
+        machine_name = request.GET.get('machine_name')
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}-v2.json")    # changed the config file to -v2.json
+        
+        if not os.path.exists(file_path):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Configuration file not found for machine: {machine_name}',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        with open(file_path, 'r', encoding='utf-8') as f:
+            config_data = json.load(f)
+        
+        # The JSON structure has the machine name as the top-level key. e.g., {"Hurco": {"Data": {...}}}
+        machine_config = config_data.get(machine_name, {})
+        
+        # Extract graph configurations from the 'Data' section
+        graph_configs = []
+        
+        if 'Data' in machine_config and isinstance(machine_config['Data'], dict):
+            for idx, (title, config) in enumerate(machine_config['Data'].items(), start=1):
+                # Extract unit and pivot information
+                bucket = config.get('Bucket', '')
+                measurement = config.get('Measurement', '')
+                unit = config.get('Units', '')
+                pivot = config.get('Pivot', None)
+                scale = config.get('Scale', 'linear')
+                
+            
+                graph_configs.append({
+                    'id': str(idx),  # Use sequential IDs
+                    'title': title,  # Use the key as title (e.g., 'Acceleration', 'Air Flow', 'Air Pressure')
+                    'unit': unit,
+                    'bucket': bucket,
+                    'measurement': measurement,
+                    'pivot': pivot,
+                    'scale': scale,
+                    'timeRange': '3h',  # Default time range
+                    'availableSeries': []  # Will be populated dynamically
+                })
+        
+        logger.info(f"Generated {len(graph_configs)} graph configurations with titles: {[g['title'] for g in graph_configs]}")
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Graph configurations retrieved successfully',
+            'data': graph_configs
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving graph configurations: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
