@@ -4,7 +4,7 @@ import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIco
 import { useDarkMode } from '../../context/DarkModeContext';
 import SideMenu from './SideMenu';
 
-const Header = ({ machineName, isNewDashboard = false }) => {
+const Header = ({ machineName, title, isNewDashboard = false }) => {
   const [airValveOpen, setAirValveOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -16,6 +16,9 @@ const Header = ({ machineName, isNewDashboard = false }) => {
   //const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
   // Only fetch booking data if not a new dashboard
   const { bookingData, loading, error } = useBookingData(isNewDashboard ? null : machineName);
+  
+  // Determine display title - use provided title or fallback to machineName or default
+  const displayTitle = title || machineName || 'Dashboard';
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -115,9 +118,9 @@ const Header = ({ machineName, isNewDashboard = false }) => {
                 >
                 <Bars3Icon className="w-6 h-6 text-gray-700 dark:text-gray-200" />
                 </button>
-                <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2">
-                 <a href={`/machine-summary?machineName=${machineName}`} className="text-4xl font-bold text-gray-900 dark:text-white tracking-wider pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
-                  {machineName}
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white pr-2">
+                 <a href={`/dashboard-summary`} className="text-4xl font-bold text-gray-900 dark:text-white pr-2 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+                  {displayTitle} {machineName} {machineName && <span className="text-xl dark:text-gray-400">({machineName})</span>}
                   </a>
                 </h1>
                 {!isNewDashboard && (
@@ -212,7 +215,7 @@ const Header = ({ machineName, isNewDashboard = false }) => {
                   <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 absolute mx-auto left-0 right-0 top-1 uppercase w-32">Air Flow</p>
                 </h5>
                 <div className="mt-2">
-                {/* Toggle Switch */}}
+                {/* Toggle Switch */}
             <div className="flex justify-center mt-1">
               <label className="flex items-center cursor-pointer">
                 <span className="mr-2 uppercase text-red-600 font-semibold">Close</span>

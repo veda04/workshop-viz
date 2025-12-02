@@ -297,7 +297,6 @@ def add_notes(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
-
 # ============================================================================
 # Influx DB related APIs
 # ============================================================================
@@ -559,6 +558,8 @@ def create_dashboard(request):
                     'message': f'Machine "{machine_name}" not found in database',
                     'data': {}
                 }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            asset_id = 0   # For general dashboards, asset_id is 0 as there is no specific machine associated at that stage 
         
         # Create dashboard
         mysql_service = MySQLService()

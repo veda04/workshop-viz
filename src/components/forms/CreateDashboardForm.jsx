@@ -97,8 +97,17 @@ const DashboardForm = ({ onClose }) => {
         // Close modal
         onClose();
         
-        // Navigate to dashboard summary with the new dashboard ID
-        navigate(`/dashboard-summary?dashboardId=${response.data.dashboardId}`);
+        // Navigate to dashboard summary with the new dashboard ID, title, and machineName
+        const params = new URLSearchParams({
+          dashboardId: response.data.dashboardId,
+          title: response.data.title
+        });
+        
+        // Add machineName if it exists (for machine-specific dashboards)
+        if (response.data.machineName) {
+          params.append('machineName', response.data.machineName);
+        }
+        navigate(`/dashboard-summary?${params.toString()}`);
       } else {
         setErrors({ submit: response.message || 'Failed to create dashboard' });
         setIsSubmitting(false);

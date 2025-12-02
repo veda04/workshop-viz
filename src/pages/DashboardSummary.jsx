@@ -16,8 +16,8 @@ const DashboardSummary = () => {
   const dashboardId = searchParams.get('dashboardId');
   const machineName = searchParams.get('machineName'); 
   
-  // Determine if this is a new dashboard (no blocks yet)
-  const isNewDashboard = dashboardId && !machineName;
+  // Determine if this is a new dashboard (has dashboardId)
+  const isNewDashboard = dashboardId !== null;
   
   const {dashboardData, loading, error } = useDashboardData(machineName);
   const [blockLoadingStates, setBlockLoadingStates] = useState({}); // Add per-block loading
