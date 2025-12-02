@@ -1,0 +1,62 @@
+{
+  "Nodes": [
+    "A1-CIN",
+    "A2-CIN",
+    "C1-CIN",
+    "T1-CIN"
+  ],
+  "ATMAS": true,
+  "Valve": true,
+  "Data": {
+    "Acceleration": {
+      "Bucket": "Machines",
+      "Measurement": "Acceleration",
+      "Predicates": {
+        "Node": ["/A[0-9]-CIN/"],
+        "_field": "Mean"
+      },
+      "Units": "g",
+      "Pivot": "Axis",
+      "Scale": "/10000.0",
+      "Sample_Interval": "0.1s"
+    },
+    "Mems Acceleration": {
+      "Bucket": "Machines",
+      "Measurement": "Acceleration",
+      "Predicates": {
+        "Node": ["108A","114A"]
+      },
+      "Units": "g",
+      "Pivot": "Axis",
+      "Scale": "/256000.0",
+      "Sample_Interval": "0.1s"
+    },
+    "Current": {
+      "Bucket": "Machines_",
+      "Measurement": "Current",
+      "Predicates": {
+        "Node": [
+          "/C[0-9]-CIN/"
+        ],
+        "_field": "Mean"
+      },
+      "Units": "A",
+      "Pivot": "Phase",
+      "Scale": "/1000.0",
+      "Sample_Interval": "15s"
+    },
+    "Temperature": {
+      "Bucket": "Machines",
+      "Measurement": "Temperature",
+      "Predicates": {
+        "Node": [
+          "/T[0-9]-CIN/"
+        ],
+        "_field": "value"
+      },
+      "Units": "°C",
+      "Pivot": "Name",
+      "Sample_Interval": "5s"
+    }
+  }
+}

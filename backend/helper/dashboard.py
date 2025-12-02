@@ -8,8 +8,8 @@
 ## Description: Used to get data from InfluxDB for displaying on a dashboard
 ## Usage: Runs as main function, or using getInfluxData is calling from an external source
 ##################################################
-## Version: 0.1.2
-## Last Updated: 27/11/2025
+## Version: 0.2.0
+## Last Updated: 01/12/2025
 ##################################################
 
 
@@ -29,7 +29,7 @@ INFLUX_TOKEN = "pRoemIh7JfC7cn1HG2VyZcx1BSIguLN-gqhQyKl8775tpvDV4o9NNf1FuLMDKKvK
 DB_LINK = "http://10.101.23.23:8086"
 DB_ORG = "ECMPG"
 
-INTERVAL_POINTS = [1,2,5,10,20,30,60]
+INTERVAL_POINTS = [1,2,5,10,20,30,45,60]
 FULL_SCREEN_POINTS = 1500
 MINIMISED_POINTS = 500
 
@@ -51,19 +51,18 @@ def _connect_influxDB(timeout=30_000):
 def calculateAggregation2(startDateTime, endDatetime, sampleInterval, maxPoints):
 	duration = (endDatetime-startDateTime).total_seconds()
 	try:
-		samplingInterval = int(sampleInterval[:-1])
+		samplingInterval = float(sampleInterval[:-1])
 		
 		unitQuantifier = sampleInterval[-1]
-		print(unitQuantifier)
+		print(f"Units:  {unitQuantifier}")
 	except Exception as e:
 		raise ValueError(f"Error parsing range '{sampleInterval}': {e}")
 	
 	match unitQuantifier:
-		case "ms":
+		case "f":
 			samplingInterval =samplingInterval /1000 #Convert milliseconds to seconds
 		case "m":
 			samplingInterval =samplingInterval*60 #Convert minutes to seconds
-	
 	estimatedPoints = duration/samplingInterval
 	print(f"Estimated Points: {estimatedPoints}")
 
@@ -297,26 +296,49 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=
 	
 	templateFilter = '  |> filter(fn: (r) => [FILTERS])'
 	templateMultiFilter = 'r["[FILTER_KEY]"] =="[FILTER_VALUE]"'
-	templateRegexFilter = 'r["[FILTER_KEY]"] =~ /[FILTER_VALUE]/)'
+	templateRegexFilter = 'r["[FILTER_KEY]"] =~ [FILTER_VALUE]'
 	templateScaling = '|> map(fn: (r) => ({r with _value: float(v: r._value) [SCALING]}))'
-	templateAggregation = '  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)'
+	templateAggregation = '  |> aggregateWindow(every: v.windowPeriod, fn: [AGGREGATE_FUNCTION], createEmpty: false)'
 
 	query = templateQuery
 	query = query.replace("[BUCKET_NAME]", configJSON.get("Bucket"))
 	query = query.replace("[MEASUREMENT]", configJSON.get("Measurement"))
 
 	filtersList = []
-	for key,value in configJSON.get("Filters").items():
-		if value[0] == "/" and value[-1] == "/":
-			filterString = templateRegexFilter
-			filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
-			
-		else:
-			filterString = templateMultiFilter
-			filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
-		completeFilterString = templateFilter
-		completeFilterString = completeFilterString.replace("[FILTERS]",filterString)
-		filtersList.append(completeFilterString)
+
+	if(configJSON.get("Summarised")):
+		filterString = templateMultiFilter.replace("[FILTER_KEY]","_field").replace("[FILTER_VALUE]", jsonQuery["aggregation"].capitalize())
+		filtersList.append(templateFilter.replace("[FILTERS]",filterString))
+		
+
+	if("Predicates" in configJSON):
+		print("Query Predicates Found")
+		for key,value in configJSON.get("Predicates").items():
+			if(isinstance(value,list)):
+				filterStringList = []
+				for listValue in value:
+					if listValue[0] == "/" and listValue[-1] == "/":
+						filterString = templateRegexFilter
+						filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", listValue)
+						
+					else:
+						filterString = templateMultiFilter
+						filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", listValue)
+					filterStringList.append(filterString)
+				completeFilterString = templateFilter
+				completeFilterString = completeFilterString.replace("[FILTERS]"," or ".join(filterStringList))
+				filtersList.append(completeFilterString)
+			else:
+				if value[0] == "/" and value[-1] == "/":
+					filterString = templateRegexFilter
+					filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
+					
+				else:
+					filterString = templateMultiFilter
+					filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
+				completeFilterString = templateFilter
+				completeFilterString = completeFilterString.replace("[FILTERS]",filterString)
+				filtersList.append(completeFilterString)
 
 	if("series" in jsonQuery):
 		seriesStringList = []
@@ -763,6 +785,22 @@ def preprocessResults(results):
 
 	
 	return results
+
+
+def loadJSONConfigs():
+	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+	config_folder = os.path.join(BASE_DIR, "Configs")
+	all_configs = {}
+
+	for filename in os.listdir(config_folder):
+		if filename.lower().endswith(".json"):
+			path = os.path.join(config_folder, filename)
+			with open(path, "r", encoding="utf-8") as f:
+				data = json.load(f)
+			
+			key = os.path.splitext(filename)[0]  # filename without extension
+			all_configs[key] = data
+	return all_configs
 
 if __name__ == "__main__":
 

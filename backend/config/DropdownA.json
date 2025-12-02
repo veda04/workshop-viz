@@ -1,0 +1,71 @@
+{
+  "Nodes": [
+    "127"
+  ],
+  "ATMAS": false,
+  "Valve": false,
+  "Data": {
+    "Temperature": {
+      "Bucket": "Workshop",
+      "Measurement": "Temperature",
+      "Predicates": {
+        "Location": [
+          "DropDown_A"
+        ],
+        "Type": "Average"
+      },
+      "Drop": [
+        "startTime",
+        "group",
+        "Type"
+      ],
+      "Units": "°C",
+      "Pivot": "Name",
+      "Sample_Interval": "15s"
+    },
+    "PM2.5": {
+      "Bucket": "Workshop",
+      "Measurement": "Particulates",
+      "Predicates": {
+        "Location": [
+          "DropDown_A"
+          
+        ],
+        "_field": "medium"
+      },
+      "Drop": [
+        "startTime",
+        "group",
+        "Type"
+      ],
+      "Units": "μg/m³",
+      "Pivot": "Level",
+      "Sample_Interval": "5s"
+    },
+    "PM10": {
+      "Bucket": "Workshop",
+      "Measurement": "Particulates",
+      "Predicates": {
+        "Location": [
+          "DropDown_A"
+        ],
+        "_field": "large"
+      },
+      "Units": "μg/m³",
+      "Pivot": "Level",
+      "Sample_Interval": "5s"
+    },
+    "Humidity": {
+      "Bucket": "Workshop",
+      "Measurement": "Humidity",
+      "Predicates": {
+        "Location": [
+          "DropDown_A"
+        ],
+        "_field": "value"
+      },
+      "Units": "%",
+      "Sample_Interval": "5s"
+    }
+  }
+}
