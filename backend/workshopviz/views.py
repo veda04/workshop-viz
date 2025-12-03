@@ -14,25 +14,7 @@ from django.conf import settings
 import os
 from influxdb_client import InfluxDBClient
 from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
-from helper.dashboard import getCustomGraphData, getInfluxData, getDataSeries
-import pprint
-import pandas as pd
-from django.shortcuts import render
-from reactivex import catch
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.http import JsonResponse
-from .influx_service import InfluxDBService
-from .mysql_service import MySQLService
-import json
-from datetime import datetime, timedelta, timezone
-import logging
-from django.conf import settings
-import os
-from influxdb_client import InfluxDBClient
-from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
-from helper.dashboard import getDataSeries, getInfluxData
+from helper.dashboard import getCustomData, getInfluxData, getDataSeries
 import pprint
 import pandas as pd
 

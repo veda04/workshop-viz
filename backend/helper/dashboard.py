@@ -776,9 +776,9 @@ def getCustomData(data, filePath=None):
 		print(f"Total Execution Time: {time_end - time_start} seconds")
 		# Preprocess the results if needed
 		processed_data = preprocessResults(output_result)
-		return output_result
+		return processed_data
 	except Exception as e:
-		print(f"Error in getCustomGraphData: {e}")
+		print(f"Error in getCustomData: {e}")
 		return None
 
 def preprocessResults(results):
