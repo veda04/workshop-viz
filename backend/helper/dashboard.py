@@ -723,8 +723,8 @@ def getDataSeries(data):
 				predicateStrings.append(f"r.{predicate} =~ {predicateValue}")
 			else:
 				predicateStrings.append(f"r.{predicate} == \"{predicateValue}\"")
-	predicateString = " or ".join(predicateStrings)
-	influxQuery = f"import \"influxdata/influxdb/schema\"\
+				predicateString = " or ".join(predicateStrings)
+				influxQuery = f"import \"influxdata/influxdb/schema\"\
 					schema.tagValues(\
 						bucket: \"{data['Bucket']}\", \
 						predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
@@ -737,7 +737,7 @@ def getDataSeries(data):
 	return series
 
 
-def getCustomGraphData(data, filePath=None):
+def getCustomData(data, filePath=None):
 	try:
 		# validate data is json and not empty
 		if not data:
@@ -776,7 +776,7 @@ def getCustomGraphData(data, filePath=None):
 		print(f"Total Execution Time: {time_end - time_start} seconds")
 		# Preprocess the results if needed
 		processed_data = preprocessResults(output_result)
-		return processed_data
+		return output_result
 	except Exception as e:
 		print(f"Error in getCustomGraphData: {e}")
 		return None

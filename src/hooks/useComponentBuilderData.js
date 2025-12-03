@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import apiService from '../services/apiService';
 
-export const useDashboardBuilderData = (machineName) => {
+export const useComponentBuilderData = (machineName) => {
   const [graphConfigs, setGraphConfigs] = useState([]);
   const [selectedGraphs, setSelectedGraphs] = useState([]);
   const [availableSeries, setAvailableSeries] = useState({});
@@ -13,52 +13,32 @@ export const useDashboardBuilderData = (machineName) => {
   const [loadingSeries, setLoadingSeries] = useState({});
   const [generatingGraph, setGeneratingGraph] = useState(false);
   const [error, setError] = useState(null);
-  const [savedGraphs, setSavedGraphs] = useState([]);
-  const [loadingSavedGraphs, setLoadingSavedGraphs] = useState(false);
 
-  // Fetch saved custom graphs
-  const fetchSavedGraphs = useCallback(async () => {
-    try {
-      setLoadingSavedGraphs(true);
-      const response = await apiService.getCustomGraphs(machineName);
-      
-      if (response.status === 'success') {
-        setSavedGraphs(response.data);
-      } else {
-        console.error('Failed to fetch saved graphs:', response.message);
-      }
-    } catch (err) {
-      console.error('Error fetching saved graphs:', err);
-    } finally {
-      setLoadingSavedGraphs(false);
-    }
-  }, [machineName]);
-
-  // Fetch available graph configurations on mount
+  // Fetch available data types 
   useEffect(() => {
-    const loadGraphConfigs = async () => {
+    const loadDataTypeConfigs = async () => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.getGraphConfigurations(machineName);
-        
+        const response = await apiService.getDataTypes(machineName);
+        // console.log('Data Types Configurations Response:', response);
+
         if (response.status === 'success') {
           setGraphConfigs(response.data);
         } else {
-          setError(response.message || 'Failed to load graph configurations');
+          setError(response.message || 'Failed to load data types');
         }
       } catch (err) {
-        setError(err.message || 'Failed to load graph configurations');
+        setError(err.message || 'Failed to load data types');
       } finally {
         setLoading(false);
       }
     };
 
     if (machineName) {
-      loadGraphConfigs();
-      fetchSavedGraphs();
+      loadDataTypeConfigs();
     }
-  }, [machineName, fetchSavedGraphs]);
+  }, [machineName]);
 
   // Fetch available series for a specific graph
   const fetchAvailableSeries = useCallback(async (graphId) => {
@@ -150,7 +130,7 @@ export const useDashboardBuilderData = (machineName) => {
       setGeneratingGraph(true);
       setError(null);
       
-      const response = await apiService.generateCustomGraphData({
+      const response = await apiService.generateData({
         type: selectedType,
         graphs: selectedGraphs,
         series: selectedSeries,
@@ -187,77 +167,6 @@ export const useDashboardBuilderData = (machineName) => {
     }
   }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs]);
 
-  // Load a saved graph configuration
-  const loadSavedGraph = useCallback(async (savedGraph) => {
-    try {
-      setGeneratingGraph(true);
-      setError(null);
-
-      // Parse the saved configuration
-      const graphTypes = typeof savedGraph.vGraph_types === 'string' 
-        ? JSON.parse(savedGraph.vGraph_types) 
-        : savedGraph.vGraph_types;
-      
-      const series = typeof savedGraph.vSeries === 'string' 
-        ? JSON.parse(savedGraph.vSeries) 
-        : savedGraph.vSeries;
-
-      // Set selected graphs and series
-      setSelectedGraphs(graphTypes);
-      setSelectedSeries(series);
-
-      // Fetch available series for each graph
-      for (const graphId of graphTypes) {
-        await fetchAvailableSeries(graphId);
-      }
-
-      // Generate the graph with saved configuration
-      const response = await apiService.getCustomGraphData({
-        type: selectedType,
-        graphs: graphTypes,
-        series: series,
-        range: timeRange,
-      }, machineName);
-
-      if (response.status === 'success') {
-        const graphDataWithAxes = {
-          ...response.data,
-          axisConfig: graphTypes.map((graphId, index) => {
-            const config = graphConfigs.find(g => g.id === graphId);
-            return {
-              graphId,
-              position: index === 0 ? 'left' : 'right',
-              unit: config?.unit || '',
-              title: config?.title || '',
-              series: series[graphId] || []
-            };
-          }),
-          savedGraphInfo: {
-            id: savedGraph.iGraph_id,
-            title: savedGraph.vTitle,
-            addedToDashboard: savedGraph.cAddToDashboard === 'Y'
-          }
-        };
-
-        setGraphData(graphDataWithAxes);
-        return true;
-      } else {
-        setError(response.message || 'Failed to load saved graph');
-        return false;
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to load saved graph');
-      return false;
-    } finally {
-      setGeneratingGraph(false);
-    }
-  }, [machineName, timeRange, graphConfigs, fetchAvailableSeries]);
-
-  // Refresh saved graphs list
-  const refreshSavedGraphs = useCallback(() => {
-    fetchSavedGraphs();
-  }, [fetchSavedGraphs]);
-
   // Reset error
   const clearError = useCallback(() => {
     setError(null);
@@ -277,8 +186,6 @@ export const useDashboardBuilderData = (machineName) => {
     loadingSeries,
     generatingGraph,
     error,
-    savedGraphs,
-    loadingSavedGraphs,
     
     // Actions
     setTimeRange,
@@ -286,7 +193,5 @@ export const useDashboardBuilderData = (machineName) => {
     handleSeriesSelection,
     generateGraph,
     clearError,
-    loadSavedGraph,
-    refreshSavedGraphs,
   };
 };

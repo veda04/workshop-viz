@@ -8,10 +8,10 @@ import ZoomableChart from '../components/charts/ZoomableChart';
 import Modal from '../components/Modal';
 import CustomGraphsForm from '../components/forms/CustomGraphsForm';
 import SavedGraphsSection from '../components/SavedGraphsSection';
-import { useDashboardBuilderData } from '../hooks/useDashboardBuilderData';
+import { useComponentBuilderData } from '../hooks/useComponentBuilderData';
 import { getFixedColors } from '../utils/chartUtils';
 
-const DashboardBuilder = () => {
+const ComponentBuilder = () => {
   const [searchParams] = useSearchParams();
   const machineName = searchParams.get('machineName');
   
@@ -38,7 +38,7 @@ const DashboardBuilder = () => {
     refreshSavedGraphs,
     selectedType,
     setSelectedType
-  } = useDashboardBuilderData(machineName);
+  } = useComponentBuilderData(machineName);
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isSaveGraphModalOpen, setIsSaveGraphModalOpen] = useState(false);
@@ -181,7 +181,7 @@ const DashboardBuilder = () => {
                   </div>
 
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Select Data Types
+                  {machineName ? `Select Data Types for ${machineName}` : 'Select Graphs'}
                   <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
                     ({selectedGraphs.length}/2)
                   </span>
@@ -242,7 +242,7 @@ const DashboardBuilder = () => {
 
           {/* Center Panel - Series Selection & Graph */}
           <div className="lg:col-span-6">
-            <div class="custom-graph">
+            <div className="custom-graph">
                 {selectedGraphs.length > 0 ? (
                   <div className="space-y-6">
                     {/* Collapsible Series Selection & Generate Button */}
@@ -320,7 +320,7 @@ const DashboardBuilder = () => {
                           })}
 
                           {/* Generate Button */}
-                          <div className="pt-4">
+                          <div className="pt-0">
                             <button
                               onClick={handleGenerateGraph}
                               disabled={generatingGraph || selectedGraphs.length === 0}
@@ -335,7 +335,7 @@ const DashboardBuilder = () => {
                                   Generating...
                                 </>
                               ) : (
-                                'Generate Graph'
+                                'Generate'
                               )}
                             </button>
                           </div>
@@ -465,4 +465,4 @@ const DashboardBuilder = () => {
   );
 };
 
-export default DashboardBuilder;
+export default ComponentBuilder;

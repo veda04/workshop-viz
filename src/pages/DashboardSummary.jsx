@@ -14,6 +14,7 @@ import { getFixedColors, getRandomColors} from '../utils/chartUtils';
 const DashboardSummary = () => {
   const [searchParams] = useSearchParams();
   const dashboardId = searchParams.get('dashboardId');
+  const title = searchParams.get('title');
   const machineName = searchParams.get('machineName'); 
   
   // Determine if this is a new dashboard (has dashboardId)
@@ -32,9 +33,9 @@ const DashboardSummary = () => {
 
   // Handle create new entry button click
   const handleCreateEntry = () => {
-    // TODO: Open popup with DashboardBuilder content
-    // redirect to DashboardBuilder page with machineName and dashboardId params
-    window.location.href = `/dashboard-builder?machineName=${encodeURIComponent(machineName)}&dashboardId=${encodeURIComponent(dashboardId)}`;
+    // TODO: Open popup with ComponentBuilder content
+    // redirect to ComponentBuilder page with machineName and dashboardId params
+    window.location.href = `/component-builder?dashboardId=${encodeURIComponent(dashboardId)}&title=${encodeURIComponent(title)}&machineName=${encodeURIComponent(machineName)}`;
   };
 
   return (

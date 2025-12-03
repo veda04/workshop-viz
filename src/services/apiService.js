@@ -27,7 +27,7 @@ class ApiService {
   }
 
   // ============================================================================
-  // Influx DB related APIs
+  // ATMAS DB related APIs
   // ============================================================================
   async getCurrentBooking(machineName) {
     const url = buildUrl(API_ENDPOINTS.currentBooking, {
@@ -72,6 +72,31 @@ class ApiService {
   //   }) + rangeParams;
   //   return this.fetchWithErrorHandling(url);
   // }
-}
+  async getDataTypes(machineName) {
+    const url = buildUrl(API_ENDPOINTS.dataTypes, {
+      machine_name: machineName,
+    });
+    return this.fetchWithErrorHandling(url);
+  }
 
+  async getAvailableSeries(graphId, machineName, timeRange) {
+    const url = buildUrl(API_ENDPOINTS.availableSeries, {
+      graph_id: graphId,
+      machine_name: machineName,
+      time_range: timeRange,
+    });
+    return this.fetchWithErrorHandling(url);
+  }
+
+  async generateData(requestData, machineName) {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.generateData}`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'POST',
+      body: JSON.stringify({
+        machine_name: machineName,
+        ...requestData,
+      }),
+    });
+  }
+}
 export default new ApiService();

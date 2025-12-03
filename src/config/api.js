@@ -11,6 +11,11 @@ export const API_ENDPOINTS = {
 
   machinesWithConfig: '/api/machines-with-config/',
   createDashboard: '/api/create-dashboard/',
+
+  dataTypes: '/api/data-types/',
+  availableSeries: '/api/available-series/',
+  generateData: '/api/generate-data/',
+
 };
 
 export const buildUrl = (endpoint, params = {}) => {

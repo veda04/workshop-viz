@@ -592,11 +592,11 @@ def create_dashboard(request):
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
-def get_graph_configurations(request):
-    """Get available graph configurations from config file"""
+def get_data_types(request):
+    """Get available data types from config file"""
     try:
         machine_name = request.GET.get('machine_name')
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}-v2.json")    # changed the config file to -v2.json
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
         
         if not os.path.exists(file_path):
             return JsonResponse({
@@ -606,10 +606,7 @@ def get_graph_configurations(request):
             }, status=status.HTTP_404_NOT_FOUND)
         
         with open(file_path, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
-        
-        # The JSON structure has the machine name as the top-level key. e.g., {"Hurco": {"Data": {...}}}
-        machine_config = config_data.get(machine_name, {})
+            machine_config = json.load(f)
         
         # Extract graph configurations from the 'Data' section
         graph_configs = []
@@ -650,4 +647,221 @@ def get_graph_configurations(request):
             'status': 'error',
             'message': f'Internal server error: {str(e)}',
             'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+def get_available_series(request):
+    """Get available series for a specific graph"""
+    try:
+        machine_name = request.GET.get('machine_name')
+        graph_id = request.GET.get('graph_id')
+        time_range = request.GET.get('range', '3h')
+        
+        if not graph_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Graph ID is required',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Load the configuration file
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        
+        if not os.path.exists(file_path):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Configuration file not found for machine: {machine_name}',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Load the JSON configuration
+        with open(file_path, 'r', encoding='utf-8') as f:
+            machine_config = json.load(f)
+        
+        if 'Data' not in machine_config or not isinstance(machine_config['Data'], dict):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid configuration structure',
+                'data': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Get the data type configuration based on graph_id, graph_id corresponds to the index in the Data dictionary (1-indexed)
+        data_types = list(machine_config['Data'].items())
+        graph_index = int(graph_id) - 1
+        
+        if graph_index < 0 or graph_index >= len(data_types):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Invalid graph ID: {graph_id}',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        data_type_name, data_type_config = data_types[graph_index]
+
+        available_series = []
+        
+        # Check if this data type has Predicates - if yes, use getDataSeries
+        if 'Predicates' in data_type_config and 'Pivot' in data_type_config:
+            available_series = getDataSeries(data_type_config)
+            # print("Available series from getDataSeries:", available_series)
+
+            if available_series is None:
+                available_series = None
+            
+            # getDataSeries returns False if Predicates not found (shouldn't happen here)
+            if available_series is None or available_series is False:
+                available_series = []
+        else:
+            logger.info(f"No Predicates found for {data_type_name}, returning empty or single series")
+            available_series = []
+        
+        logger.info(f"Available series for graph {graph_id} ({data_type_name}): {available_series}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Available series retrieved successfully',
+            'data_for': data_type_name,
+            'data': available_series
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving available series: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+@api_view(['POST'])
+def generate_data(request):
+    """Get custom graph data based on selected graphs and series"""
+    try:
+        data = request.data
+        machine_name = data.get('machine_name')
+        selected_type = data.get('type', None)
+        selected_graphs = data.get('graphs', [])
+        selected_series = data.get('series', {})
+        time_range = data.get('range', '3h')
+        # print("******* Custom graph data request:", machine_name, selected_graphs, selected_series, time_range)
+        
+        if not selected_graphs:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'No graphs selected',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Calculate time range
+        delta = parse_range_to_timedelta(time_range)
+        custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+        custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        
+        if not os.path.exists(file_path):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Configuration file not found for machine: {machine_name}',
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Load the config file to get graph names
+        with open(file_path, 'r', encoding='utf-8') as f:
+            machine_config = json.load(f)
+
+        data_types = list(machine_config.get('Data', {}).items())
+        
+        # Build graph info with IDs and names and series 
+        graphs_info = []
+        for graph_id in selected_graphs:
+            graph_index = int(graph_id) - 1
+            if graph_index >= 0 and graph_index < len(data_types):
+                data_type_name, data_type_config = data_types[graph_index]
+                graphs_info.append({
+                    'id': int(graph_id),
+                    'name': data_type_name,
+                    'aggregation': 'max',    # will change later based on user selection
+                    'series': selected_series.get(str(graph_id), [])
+                })
+                
+        customised_config_data = {
+            'date_from': custom_date_from,
+            'date_to': custom_date_to,
+            'data_types': graphs_info,  # Now includes both id and name and series 
+            'machine_name': machine_name,
+            "type": selected_type
+        }
+
+        # pprint.pprint("****** Custom Graph Config Data  :")        
+        # pprint.pprint( customised_config_data, indent=2, width=120)
+
+        # Get full dashboard data
+        # machine_data = getInfluxData(file_path, custom_date_from, custom_date_to, custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
+        machine_data = getCustomData(customised_config_data, file_path)
+        pprint.pprint("****** Machine Data  ******:")
+        pprint.pprint( machine_data, indent=2, width=120) 
+        
+        # Filter data based on selected graphs and series
+        combined_data = {
+            'chartData': [],
+            'series': [],
+            'unit': ''
+        }
+        
+        all_timestamps = set()
+        series_data_map = {}
+        
+        for graph_id in selected_graphs:
+            # machine_data is a list, find the item that matches the graph_id
+            graph_index = int(graph_id) - 1
+            
+            if graph_index >= 0 and graph_index < len(machine_data):
+                item = machine_data[graph_index]
+                graph_series = selected_series.get(str(graph_id), [])
+                
+                # Get unit from config if available
+                if not combined_data['unit'] and 'config' in item:
+                    # Extract unit from Queries if available
+                    if 'Queries' in item['config'] and len(item['config']['Queries']) > 0:
+                        combined_data['unit'] = item['config']['Queries'][0].get('Units', '')
+                
+                if 'data' in item and item['data']:
+                    # item['data'] is a list of data arrays (one per query)
+                    for df_data in item['data']:
+                        if df_data:
+                            for entry in df_data:
+                                timestamp = entry.get('time')
+                                if timestamp:
+                                    all_timestamps.add(timestamp)
+                                    
+                                    # Process each series
+                                    for series_name in graph_series:
+                                        if series_name in entry:
+                                            if series_name not in series_data_map:
+                                                series_data_map[series_name] = {}
+                                                combined_data['series'].append(series_name)
+                                            
+                                            series_data_map[series_name][timestamp] = entry[series_name]
+        
+        # Build combined chart data
+        sorted_timestamps = sorted(list(all_timestamps))
+        for timestamp in sorted_timestamps:
+            data_point = {'time': timestamp}
+            for series_name in combined_data['series']:
+                data_point[series_name] = series_data_map[series_name].get(timestamp, None)
+            combined_data['chartData'].append(data_point)
+        
+        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Custom graph data retrieved successfully',
+            'data': combined_data
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving custom graph data: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
