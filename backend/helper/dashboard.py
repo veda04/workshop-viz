@@ -374,7 +374,13 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=
 			maxPointsToFetch = MINIMISED_POINTS
 		getAggregationValue = calculateAggregation2(startDateTime_utc,endDateTime_utc,configJSON.get("Sample_Interval"),maxPointsToFetch)
 		if(getAggregationValue):
-			query += templateAggregation.replace("v.windowPeriod", getAggregationValue)
+			# query += templateAggregation.replace("v.windowPeriod", getAggregationValue)
+
+
+			# Get aggregation function from query, config, or default to 'mean'
+			aggregationFunc = jsonQuery.get("aggregation", configJSON.get("Aggregation", "mean"))
+			aggregationQuery = templateAggregation.replace("v.windowPeriod", getAggregationValue).replace("[AGGREGATE_FUNCTION]", aggregationFunc)
+			query += aggregationQuery
 
 		
 	if("Scale" in configJSON):
@@ -382,6 +388,7 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=
 		query += "\n" + templateScaling.replace("[SCALING]", scaling)
 		
 	return query
+
 def _runQuery(query):
 	"""
 	Connects to the InfluxDB and runs an InfluxDB Flux query 
@@ -509,12 +516,16 @@ def runJSONQuery(config, query):
 		list: A list of processed DataFrames (or None for queries that return no data),
 			  each corresponding to one entry in the "Queries" list.
 	"""
-	# print("Running JSON Query...")
+	#print("Running JSON Query...")
+	#pprint.pprint(config, indent=2, width=120)
+	
 	pivotedData = []
-	machine = query["machine_name"]
+	#machine = query["machine_name"]
 	for type in query["data_types"]:
+		#pprint.pprint(type, indent=2, width=120)
 		typename = type["name"]
-		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("minimised",False))
+		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("minimised",False)) #configJSON,jsonQuery,startDate,endDate,type,minimised=False
+		#print("Influx Query:", influxQuery)
 		data = _runQuery(influxQuery)
 		if not data:
 			print("No data returned from query")
@@ -633,13 +644,6 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	})
 	#print(results)
 	return results
-
-	# dummy json
-	# jsonQuery = {
-	#  	"Type": "Graph",
-	# 	"DefaultRange": "1h",
-	# 	"Minimised": False,
-	# }
 
 # this helper function to get the timezone adjusted time in HH:MM format
 def format_timestamp(timestamp, timezone='Europe/London'):
@@ -766,30 +770,64 @@ def getCustomData(data, filePath=None):
 		with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
 			configFile = f.read()
 
-		# f = open("D:\\projects\\workshop-viz\\backend\\config\\Hurco-v2.json",'r')
-		# configFile = f.read()
-		f.close()
 		jsonConfig = json.loads(configFile)
 		time_start = perf_counter()
-		output_result = runJSONQuery(jsonConfig[machine]["Data"],jsonQuery)
+
+		# Config file structure has Data at root level, not nested under machine name
+		output_result = runJSONQuery(jsonConfig["Data"], jsonQuery)		
+		#print("Output Result: ", output_result)
+
 		time_end = perf_counter()
 		print(f"Total Execution Time: {time_end - time_start} seconds")
-		# Preprocess the results if needed
-		processed_data = preprocessResults(output_result)
-		return processed_data
+		
+		# preprocess the results to make them JSON serializable
+		output_results = preprocessResults(output_result)
+
+		return output_results
+		
 	except Exception as e:
 		print(f"Error in getCustomData: {e}")
 		return None
 
-def preprocessResults(results):
 
-	
-	return results
+def preprocessResults(results):
+	"""
+	Preprocesses the results from InfluxDB queries to ensure they are JSON serializable.
+
+	Parameters:
+		results (list): A list of DataFrames or None values returned from runJSONQuery.
+
+	Returns:
+		list: A list of processed results where each DataFrame is converted to a list of dictionaries.
+	"""
+	processed_results = []
+	for df in results:
+		if df is not None:
+			# Reset index to include time as a column before converting to dictionary
+			df_with_time = df.reset_index()
+			# Convert DataFrame to dictionary format
+			df_dict = df_with_time.to_dict(orient='records')
+			
+			# Format timestamps in the data to 'HH:MM' format in GMT/BST timezone
+			formatted_records = []
+			for record in df_dict:
+				formatted_record = {}
+				for key, value in record.items():
+					if key.lower() in ['time', 'timestamp', '_time'] and isinstance(value, (str, pd.Timestamp)):
+						formatted_record[key] = format_timestamp(value, 'Europe/London')
+					else:
+						formatted_record[key] = value
+				formatted_records.append(formatted_record)
+			
+			processed_results.append(formatted_records)
+		else:
+			processed_results.append(None)
+	return processed_results
 
 
 def loadJSONConfigs():
-	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-	config_folder = os.path.join(BASE_DIR, "Configs")
+	BASE_DIR = "D:\\projects\\workshop-viz\\backend"
+	config_folder = os.path.join(BASE_DIR, "config")
 	all_configs = {}
 
 	for filename in os.listdir(config_folder):
@@ -804,58 +842,33 @@ def loadJSONConfigs():
 
 if __name__ == "__main__":
 
-	f = open("D:\\Github\\Workshop-Data\\Capture\\API\\query.json",'r')
+	jsonConfig = loadJSONConfigs()
+
+	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+	queryPath = os.path.join(BASE_DIR, "Queries","query.json")   # custom config
+	f = open(queryPath,'r')
 	queryFile = f.read()
 	f.close()
-	jsonQuery = json.loads(queryFile)	
+	jsonQuery = json.loads(queryFile)	   # custom config 
 	machine = jsonQuery["machine_name"]
 	
-	f = open("D:\\Github\\Workshop-Data\\Capture\\API\\NewHurcoConfig.json",'r')
-	configFile = f.read()
-	f.close()
-	jsonConfig = json.loads(configFile)
+	#print("Loaded Config: ", jsonConfig[machine])
 	time_start = perf_counter()
 	print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
 	time_end = perf_counter()
 	print(f"Total Execution Time: {time_end - time_start} seconds")
 
-
-
-"""
-if __name__ == "__main__":
-	f = open("E:\\ECPMG\\workshop-viz\\backend\\config\\HurcoDashboard2.json",'r')
-	configFile = f.read()
-	f.close()
-	jsonQuery = json.loads(configFile)
-	for i in range(1,9):
-		start = perf_counter()
-		data = runJSONQuery(jsonQuery[str(i)])
-		end = perf_counter()
-		print(f"{i} = {end-start}")
+	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\query.json",'r')
+	# queryFile = f.read()
+	# f.close()
+	# jsonQuery = json.loads(queryFile)	
+	# machine = jsonQuery["machine_name"]
 	
-	#print(data)
-"""
-
-""" This function is not currently in use
-def _getPivotKey(data,specifiedTags):
-	
-	pivot_keys = [k for k in data[0].records[0].values.keys()
-				if k not in ["_time", "_value", "_field", "_measurement","table","result",] and k not in specifiedTags.keys()]
-	if(len(pivot_keys) ==1):
-		pivotKey = pivot_keys[0]
-		print("Pivot key:", pivotKey)
-		return pivotKey
-	print("Potential pivot keys:", pivot_keys)
-	countPivotKeyOccurance = {}
-	for k in pivot_keys:
-		countPivotKeyOccurance[k] = set()
-	for table in data:
-		for record in table.records:
-			for k in pivot_keys:
-					tagValue = record.values.get(k)
-					countPivotKeyOccurance[k].add(tagValue)
-	longest_key = max(countPivotKeyOccurance, key=lambda k: len(countPivotKeyOccurance[k]))
-	pivotKey = longest_key
-	print("Pivot key:", pivotKey)
-	return pivotKey
-"""
+	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\NewHurcoConfig.json",'r')
+	# configFile = f.read()
+	# f.close()
+	# jsonConfig = json.loads(configFile)
+	# time_start = perf_counter()
+	# print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
+	# time_end = perf_counter()
+	# print(f"Total Execution Time: {time_end - time_start} seconds")

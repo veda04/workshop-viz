@@ -1,0 +1,11 @@
+{ 
+    "date_from": "2025-11-26T14:55:48Z",
+    "date_to": "2025-11-26T17:55:48Z",
+    "data_types": [
+        {"id": 1, "name": "Mems Acceleration", "series": ["Spindle_Left-X", "Spindle_Right-X"], "aggregation": "max", "machine_name": "Cincinnati"},
+        {"id": 2, "name": "Acceleration", "series": ["X-axis", "Y-axis"], "aggregation": "max", "machine_name": "Cincinnati"},
+        {"id": 3, "name": "Temperature", "series": ["Bottom Sensors","Top Sensors"], "aggregation": "max", "machine_name": "DropDown_A"}
+    ],
+    "type": "graph"
+
+}

@@ -35,7 +35,12 @@ const DashboardSummary = () => {
   const handleCreateEntry = () => {
     // TODO: Open popup with ComponentBuilder content
     // redirect to ComponentBuilder page with machineName and dashboardId params
-    window.location.href = `/component-builder?dashboardId=${encodeURIComponent(dashboardId)}&title=${encodeURIComponent(title)}&machineName=${encodeURIComponent(machineName)}`;
+    let componentBuilderUrl = `/component-builder?dashboardId=${encodeURIComponent(dashboardId)}&title=${encodeURIComponent(title)}`;
+    // redirects to component builder with dashboardId and title and machineName if available
+    if (machineName) {
+      componentBuilderUrl += `&machineName=${encodeURIComponent(machineName)}`;
+    }
+    window.location.href = componentBuilderUrl;
   };
 
   return (

@@ -11,6 +11,7 @@ urlpatterns = [
     path('add-notes/', views.add_notes, name='add_notes'),
 
     path('machines-with-config/', views.get_machines_with_config, name='get_machines_with_config'),
+    path('dropdowns-from-config/', views.get_dropdowns_from_config, name='get_dropdowns_from_config'),
     path('create-dashboard/', views.create_dashboard, name='create_dashboard'),
 
     path('data-types/', views.get_data_types, name='get_data_types'),

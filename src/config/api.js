@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
   addNotes: '/api/add-notes/',
 
   machinesWithConfig: '/api/machines-with-config/',
+  dropdownsFromConfig: '/api/dropdowns-from-config/',
   createDashboard: '/api/create-dashboard/',
 
   dataTypes: '/api/data-types/',

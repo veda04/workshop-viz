@@ -54,6 +54,11 @@ class ApiService {
     return this.fetchWithErrorHandling(url);
   }
 
+  async getDropdownsFromConfig() {
+    const url = `${API_BASE_URL}${API_ENDPOINTS.dropdownsFromConfig}`;
+    return this.fetchWithErrorHandling(url);
+  }
+
   async createDashboard(dashboardData) {
     const url = `${API_BASE_URL}${API_ENDPOINTS.createDashboard}`;
     return this.fetchWithErrorHandling(url, {

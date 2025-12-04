@@ -455,8 +455,8 @@ def get_machines_with_config(request):
         json_files = [f for f in os.listdir(config_dir) if f.endswith('.json') and '-' not in f]
         config_machine_names = [os.path.splitext(f)[0] for f in json_files]
         
-        print("Machines from DB:", [m['vName'] for m in db_machines])
-        print("Machines from config:", config_machine_names)
+        # print("Machines from DB:", [m['vName'] for m in db_machines])
+        # print("Machines from config:", config_machine_names)
         
         # Filter machines: Only include if BOTH in DB AND has config file
         machines_with_config = []
@@ -475,7 +475,7 @@ def get_machines_with_config(request):
                     'inDatabase': True
                 })
         
-        print("Machines with config (DB only):", machines_with_config)
+        #print("Machines with config (DB only):", machines_with_config)
         
         return JsonResponse({
             'status': 'success',
@@ -485,6 +485,44 @@ def get_machines_with_config(request):
     
     except Exception as e:
         logger.error(f"Error retrieving machines with config: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def get_dropdowns_from_config(request):
+    """Get non-machine assets from config files"""
+    try:
+        config_dir = MACHINE_CONFIG_PATH
+        
+        if not os.path.exists(config_dir):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Config directory not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all JSON files in config directory
+        json_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
+
+        dropdown_names = []
+        
+        for file_name in json_files:
+            if 'Dropdown' in file_name:
+                dropdown_names.append(os.path.splitext(file_name)[0])
+
+        # print("Dropdowns from config:", dropdown_names)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Dropdown list retrieved successfully',
+            'data': dropdown_names
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving dropdowns: {str(e)}")
         return JsonResponse({
             'status': 'error',
             'message': f'Internal server error: {str(e)}',
@@ -573,7 +611,6 @@ def create_dashboard(request):
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
-
 def get_data_types(request):
     """Get available data types from config file"""
     try:
@@ -723,7 +760,7 @@ def generate_data(request):
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
-        # print("******* Custom graph data request:", machine_name, selected_graphs, selected_series, time_range)
+        # print("******* Custom graph data request:", machine_name, selected_type, selected_graphs, selected_series, time_range)
         
         if not selected_graphs:
             return JsonResponse({
@@ -793,43 +830,42 @@ def generate_data(request):
         series_data_map = {}
         
         for graph_id in selected_graphs:
-            # machine_data is a list, find the item that matches the graph_id
             graph_index = int(graph_id) - 1
             
             if graph_index >= 0 and graph_index < len(machine_data):
-                item = machine_data[graph_index]
+                data_list = machine_data[graph_index]
                 graph_series = selected_series.get(str(graph_id), [])
                 
-                # Get unit from config if available
-                if not combined_data['unit'] and 'config' in item:
-                    # Extract unit from Queries if available
-                    if 'Queries' in item['config'] and len(item['config']['Queries']) > 0:
-                        combined_data['unit'] = item['config']['Queries'][0].get('Units', '')
-                
-                if 'data' in item and item['data']:
-                    # item['data'] is a list of data arrays (one per query)
-                    for df_data in item['data']:
-                        if df_data:
-                            for entry in df_data:
-                                timestamp = entry.get('time')
-                                if timestamp:
-                                    all_timestamps.add(timestamp)
+                # Process each data entry in the list
+                if data_list and isinstance(data_list, list):
+                    for entry in data_list:
+                        timestamp = entry.get('time')
+                        if timestamp:
+                            all_timestamps.add(timestamp)
+                            
+                            # Process each series - look for matching series names in the entry
+                            for series_name in graph_series:
+                                if series_name in entry:
+                                    if series_name not in series_data_map:
+                                        series_data_map[series_name] = {}
+                                        combined_data['series'].append(series_name)
                                     
-                                    # Process each series
-                                    for series_name in graph_series:
-                                        if series_name in entry:
-                                            if series_name not in series_data_map:
-                                                series_data_map[series_name] = {}
-                                                combined_data['series'].append(series_name)
-                                            
-                                            series_data_map[series_name][timestamp] = entry[series_name]
+                                    # Store or aggregate values for the same timestamp
+                                    if timestamp not in series_data_map[series_name]:
+                                        series_data_map[series_name][timestamp] = []
+                                    series_data_map[series_name][timestamp].append(entry[series_name])
         
-        # Build combined chart data
+        # Build combined chart data - average values for same timestamps
         sorted_timestamps = sorted(list(all_timestamps))
         for timestamp in sorted_timestamps:
             data_point = {'time': timestamp}
             for series_name in combined_data['series']:
-                data_point[series_name] = series_data_map[series_name].get(timestamp, None)
+                if timestamp in series_data_map[series_name]:
+                    values = series_data_map[series_name][timestamp]
+                    # Average multiple values for the same timestamp
+                    data_point[series_name] = sum(values) / len(values) if values else None
+                else:
+                    data_point[series_name] = None
             combined_data['chartData'].append(data_point)
         
         logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series")

@@ -3,7 +3,11 @@ import apiService from '../services/apiService';
 
 export const useComponentBuilderData = (machineName) => {
   const [graphConfigs, setGraphConfigs] = useState([]);
+  const [machines, setMachines] = useState([]);
+  const [dropdowns, setDropdowns] = useState([]);
+  const [machineDataTypes, setMachineDataTypes] = useState({});
   const [selectedGraphs, setSelectedGraphs] = useState([]);
+  const [graphToMachineMap, setGraphToMachineMap] = useState({}); // Maps graphId to machineName
   const [availableSeries, setAvailableSeries] = useState({});
   const [selectedSeries, setSelectedSeries] = useState({});
   const [selectedType, setSelectedType] = useState('Graph');
@@ -11,6 +15,7 @@ export const useComponentBuilderData = (machineName) => {
   const [timeRange, setTimeRange] = useState('3h');
   const [loading, setLoading] = useState(true);
   const [loadingSeries, setLoadingSeries] = useState({});
+  const [loadingDataTypes, setLoadingDataTypes] = useState({});
   const [generatingGraph, setGeneratingGraph] = useState(false);
   const [error, setError] = useState(null);
 
@@ -20,13 +25,50 @@ export const useComponentBuilderData = (machineName) => {
       try {
         setLoading(true);
         setError(null);
-        const response = await apiService.getDataTypes(machineName);
-        // console.log('Data Types Configurations Response:', response);
 
-        if (response.status === 'success') {
-          setGraphConfigs(response.data);
+        // If machineName is provided (MACH dashboard), load data for that machine
+        if (machineName) {
+          const response = await apiService.getDataTypes(machineName);
+          
+          if (response.status === 'success') {
+            // For MACH dashboard, also create unique IDs for consistency
+            const dataTypesWithUniqueIds = response.data.map(dataType => ({
+              ...dataType,
+              originalId: dataType.id, // Store original ID for API calls
+              id: `${machineName}_${dataType.id}` // Create unique ID
+            }));
+            
+            setGraphConfigs(dataTypesWithUniqueIds);
+            setMachines([{ vName: machineName }]);
+            setMachineDataTypes({ [machineName]: dataTypesWithUniqueIds });
+          } else {
+            setError(response.message || 'Failed to load data types');
+          }
+          
+          // Fetch dropdowns for MACH dashboard
+          const dropdownResponse = await apiService.getDropdownsFromConfig();
+          if (dropdownResponse.status === 'success') {
+            setDropdowns(dropdownResponse.data);
+          } else {
+            setError(dropdownResponse.message || 'Failed to load dropdowns');
+          }
         } else {
-          setError(response.message || 'Failed to load data types');
+          // If no machineName (GENR dashboard), get all machines first
+          const machinesResponse = await apiService.getMachinesWithConfig();
+        
+          if (machinesResponse.status === 'success') {
+            setMachines(machinesResponse.data);
+            // Don't load data types yet - will be loaded when accordion is expanded
+          } else {
+            setError(machinesResponse.message || 'Failed to load machines');
+          }
+          
+          const dropdownResponse = await apiService.getDropdownsFromConfig();
+          if (dropdownResponse.status === 'success') {
+            setDropdowns(dropdownResponse.data);
+          } else {
+            setError(dropdownResponse.message || 'Failed to load dropdowns');
+          }
         }
       } catch (err) {
         setError(err.message || 'Failed to load data types');
@@ -35,16 +77,51 @@ export const useComponentBuilderData = (machineName) => {
       }
     };
 
-    if (machineName) {
-      loadDataTypeConfigs();
-    }
+    loadDataTypeConfigs();
   }, [machineName]);
 
+  // Fetch data types for a specific machine (for GENR dashboards when accordion is expanded)
+  const fetchDataTypesForMachine = useCallback(async (machine) => {
+    // Skip if already loaded
+    if (machineDataTypes[machine]) {
+      return;
+    }
+
+    try {
+      setLoadingDataTypes(prev => ({ ...prev, [machine]: true }));
+      const response = await apiService.getDataTypes(machine);
+      
+      if (response.status === 'success') {
+        // Create unique IDs by prefixing with machine name
+        const dataTypesWithUniqueIds = response.data.map(dataType => ({
+          ...dataType,
+          originalId: dataType.id, // Store original ID for API calls
+          id: `${machine}_${dataType.id}` // Create unique ID
+        }));
+        
+        setMachineDataTypes(prev => ({
+          ...prev,
+          [machine]: dataTypesWithUniqueIds
+        }));
+      } else {
+        console.error(`Failed to fetch data types for ${machine}:`, response.message);
+      }
+    } catch (err) {
+      console.error(`Error fetching data types for ${machine}:`, err);
+    } finally {
+      setLoadingDataTypes(prev => ({ ...prev, [machine]: false }));
+    }
+  }, [machineDataTypes]);
+
   // Fetch available series for a specific graph
-  const fetchAvailableSeries = useCallback(async (graphId) => {
+  const fetchAvailableSeries = useCallback(async (graphId, machineNameForGraph) => {
     try {
       setLoadingSeries(prev => ({ ...prev, [graphId]: true }));
-      const response = await apiService.getAvailableSeries(graphId, machineName, '3h');
+      
+      // Extract original ID from unique ID (format: MachineName_OriginalId)
+      const originalId = graphId.includes('_') ? graphId.split('_')[1] : graphId;
+      
+      const response = await apiService.getAvailableSeries(originalId, machineNameForGraph, '3h');
       
       if (response.status === 'success') {
         setAvailableSeries(prev => ({
@@ -59,10 +136,10 @@ export const useComponentBuilderData = (machineName) => {
     } finally {
       setLoadingSeries(prev => ({ ...prev, [graphId]: false }));
     }
-  }, [machineName]);
+  }, []);
 
   // Handle graph selection (max 2 graphs)
-  const handleGraphSelection = useCallback((graphId) => {
+  const handleGraphSelection = useCallback((graphId, machineNameForGraph = null) => {
     setSelectedGraphs((prev) => {
       // Toggle selection
       if (prev.includes(graphId)) {
@@ -82,18 +159,34 @@ export const useComponentBuilderData = (machineName) => {
           return newAvailable;
         });
         
+        // Remove from machine map
+        setGraphToMachineMap(current => {
+          const newMap = { ...current };
+          delete newMap[graphId];
+          return newMap;
+        });
+        
         return newSelection;
       } else {
         // Add graph (max 2)
         if (prev.length < 2) {
+          // Determine which machine name to use
+          const machineToUse = machineNameForGraph || machineName;
+          
+          // Store the machine name for this graph
+          setGraphToMachineMap(current => ({
+            ...current,
+            [graphId]: machineToUse
+          }));
+          
           // Fetch available series for this graph
-          fetchAvailableSeries(graphId);
+          fetchAvailableSeries(graphId, machineToUse);
           return [...prev, graphId];
         }
         return prev;
       }
     });
-  }, [fetchAvailableSeries]);
+  }, [fetchAvailableSeries, machineName]);
 
   // Handle series selection for a graph
   const handleSeriesSelection = useCallback((graphId, seriesName) => {
@@ -130,19 +223,45 @@ export const useComponentBuilderData = (machineName) => {
       setGeneratingGraph(true);
       setError(null);
       
+      // For GENR dashboards, use the machine name of the first selected graph
+      // For MACH dashboards, use the provided machineName
+      const machineToUse = machineName || graphToMachineMap[selectedGraphs[0]];
+      
+      // Convert unique IDs back to original IDs for API call
+      const originalGraphIds = selectedGraphs.map(graphId => {
+        // Extract original ID from unique ID (format: MachineName_OriginalId)
+        return graphId.includes('_') ? graphId.split('_')[1] : graphId;
+      });
+      
+      // Convert series object keys from unique IDs to original IDs
+      const originalSeriesMapping = {};
+      selectedGraphs.forEach((uniqueGraphId, index) => {
+        const originalId = originalGraphIds[index];
+        originalSeriesMapping[originalId] = selectedSeries[uniqueGraphId];
+      });
+      
       const response = await apiService.generateData({
-        type: selectedType,
-        graphs: selectedGraphs,
-        series: selectedSeries,
+        type: selectedType.toLowerCase(),
+        graphs: originalGraphIds,
+        series: originalSeriesMapping,
         range: timeRange,
-      }, machineName);
+      }, machineToUse);
       
       if (response.status === 'success') {
         // Organize data with axis information
         const graphDataWithAxes = {
           ...response.data,
           axisConfig: selectedGraphs.map((graphId, index) => {
-            const config = graphConfigs.find(g => g.id === graphId);
+            // Find config - either from graphConfigs (MACH) or machineDataTypes (GENR)
+            let config = graphConfigs.find(g => g.id === graphId);
+            
+            // If not found in graphConfigs (GENR mode), search in machineDataTypes
+            if (!config && graphToMachineMap[graphId]) {
+              const machineForGraph = graphToMachineMap[graphId];
+              const machineTypes = machineDataTypes[machineForGraph] || [];
+              config = machineTypes.find(g => g.id === graphId);
+            }
+            
             return {
               graphId,
               position: index === 0 ? 'left' : 'right',
@@ -165,7 +284,7 @@ export const useComponentBuilderData = (machineName) => {
     } finally {
       setGeneratingGraph(false);
     }
-  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs]);
+  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs, graphToMachineMap, machineDataTypes]);
 
   // Reset error
   const clearError = useCallback(() => {
@@ -175,6 +294,10 @@ export const useComponentBuilderData = (machineName) => {
   return {
     // State
     graphConfigs,
+    machines,
+    dropdowns,
+    machineDataTypes,
+    graphToMachineMap,
     selectedGraphs,
     availableSeries,
     selectedSeries,
@@ -184,6 +307,7 @@ export const useComponentBuilderData = (machineName) => {
     timeRange,
     loading,
     loadingSeries,
+    loadingDataTypes,
     generatingGraph,
     error,
     
@@ -193,5 +317,6 @@ export const useComponentBuilderData = (machineName) => {
     handleSeriesSelection,
     generateGraph,
     clearError,
+    fetchDataTypesForMachine,
   };
 };
