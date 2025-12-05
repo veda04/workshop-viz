@@ -4,7 +4,7 @@ import { ClockIcon, ArrowPathIcon, SunIcon, MoonIcon, Bars3Icon, PencilSquareIco
 import { useDarkMode } from '../../context/DarkModeContext';
 import SideMenu from './SideMenu';
 
-const Header = ({ machineName, title, isNewDashboard = false }) => {
+const Header = ({ machineName, title, isNewDashboard = false, componentCount = 0 }) => {
   const [airValveOpen, setAirValveOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState('3h');
   const [showCustomRange, setShowCustomRange] = useState(false);
@@ -13,9 +13,12 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
+  // Show dashboard buttons only when dashboard has components
+  const showDashboardButtons = !isNewDashboard || componentCount > 0;
+
   //const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
-  // Only fetch booking data if not a new dashboard
-  const { bookingData, loading, error } = useBookingData(isNewDashboard ? null : machineName);
+  // Only fetch booking data if dashboard buttons should be shown
+  const { bookingData, loading, error } = useBookingData(showDashboardButtons ? machineName : null);
   
   // Determine display title - use provided title or fallback to machineName or default
   const displayTitle = title || machineName || 'Dashboard';
@@ -123,7 +126,7 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
                   {displayTitle} {machineName && <span className="">| {machineName}</span>}
                   </a>
                 </h1>
-                {!isNewDashboard && (
+                {showDashboardButtons && (
                 <>
                 <div
                 className={
@@ -208,8 +211,8 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
                 )}
               </div>
 
-              {/* Air Flow Block - Hide for new dashboards */}
-              {!isNewDashboard && (
+              {/* Air Flow Block - Show only when dashboard has components */}
+              {showDashboardButtons && (
                 <div className="text-center border-l border-r border-gray-300 dark:border-gray-600 px-20">
                 <h5 className="relative border-b border-gray-300 dark:border-gray-600 pb-5 bottom-2">
                   <p className="text-lg font-semibold text-gray-800 dark:text-gray-200 bg-white dark:bg-gray-900 absolute mx-auto left-0 right-0 top-1 uppercase w-32">Air Flow</p>
@@ -266,8 +269,8 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
             </button>
           </div>
           
-          {/* Refresh and Notes buttons - Hide for new dashboards */}
-          {!isNewDashboard && (
+          {/* Refresh and Notes buttons - Show only when dashboard has components */}
+          {showDashboardButtons && (
             <>
               <div className="bg-indigo-500 dark:bg-indigo-600 px-0 py-0 rounded-lg shadow-md flex items-center space-x-2 transition-colors">
                 <button className="text-white font-medium hover:bg-indigo-700 p-1 rounded-lg transition-colors" title="Refresh" onClick={() => window.location.reload()}>
@@ -296,8 +299,8 @@ const Header = ({ machineName, title, isNewDashboard = false }) => {
         </div>
       </div>
       
-      {/* Booking details section - Hide for new dashboards */}
-      {!isNewDashboard ? (
+      {/* Booking details section - Show only when dashboard has components */}
+      {showDashboardButtons ? (
         <div className="mt-4 current-booking">
           {(!bookingData) ? (
             <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">

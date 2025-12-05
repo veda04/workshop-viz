@@ -244,6 +244,210 @@ class MySQLService:
         finally:
             self.close()
 
+    def get_all_dashboards(self):
+        """Get all dashboards from visualisation_dashboards table"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            query = """
+                SELECT iDashboard_id, vTitle, iAsset_id, iUser_id, dtCreated, dtModified, cCategory
+                FROM visualisation_dashboards
+                ORDER BY dtModified DESC
+            """
+            cursor.execute(query)
+            results = cursor.fetchall()
+            cursor.close()
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error fetching dashboards: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def create_component(self, dashboard_id, v_title, v_description, i_position, v_query):
+        """Create a new component in visualisation_component_data table"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Convert vQuery dict to JSON string
+            import json
+            v_query_json = json.dumps(v_query)
+            
+            query = """
+                INSERT INTO visualisation_component_data 
+                (iDashboard_id, vTitle, vDescription, iPosition, vQuery, cAddToDashboard, dtCreated, dtModified)
+                VALUES (%s, %s, %s, %s, %s, 'Y', NOW(), NOW())
+            """
+            cursor.execute(query, (dashboard_id, v_title, v_description, i_position, v_query_json))
+            self.connection.commit()
+            
+            component_id = cursor.lastrowid
+            
+            # Fetch the created component
+            cursor.execute("""
+                SELECT icomponent_id, iDashboard_id, vTitle, vDescription, iPosition, vQuery, 
+                       cAddToDashboard, dtCreated, dtModified
+                FROM visualisation_component_data
+                WHERE icomponent_id = %s
+            """, (component_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            # Parse vQuery JSON back to dict
+            if result and result['vQuery']:
+                result['vQuery'] = json.loads(result['vQuery'])
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error creating component: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def get_components_by_dashboard(self, dashboard_id):
+        """Get all components for a specific dashboard"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            query = """
+                SELECT icomponent_id, iDashboard_id, vTitle, vDescription, iPosition, vQuery,
+                       cAddToDashboard, dtCreated, dtModified
+                FROM visualisation_component_data
+                WHERE iDashboard_id = %s AND cAddToDashboard = 'Y'
+                ORDER BY iPosition, dtCreated
+            """
+            cursor.execute(query, (dashboard_id,))
+            results = cursor.fetchall()
+            cursor.close()
+            
+            # Parse vQuery JSON for each component
+            import json
+            for result in results:
+                if result['vQuery']:
+                    result['vQuery'] = json.loads(result['vQuery'])
+            
+            return results
+            
+        except Exception as e:
+            logger.error(f"Error fetching components for dashboard {dashboard_id}: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def get_component_by_id(self, component_id):
+        """Get a single component by ID"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            query = """
+                SELECT icomponent_id, iDashboard_id, vTitle, vDescription, iPosition, vQuery,
+                       cAddToDashboard, dtCreated, dtModified
+                FROM visualisation_component_data
+                WHERE icomponent_id = %s
+            """
+            cursor.execute(query, (component_id,))
+            result = cursor.fetchone()
+            cursor.close()
+            
+            # Parse vQuery JSON
+            import json
+            if result and result['vQuery']:
+                result['vQuery'] = json.loads(result['vQuery'])
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Error fetching component {component_id}: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def update_component(self, component_id, v_title, v_description, i_position, v_query):
+        """Update an existing component"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor(dictionary=True)
+            
+            # Convert vQuery dict to JSON string
+            import json
+            v_query_json = json.dumps(v_query)
+            
+            query = """
+                UPDATE visualisation_component_data
+                SET vTitle = %s, vDescription = %s, iPosition = %s, vQuery = %s, dtModified = NOW()
+                WHERE icomponent_id = %s
+            """
+            cursor.execute(query, (v_title, v_description, i_position, v_query_json, component_id))
+            self.connection.commit()
+            
+            rows_affected = cursor.rowcount
+            
+            if rows_affected > 0:
+                # Fetch the updated component
+                cursor.execute("""
+                    SELECT icomponent_id, iDashboard_id, vTitle, vDescription, iPosition, vQuery,
+                           cAddToDashboard, dtCreated, dtModified
+                    FROM visualisation_component_data
+                    WHERE icomponent_id = %s
+                """, (component_id,))
+                result = cursor.fetchone()
+                cursor.close()
+                
+                # Parse vQuery JSON
+                if result and result['vQuery']:
+                    result['vQuery'] = json.loads(result['vQuery'])
+                
+                return result
+            else:
+                cursor.close()
+                return None
+            
+        except Exception as e:
+            logger.error(f"Error updating component {component_id}: {str(e)}")
+            return None
+        finally:
+            self.close()
+
+    def delete_component(self, component_id):
+        """Delete a component by ID"""
+        try:
+            if not self.connect():
+                return None
+            
+            cursor = self.connection.cursor()
+            
+            query = "DELETE FROM visualisation_component_data WHERE icomponent_id = %s"
+            cursor.execute(query, (component_id,))
+            self.connection.commit()
+            
+            rows_affected = cursor.rowcount
+            cursor.close()
+            
+            return rows_affected > 0
+            
+        except Exception as e:
+            logger.error(f"Error deleting component {component_id}: {str(e)}")
+            return None
+        finally:
+            self.close()
+
     def close(self):
         """Close the MySQL connection"""
         if self.connection and self.connection.is_connected():

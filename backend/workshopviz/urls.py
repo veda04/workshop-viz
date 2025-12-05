@@ -17,4 +17,14 @@ urlpatterns = [
     path('data-types/', views.get_data_types, name='get_data_types'),
     path('available-series/', views.get_available_series, name='get_available_series'),
     path('generate-data/', views.generate_data, name='generate_data'),
+    
+    # Dashboard endpoints
+    path('dashboards/', views.list_dashboards, name='list_dashboards'),
+    
+    # Component CRUD endpoints
+    path('components/create/', views.create_component, name='create_component'),
+    path('components/', views.list_components, name='list_components'),
+    path('components/<int:component_id>/', views.get_component, name='get_component'),
+    path('components/<int:component_id>/update/', views.update_component, name='update_component'),
+    path('components/<int:component_id>/delete/', views.delete_component, name='delete_component'),
 ]

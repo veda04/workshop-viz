@@ -926,10 +926,21 @@ def generate_data(request):
             else:
                 combined_data['statsValue'] = 'N/A'
         
+        # Build saveable config for component storage
+        # This allows the frontend to save the exact configuration that generated this data
+        saveable_config = {
+            'type': selected_type,
+            'graphs': selected_graphs,
+            'machine_names': machine_names,
+            'series': selected_series,
+            'range': time_range
+        }
+        
         return JsonResponse({
             'status': 'success',
             'message': 'Custom graph data retrieved successfully',
-            'data': combined_data
+            'data': combined_data,
+            'saveableConfig': saveable_config  # NEW: Add saveable config for component creation
         }, status=status.HTTP_200_OK)
     
     except Exception as e:
@@ -938,4 +949,384 @@ def generate_data(request):
             'status': 'error',
             'message': f'Internal server error: {str(e)}',
             'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+# ============================================================================
+# COMPONENT CRUD API ENDPOINTS
+# ============================================================================
+
+@api_view(['POST'])
+def create_component(request):
+    """
+    Create a new component in visualisation_component_data table
+    
+    POST /api/components/create/
+    
+    Request Body:
+    {
+        "iDashboard_id": 12,
+        "vTitle": "Cincinnati Acceleration Overview",
+        "vDescription": "3-hour view of acceleration data",
+        "iPosition": 1,
+        "vQuery": {
+            "graphIds": [{"id": "1", "machine": "Cincinnati"}],
+            "seriesSelection": {"1": ["X-Axis", "Y-Axis"]},
+            "timeRange": {"value": 3, "unit": "h"},
+            "type": "graph"
+        }
+    }
+    
+    Response: 201 Created
+    {
+        "success": true,
+        "component_id": 45,
+        "message": "Component created successfully"
+    }
+    """
+    try:
+        data = request.data
+        
+        # Validate required fields
+        if not data.get('iDashboard_id'):
+            return Response({
+                'success': False,
+                'error': 'iDashboard_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('vTitle'):
+            return Response({
+                'success': False,
+                'error': 'vTitle is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('iPosition'):
+            return Response({
+                'success': False,
+                'error': 'iPosition is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('vQuery'):
+            return Response({
+                'success': False,
+                'error': 'vQuery is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create component using mysql_service
+        mysql_service = MySQLService()
+        component = mysql_service.create_component(
+            dashboard_id=data['iDashboard_id'],
+            v_title=data['vTitle'],
+            v_description=data.get('vDescription', ''),
+            i_position=data['iPosition'],
+            v_query=data['vQuery']
+        )
+        
+        if component:
+            logger.info(f"Component created successfully: ID {component['icomponent_id']}")
+            return Response({
+                'success': True,
+                'component_id': component['icomponent_id'],
+                'message': 'Component created successfully'
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                'success': False,
+                'error': 'Failed to create component'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    except Exception as e:
+        logger.error(f"Error creating component: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def list_components(request):
+    """
+    Get all components for a specific dashboard
+    
+    GET /api/components/?dashboard_id=12
+    
+    Response:
+    {
+        "success": true,
+        "components": [
+            {
+                "icomponent_id": 45,
+                "iDashboard_id": 12,
+                "vTitle": "Cincinnati Acceleration",
+                "vDescription": "3-hour view",
+                "iPosition": 1,
+                "vQuery": {...},
+                "dtCreated": "2025-12-05T10:30:00Z",
+                "dtModified": "2025-12-05T10:30:00Z"
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        dashboard_id = request.query_params.get('dashboard_id')
+        
+        if not dashboard_id:
+            return Response({
+                'success': False,
+                'error': 'dashboard_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch components using mysql_service
+        mysql_service = MySQLService()
+        components_data = mysql_service.get_components_by_dashboard(dashboard_id)
+        
+        if components_data is None:
+            return Response({
+                'success': False,
+                'error': 'Failed to fetch components'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Format datetime fields
+        for c in components_data:
+            if c.get('dtCreated'):
+                c['dtCreated'] = c['dtCreated'].isoformat() if hasattr(c['dtCreated'], 'isoformat') else str(c['dtCreated'])
+            if c.get('dtModified'):
+                c['dtModified'] = c['dtModified'].isoformat() if hasattr(c['dtModified'], 'isoformat') else str(c['dtModified'])
+        
+        logger.info(f"Retrieved {len(components_data)} components for dashboard {dashboard_id}")
+        
+        return Response({
+            'success': True,
+            'data': components_data,
+            'count': len(components_data)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error listing components: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_component(request, component_id):
+    """
+    Get a single component by ID
+    
+    GET /api/components/{id}/
+    
+    Response:
+    {
+        "success": true,
+        "component": {
+            "icomponent_id": 45,
+            "iDashboard_id": 12,
+            "vTitle": "Cincinnati Acceleration",
+            "vDescription": "3-hour view",
+            "iPosition": 1,
+            "vQuery": {...},
+            "dtCreated": "2025-12-05T10:30:00Z",
+            "dtModified": "2025-12-05T10:30:00Z"
+        }
+    }
+    """
+    try:
+        # Fetch component using mysql_service
+        mysql_service = MySQLService()
+        component_data = mysql_service.get_component_by_id(component_id)
+        
+        if not component_data:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Format datetime fields
+        if component_data.get('dtCreated'):
+            component_data['dtCreated'] = component_data['dtCreated'].isoformat() if hasattr(component_data['dtCreated'], 'isoformat') else str(component_data['dtCreated'])
+        if component_data.get('dtModified'):
+            component_data['dtModified'] = component_data['dtModified'].isoformat() if hasattr(component_data['dtModified'], 'isoformat') else str(component_data['dtModified'])
+        
+        logger.info(f"Retrieved component {component_id}")
+        
+        return Response({
+            'success': True,
+            'data': component_data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error retrieving component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT'])
+def update_component(request, component_id):
+    """
+    Update an existing component
+    
+    PUT /api/components/{id}/update/
+    
+    Request Body:
+    {
+        "vTitle": "Updated Title",
+        "vDescription": "Updated description",
+        "iPosition": 2,
+        "vQuery": {...}
+    }
+    
+    Response:
+    {
+        "success": true,
+        "message": "Component updated successfully"
+    }
+    """
+    try:
+        data = request.data
+        
+        # Validate required fields
+        if not data.get('vTitle'):
+            return Response({
+                'success': False,
+                'error': 'vTitle is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('iPosition'):
+            return Response({
+                'success': False,
+                'error': 'iPosition is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('vQuery'):
+            return Response({
+                'success': False,
+                'error': 'vQuery is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update component using mysql_service
+        mysql_service = MySQLService()
+        updated_component = mysql_service.update_component(
+            component_id=component_id,
+            v_title=data['vTitle'],
+            v_description=data.get('vDescription', ''),
+            i_position=data['iPosition'],
+            v_query=data['vQuery']
+        )
+        
+        if updated_component:
+            logger.info(f"Component {component_id} updated successfully")
+            return Response({
+                'success': True,
+                'message': 'Component updated successfully',
+                'data': updated_component
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+    except Exception as e:
+        logger.error(f"Error updating component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+def delete_component(request, component_id):
+    """
+    Delete a component
+    
+    DELETE /api/components/{id}/delete/
+    
+    Response:
+    {
+        "success": true,
+        "message": "Component deleted successfully"
+    }
+    """
+    try:
+        # Delete component using mysql_service
+        mysql_service = MySQLService()
+        success = mysql_service.delete_component(component_id)
+        
+        if success:
+            logger.info(f"Component {component_id} deleted successfully")
+            return Response({
+                'success': True,
+                'message': 'Component deleted successfully'
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+    except Exception as e:
+        logger.error(f"Error deleting component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def list_dashboards(request):
+    """
+    Get all dashboards
+    
+    GET /api/dashboards/
+    
+    Response:
+    {
+        "success": true,
+        "data": [
+            {
+                "iDashboard_id": 1,
+                "vTitle": "Cincinnati Dashboard",
+                "iAsset_id": 123,
+                "dtCreated": "2024-01-15T10:30:00Z",
+                "dtModified": "2024-01-15T10:30:00Z",
+                "cCategory": "MACH"
+            }
+        ]
+    }
+    """
+    try:
+        # Fetch dashboards using mysql_service
+        mysql_service = MySQLService()
+        dashboard_list = mysql_service.get_all_dashboards()
+        
+        if dashboard_list is None:
+            return Response({
+                'success': False,
+                'error': 'Failed to fetch dashboards'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Format datetime fields
+        for dashboard in dashboard_list:
+            if dashboard.get('dtCreated'):
+                dashboard['dtCreated'] = dashboard['dtCreated'].isoformat() if hasattr(dashboard['dtCreated'], 'isoformat') else str(dashboard['dtCreated'])
+            if dashboard.get('dtModified'):
+                dashboard['dtModified'] = dashboard['dtModified'].isoformat() if hasattr(dashboard['dtModified'], 'isoformat') else str(dashboard['dtModified'])
+        
+        return Response({
+            'success': True,
+            'data': dashboard_list
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching dashboards: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

@@ -103,5 +103,78 @@ class ApiService {
       }),
     });
   }
+
+  // Dashboard methods
+  async getDashboards() {
+    const url = `${API_BASE_URL}/dashboards/`;
+    return this.fetchWithErrorHandling(url);
+  }
+
+  // ============================================================================
+  // COMPONENT CRUD APIs
+  // ============================================================================
+
+  /**
+   * Create a new component
+   * @param {Object} componentData - Component data including iDashboard_id, vTitle, vDescription, iPosition, vQuery
+   * @returns {Promise} Response with component_id
+   */
+  async createComponent(componentData) {
+    const url = `${API_BASE_URL}/api/components/create/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'POST',
+      body: JSON.stringify(componentData),
+    });
+  }
+
+  /**
+   * Get all components for a dashboard
+   * @param {number} dashboardId - Dashboard ID
+   * @returns {Promise} Response with array of components
+   */
+  async getComponents(dashboardId) {
+    const url = `${API_BASE_URL}/api/components/?dashboard_id=${dashboardId}`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Get a single component by ID
+   * @param {number} componentId - Component ID
+   * @returns {Promise} Response with component data
+   */
+  async getComponent(componentId) {
+    const url = `${API_BASE_URL}/api/components/${componentId}/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'GET',
+    });
+  }
+
+  /**
+   * Update an existing component
+   * @param {number} componentId - Component ID
+   * @param {Object} componentData - Updated component data
+   * @returns {Promise} Response with success message
+   */
+  async updateComponent(componentId, componentData) {
+    const url = `${API_BASE_URL}/api/components/${componentId}/update/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'PUT',
+      body: JSON.stringify(componentData),
+    });
+  }
+
+  /**
+   * Delete a component
+   * @param {number} componentId - Component ID
+   * @returns {Promise} Response with success message
+   */
+  async deleteComponent(componentId) {
+    const url = `${API_BASE_URL}/api/components/${componentId}/delete/`;
+    return this.fetchWithErrorHandling(url, {
+      method: 'DELETE',
+    });
+  }
 }
 export default new ApiService();

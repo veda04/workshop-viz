@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layouts/Layout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
@@ -7,14 +7,20 @@ import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import DashboardBlock from '../components/dashboard/DashboardBlock';
 import Modal from '../components/Modal';
-import CustomGraphsForm from '../components/forms/CustomGraphsForm';
+import AddComponentForm from '../components/forms/AddComponentForm';
 import { useComponentBuilderData } from '../hooks/useComponentBuilderData';
 import { getFixedColors, getRandomColors } from '../utils/chartUtils';
 import { getUnitByTitle } from '../utils/unitUtils';
+import apiService from '../services/apiService';
 
 const ComponentBuilder = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const machineName = searchParams.get('machineName');
+  const dashboardId = searchParams.get('dashboardId');
+  const mode = searchParams.get('mode'); // 'E' for edit mode
+  const componentId = searchParams.get('component_id');
+  const isEditMode = mode === 'E' && componentId;
   
   // Use custom hook for graph data management
   const {
@@ -49,6 +55,9 @@ const ComponentBuilder = () => {
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [isSaveGraphModalOpen, setIsSaveGraphModalOpen] = useState(false);
+  const [isAddToDashboardModalOpen, setIsAddToDashboardModalOpen] = useState(false);
+  const [saveableConfig, setSaveableConfig] = useState(null);
+  const [componentToEdit, setComponentToEdit] = useState(null);
   const [chartColors, setChartColors] = useState([]);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true); // Start collapsed for consistency
   const [expandedMachines, setExpandedMachines] = useState([]);
@@ -71,6 +80,32 @@ const ComponentBuilder = () => {
     }
   }, [graphData]);
 
+  // Load component data in edit mode
+  useEffect(() => {
+    if (isEditMode && componentId) {
+      loadComponentForEdit(componentId);
+    }
+  }, [isEditMode, componentId]);
+
+  const loadComponentForEdit = async (compId) => {
+    try {
+      const response = await apiService.getComponent(compId);
+      if (response.success) {
+        const component = response.data || response.component;
+        setComponentToEdit(component);
+        const vQuery = component.vQuery;
+        
+        // TODO: Pre-populate form fields from vQuery
+        // This would involve setting machines, data types, series selections, etc.
+        // For now, just store the component data
+        console.log('Component loaded for edit:', component);
+      }
+    } catch (error) {
+      console.error('Failed to load component:', error);
+      alert('Failed to load component for editing');
+    }
+  };
+
   // Handle generate graph button click
   const handleGenerateGraph = async () => {
     const success = await generateGraph();
@@ -79,13 +114,34 @@ const ComponentBuilder = () => {
     }
   };
 
+  // Update saveableConfig whenever graphData changes
+  useEffect(() => {
+    if (graphData?.saveableConfig) {
+      console.log('Setting saveableConfig:', graphData.saveableConfig);
+      setSaveableConfig(graphData.saveableConfig);
+    }
+  }, [graphData]);
 
-  // Handle Save Graph button click
+  // Handle Add to Dashboard button click
   const handleSaveGraph = () => {
     if (!graphData || !graphData.chartData || graphData.chartData.length === 0) {
+      alert('Please generate a graph first');
       return;
     }
-    setIsSaveGraphModalOpen(true);
+    
+    // Check if we have saveableConfig
+    if (!saveableConfig) {
+      alert('Configuration data is missing. Please generate the graph again.');
+      return;
+    }
+    
+    // Check if we have dashboard context
+    if (!dashboardId) {
+      alert('Dashboard ID is missing. Please access this page through a dashboard.');
+      return;
+    }
+    
+    setIsAddToDashboardModalOpen(true);
   };
 
   // Handle machine accordion toggle
@@ -650,8 +706,14 @@ const ComponentBuilder = () => {
                         </div>
                         <button
                         onClick={handleSaveGraph}
-                        className='mt-4 px-4 py-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors'>
-                          Add to Dashboard
+                        disabled={!saveableConfig}
+                        className={`mt-4 px-4 py-2 w-full font-semibold rounded-lg transition-colors ${
+                          saveableConfig
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                            : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                        }`}
+                        title={!saveableConfig ? 'Generate a graph first' : ''}>
+                          {isEditMode ? 'Update Component' : 'Add to Dashboard'}
                         </button>
                       </div>
                     )} 
@@ -698,26 +760,18 @@ const ComponentBuilder = () => {
         />
       </Modal>
 
-      {/* Modal for Save Graph Form */}
-      <Modal isOpen={isSaveGraphModalOpen} onClose={() => {
-        setIsSaveGraphModalOpen(false);
-        // Clear edit mode when modal is closed
-        setEditGraphId(null);
-        setEditGraphData(null);
-      }} size="large">
-        <CustomGraphsForm
-          onClose={() => {
-            setIsSaveGraphModalOpen(false);
-            setEditGraphId(null);
-            setEditGraphData(null);
-          }}
-          machineName={machineName}
-          selectedGraphs={selectedGraphs}
-          selectedSeries={selectedSeries}
-          graphConfigs={graphConfigs}
-          onSaveSuccess={handleSaveSuccess}
-          editGraphId={editGraphId}
-          editGraphData={editGraphData}
+      {/* Add to Dashboard Modal */}
+      <Modal 
+        isOpen={isAddToDashboardModalOpen} 
+        onClose={() => setIsAddToDashboardModalOpen(false)}
+        size="default"
+      >
+        <AddComponentForm
+          onClose={() => setIsAddToDashboardModalOpen(false)}
+          dashboardId={dashboardId}
+          saveableConfig={saveableConfig}
+          isEditMode={isEditMode}
+          initialData={componentToEdit}
         />
       </Modal>
     </Layout>

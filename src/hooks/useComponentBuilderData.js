@@ -257,6 +257,7 @@ export const useComponentBuilderData = (machineName) => {
         // Organize data with axis information
         const graphDataWithAxes = {
           ...response.data,
+          saveableConfig: response.saveableConfig, // NEW: Include saveable config from backend
           axisConfig: selectedGraphs.map((graphId, index) => {
             // Find config - either from graphConfigs (MACH) or machineDataTypes (GENR)
             let config = graphConfigs.find(g => g.id === graphId);
