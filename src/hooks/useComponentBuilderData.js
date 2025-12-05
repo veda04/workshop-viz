@@ -223,9 +223,14 @@ export const useComponentBuilderData = (machineName) => {
       setGeneratingGraph(true);
       setError(null);
       
-      // For GENR dashboards, use the machine name of the first selected graph
-      // For MACH dashboards, use the provided machineName
-      const machineToUse = machineName || graphToMachineMap[selectedGraphs[0]];
+      // Build array of machine names (one per selected graph)
+      const machineNamesArray = selectedGraphs.map(graphId => {
+        // Use graphToMachineMap for GENR dashboards, or machineName for MACH dashboards
+        return graphToMachineMap[graphId] || machineName;
+      });
+      
+      // For backward compatibility, use first machine name
+      const machineToUse = machineNamesArray[0];
       
       // Convert unique IDs back to original IDs for API call
       const originalGraphIds = selectedGraphs.map(graphId => {
@@ -245,6 +250,7 @@ export const useComponentBuilderData = (machineName) => {
         graphs: originalGraphIds,
         series: originalSeriesMapping,
         range: timeRange,
+        machine_names: machineNamesArray,  // NEW: Send array of machine names
       }, machineToUse);
       
       if (response.status === 'success') {
@@ -255,15 +261,18 @@ export const useComponentBuilderData = (machineName) => {
             // Find config - either from graphConfigs (MACH) or machineDataTypes (GENR)
             let config = graphConfigs.find(g => g.id === graphId);
             
+            // Determine machine name for this graph
+            const machineForGraph = graphToMachineMap[graphId] || machineName;
+            
             // If not found in graphConfigs (GENR mode), search in machineDataTypes
-            if (!config && graphToMachineMap[graphId]) {
-              const machineForGraph = graphToMachineMap[graphId];
+            if (!config && machineForGraph && machineDataTypes[machineForGraph]) {
               const machineTypes = machineDataTypes[machineForGraph] || [];
               config = machineTypes.find(g => g.id === graphId);
             }
             
             return {
               graphId,
+              machineName: machineForGraph,  // NEW: Include machine/dropdown name
               position: index === 0 ? 'left' : 'right',
               unit: config?.unit || '',
               title: config?.title || '',

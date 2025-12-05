@@ -226,7 +226,7 @@ const ZoomableChart = ({ data, series, color, title, unit, axisConfig }) => {
                 {/* Left Axis Legend (First Selection) */}
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 mb-2 text-left px-2">
-                    {axisConfig[0].title} ({axisConfig[0].unit}) - Left Axis
+                    {axisConfig[0].machineName ? `${axisConfig[0].machineName}: ${axisConfig[0].title}` : axisConfig[0].title} ({axisConfig[0].unit}) - Left Axis
                   </h4>
                   <div className="flex flex-wrap justify-start gap-4 px-2">
                     {axisConfig[0].series.map((seriesName) => {
@@ -249,7 +249,7 @@ const ZoomableChart = ({ data, series, color, title, unit, axisConfig }) => {
                 {/* Right Axis Legend (Second Selection) */}
                 <div>
                   <h4 className="text-xs font-semibold text-gray-400 mb-2 text-right px-2">
-                    {axisConfig[1].title} ({axisConfig[1].unit}) - Right Axis
+                    {axisConfig[1].machineName ? `${axisConfig[1].machineName}: ${axisConfig[1].title}` : axisConfig[1].title} ({axisConfig[1].unit}) - Right Axis
                   </h4>
                   <div className="flex flex-wrap justify-end gap-4 px-2">
                     {axisConfig[1].series.map((seriesName) => {

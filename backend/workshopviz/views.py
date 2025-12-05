@@ -755,12 +755,16 @@ def generate_data(request):
     """Get custom graph data based on selected graphs and series"""
     try:
         data = request.data
-        machine_name = data.get('machine_name')
+        machine_name = data.get('machine_name')  # For backward compatibility
+        machine_names = data.get('machine_names', [])  # New: array of machine names per graph
         selected_type = data.get('type', None)
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
-        # print("******* Custom graph data request:", machine_name, selected_type, selected_graphs, selected_series, time_range)
+        
+        # Backward compatibility: if machine_names not provided, use machine_name for all graphs
+        if not machine_names:
+            machine_names = [machine_name] * len(selected_graphs)
         
         if not selected_graphs:
             return JsonResponse({
@@ -769,91 +773,115 @@ def generate_data(request):
                 'data': {}
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        if len(machine_names) != len(selected_graphs):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Number of machine names must match number of selected graphs',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # Calculate time range
         delta = parse_range_to_timedelta(time_range)
         custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
         custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        # Process each graph with its corresponding machine/dropdown
+        all_machine_data = []
+        machine_metadata = []  # Store metadata about each graph's source
         
-        if not os.path.exists(file_path):
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Configuration file not found for machine: {machine_name}',
-                'data': {}
-            }, status=status.HTTP_404_NOT_FOUND)
-        
-        # Load the config file to get graph names
-        with open(file_path, 'r', encoding='utf-8') as f:
-            machine_config = json.load(f)
+        for idx, (graph_id, machine_name_for_graph) in enumerate(zip(selected_graphs, machine_names)):
+            file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name_for_graph}.json")
+            
+            if not os.path.exists(file_path):
+                logger.warning(f'Configuration file not found for: {machine_name_for_graph}')
+                all_machine_data.append(None)
+                continue
+            
+            # Load the config file to get graph names
+            with open(file_path, 'r', encoding='utf-8') as f:
+                machine_config = json.load(f)
 
-        data_types = list(machine_config.get('Data', {}).items())
-        
-        # Build graph info with IDs and names and series 
-        graphs_info = []
-        for graph_id in selected_graphs:
+            data_types = list(machine_config.get('Data', {}).items())
+            
+            # Build graph info for this specific graph
             graph_index = int(graph_id) - 1
             if graph_index >= 0 and graph_index < len(data_types):
                 data_type_name, data_type_config = data_types[graph_index]
-                graphs_info.append({
+                graphs_info = [{
                     'id': int(graph_id),
                     'name': data_type_name,
-                    'aggregation': 'max',    # will change later based on user selection
+                    'aggregation': 'max',
                     'series': selected_series.get(str(graph_id), [])
-                })
+                }]
                 
-        customised_config_data = {
-            'date_from': custom_date_from,
-            'date_to': custom_date_to,
-            'data_types': graphs_info,  # Now includes both id and name and series 
-            'machine_name': machine_name,
-            "type": selected_type
-        }
-
-        # pprint.pprint("****** Custom Graph Config Data  :")        
-        # pprint.pprint( customised_config_data, indent=2, width=120)
-
-        # Get full dashboard data
-        # machine_data = getInfluxData(file_path, custom_date_from, custom_date_to, custom_graph_config_data)   #  getInfluxData(file_path, custom_date_from, custom_date_to)
-        machine_data = getCustomData(customised_config_data, file_path)
-        pprint.pprint("****** Machine Data  ******:")
-        pprint.pprint( machine_data, indent=2, width=120) 
+                customised_config_data = {
+                    'date_from': custom_date_from,
+                    'date_to': custom_date_to,
+                    'data_types': graphs_info,
+                    'machine_name': machine_name_for_graph,
+                    "type": selected_type
+                }
+                
+                # Get data for this machine/dropdown
+                machine_data = getCustomData(customised_config_data, file_path)
+                
+                if machine_data and len(machine_data) > 0:
+                    all_machine_data.append(machine_data[0])  # Get first element as we only query one graph at a time
+                    machine_metadata.append({
+                        'graph_id': str(graph_id),
+                        'machine_name': machine_name_for_graph,
+                        'data_type_name': data_type_name,
+                        'unit': data_type_config.get('Unit', ''),
+                        'series': selected_series.get(str(graph_id), [])
+                    })
+                else:
+                    all_machine_data.append(None)
+            else:
+                all_machine_data.append(None)
         
-        # Filter data based on selected graphs and series
+        logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
+        pprint.pprint("****** All Machine Data  ******:")
+        pprint.pprint(all_machine_data, indent=2, width=120)
+        
+        # Merge data from multiple machines/dropdowns
         combined_data = {
             'chartData': [],
             'series': [],
-            'unit': ''
+            'unit': '',
+            'machineMetadata': machine_metadata  # Include metadata for frontend
         }
         
         all_timestamps = set()
         series_data_map = {}
         
-        for graph_id in selected_graphs:
-            graph_index = int(graph_id) - 1
+        # Process each machine's data
+        for idx, data_list in enumerate(all_machine_data):
+            if data_list is None or not isinstance(data_list, list):
+                continue
             
-            if graph_index >= 0 and graph_index < len(machine_data):
-                data_list = machine_data[graph_index]
-                graph_series = selected_series.get(str(graph_id), [])
-                
-                # Process each data entry in the list
-                if data_list and isinstance(data_list, list):
-                    for entry in data_list:
-                        timestamp = entry.get('time')
-                        if timestamp:
-                            all_timestamps.add(timestamp)
+            metadata = machine_metadata[idx] if idx < len(machine_metadata) else None
+            if not metadata:
+                continue
+            
+            graph_series = metadata['series']
+            
+            # Process each data entry in the list
+            for entry in data_list:
+                timestamp = entry.get('time')
+                if timestamp:
+                    all_timestamps.add(timestamp)
+                    
+                    # Process each series - look for matching series names in the entry
+                    for series_name in graph_series:
+                        if series_name in entry:
+                            if series_name not in series_data_map:
+                                series_data_map[series_name] = {}
+                                combined_data['series'].append(series_name)
                             
-                            # Process each series - look for matching series names in the entry
-                            for series_name in graph_series:
-                                if series_name in entry:
-                                    if series_name not in series_data_map:
-                                        series_data_map[series_name] = {}
-                                        combined_data['series'].append(series_name)
-                                    
-                                    # Store or aggregate values for the same timestamp
-                                    if timestamp not in series_data_map[series_name]:
-                                        series_data_map[series_name][timestamp] = []
-                                    series_data_map[series_name][timestamp].append(entry[series_name])
+                            # Store or aggregate values for the same timestamp
+                            if timestamp not in series_data_map[series_name]:
+                                series_data_map[series_name][timestamp] = []
+                            series_data_map[series_name][timestamp].append(entry[series_name])
         
         # Build combined chart data - average values for same timestamps
         sorted_timestamps = sorted(list(all_timestamps))
@@ -868,7 +896,7 @@ def generate_data(request):
                     data_point[series_name] = None
             combined_data['chartData'].append(data_point)
         
-        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series")
+        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series from {len(machine_metadata)} sources")
         
         return JsonResponse({
             'status': 'success',
