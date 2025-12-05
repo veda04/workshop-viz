@@ -5,11 +5,12 @@ import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
+import DashboardBlock from '../components/dashboard/DashboardBlock';
 import Modal from '../components/Modal';
 import CustomGraphsForm from '../components/forms/CustomGraphsForm';
-import SavedGraphsSection from '../components/SavedGraphsSection';
 import { useComponentBuilderData } from '../hooks/useComponentBuilderData';
-import { getFixedColors } from '../utils/chartUtils';
+import { getFixedColors, getRandomColors } from '../utils/chartUtils';
+import { getUnitByTitle } from '../utils/unitUtils';
 
 const ComponentBuilder = () => {
   const [searchParams] = useSearchParams();
@@ -53,7 +54,7 @@ const ComponentBuilder = () => {
   const [expandedMachines, setExpandedMachines] = useState([]);
   const [editGraphId, setEditGraphId] = useState(null);
   const [editGraphData, setEditGraphData] = useState(null);
-  const custom_types = ['Graph', 'Stats', 'Info'];
+  const custom_types = ['Graph', 'Stats'];
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -625,17 +626,26 @@ const ComponentBuilder = () => {
                             )}
                           </div>
                           
-                          <OverviewChart
-                            title=""
-                            data={graphData.chartData}
-                            series={graphData.series}
-                            color={chartColors}
-                            yAxisDomain={[0, 'auto']}
-                            unit={graphData.unit}
-                            onClick={handleChartClick}
+                          <DashboardBlock
+                            config={{
+                              Title: "",
+                              Series: graphData.series,
+                              Units: graphData.unit,
+                              YAxisDomain: [0, 'auto'],
+                              Color: chartColors
+                            }}
+                            initialData={graphData.type?.toLowerCase() === 'stats' ? [graphData] : [graphData.chartData]}
+                            selectedType={graphData.type || selectedType}
                             axisConfig={graphData.axisConfig}
                             heightOuter={96}
                             heightInner={80}
+                            blockIndex={0}
+                            getUnitByTitle={getUnitByTitle}
+                            handleCardClick={() => {}}
+                            handleChartClick={handleChartClick}
+                            getRandomColors={getRandomColors}
+                            getFixedColors={getFixedColors}
+                            isLoading={false}
                           />
                         </div>
                         <button

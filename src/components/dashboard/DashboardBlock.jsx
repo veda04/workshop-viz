@@ -12,16 +12,27 @@ const DashboardBlock = ({
   handleChartClick, 
   getRandomColors,
   getFixedColors,
-  isLoading = false 
+  isLoading = false,
+  selectedType = null,  // NEW: Accept selectedType prop for custom graphs
+  axisConfig = null,    // NEW: Accept axisConfig for custom graphs with dual axes
+  heightOuter = 72,     // NEW: Configurable height
+  heightInner = 56      // NEW: Configurable height
 }) => {
   const [data, setData] = useState(initialData);
-  const [chartColors] = useState(config?.Color || getFixedColors(12));
+  const [chartColors, setChartColors] = useState(config?.Color || getFixedColors(12));
 
   // Sync local data state with parent component's data when it changes
   // This ensures the component updates when MachineSummary fetches new data based on range changes
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
+
+  // Update chart colors when config.Color changes
+  useEffect(() => {
+    if (config?.Color) {
+      setChartColors(config.Color);
+    }
+  }, [config?.Color]);
 
   if (isLoading) {
     return (
@@ -34,8 +45,11 @@ const DashboardBlock = ({
     );
   }
 
-  // Render based on config.Type
-  if (config?.Type === 'Graph') {
+  // Determine the type to render: use selectedType if provided, otherwise fall back to config.Type
+  const renderType = selectedType || config?.Type;
+
+  // Render based on type
+  if (renderType === 'Graph' || renderType === 'graph') {
     return (
       <OverviewChart
         title={config?.Title}
@@ -44,19 +58,26 @@ const DashboardBlock = ({
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
         unit={config?.Units || getUnitByTitle(config?.Title || '')}
-        heightOuter={72}
-        heightInner={56}
+        heightOuter={heightOuter}
+        heightInner={heightInner}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
+        axisConfig={axisConfig}
       />
     );
   }
-  if (config?.Type === 'Stat' ) {
+  if (renderType === 'Stat' || renderType === 'stats') {
+    // For custom graphs (with selectedType), data is structured differently
+    // For regular dashboards, use the original structure
+    const statsValue = selectedType 
+      ? (data?.[0]?.statsValue !== undefined ? data[0].statsValue : 'N/A')
+      : (data?.[0]?.[0]?.value || 'N/A');
+    
     return (
       <DataCard
         title={config?.Title}
-        value={data?.[0]?.[0]?.value || 'N/A'}
+        value={statsValue}
         textColor={config?.TextColor || getRandomColors(1)}
-        unit={data?.[0]?.[0]?.value ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
+        unit={statsValue !== 'N/A' ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
         onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
       />
     );

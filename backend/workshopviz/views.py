@@ -840,8 +840,8 @@ def generate_data(request):
                 all_machine_data.append(None)
         
         logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
-        pprint.pprint("****** All Machine Data  ******:")
-        pprint.pprint(all_machine_data, indent=2, width=120)
+        # pprint.pprint("****** All Machine Data  ******:")
+        # pprint.pprint(all_machine_data, indent=2, width=120)
         
         # Merge data from multiple machines/dropdowns
         combined_data = {
@@ -897,6 +897,34 @@ def generate_data(request):
             combined_data['chartData'].append(data_point)
         
         logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series from {len(machine_metadata)} sources")
+        
+        # Add selectedType to the response data
+        combined_data['type'] = selected_type
+        
+        # If type is 'stats', calculate aggregate values (latest, average, max, etc.) for stats display
+        if selected_type and selected_type.lower() == 'stats':
+            # Calculate the latest value (or average of latest values) for each series
+            stats_values = []
+            for series_name in combined_data['series']:
+                # Get the last non-null value for this series
+                last_value = None
+                for data_point in reversed(combined_data['chartData']):
+                    if data_point.get(series_name) is not None:
+                        last_value = data_point[series_name]
+                        break
+                
+                if last_value is not None:
+                    stats_values.append({
+                        'series': series_name,
+                        'value': last_value
+                    })
+            
+            # For stats, we return a single aggregated value or the first series value
+            if stats_values:
+                # Use the first series value or calculate average
+                combined_data['statsValue'] = stats_values[0]['value']
+            else:
+                combined_data['statsValue'] = 'N/A'
         
         return JsonResponse({
             'status': 'success',
