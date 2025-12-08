@@ -106,14 +106,14 @@ const DashboardSummary = () => {
     }
   };
 
-  const handleRefresh = async (component) => {
-    setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: true }));
-    try {
-      await fetchComponentData(component);
-    } finally {
-      setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: false }));
-    }
-  };
+  // const handleRefresh = async (component) => {
+  //   setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: true }));
+  //   try {
+  //     await fetchComponentData(component);
+  //   } finally {
+  //     setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: false }));
+  //   }
+  // };
 
   // Handle create new entry button click
   const handleCreateEntry = () => {
@@ -193,7 +193,7 @@ const DashboardSummary = () => {
                 .sort((a, b) => parseInt(a) - parseInt(b))
                 .map(position => (
                   <div key={position} 
-                    className="sub-blocks w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]"> {/* Adjust width based on type in future */}
+                    className="sub-blocks relative w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]"> {/* Adjust width based on type in future */}
                     {groupedByPosition[position].map(component => (
                       <div
                         key={component.icomponent_id}
@@ -215,7 +215,7 @@ const DashboardSummary = () => {
                                 Series: componentData[component.icomponent_id].series,
                                 Units: componentData[component.icomponent_id].unit || '',
                                 YAxisDomain: [0, 'auto'],
-                                Color: getFixedColors(componentData[component.icomponent_id].series)
+                                Color: getFixedColors(componentData[component.icomponent_id].series.length)
                               }}
                               initialData={
                                 componentData[component.icomponent_id].type?.toLowerCase() === 'stats'
@@ -238,21 +238,20 @@ const DashboardSummary = () => {
                           )}
 
                         {/* Action Buttons */}
-                        <div className="flex gap-2 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mb-2">
+                        <div className="flex gap-2 p-0 mb-0 absolute top-1 right-2">
                           <button
                             onClick={() => handleEdit(component)}
-                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            className="flex items-center justify-center gap-2 px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                             title="Edit Component"
                           >
-                            <PencilSquareIcon className="w-4 h-4" />
-                            Edit
+                            <PencilSquareIcon className="w-5 h-5" />
                           </button> 
                           <button
                             onClick={() => handleDelete(component)}
-                            className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            className="flex items-center justify-center px-1 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
                             title="Delete Component"
                           >
-                            <TrashIcon className="w-4 h-4" />
+                            <TrashIcon className="w-5 h-5" />
                           </button>
                         </div>
                       </div>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from 'recharts';
 import { generateTicks } from '../../utils/timeUtils';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 // Custom Tooltip Component to display data on hover of activeDots
 const CustomTooltip = ({ active, payload, label }) => {
@@ -138,10 +139,10 @@ const ZoomableChart = ({ data, series, color, title, unit, axisConfig }) => {
         {isZoomed && (
           <button
             onClick={handleResetZoom}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 absolute right-16 top-9 transform -translate-y-1/2 rounded shadow-lg transition-colors"
+            className="bg-green-500 hover:bg-green-600 text-white px-2 py-2 absolute right-16 top-9 transform -translate-y-1/2 rounded shadow-lg transition-colors"
             title="Reset Zoom"
           >
-            Reset
+            <ArrowPathIcon className="w-5 h-5" />
           </button>
         )}
       </div>
@@ -291,7 +292,7 @@ const ZoomableChart = ({ data, series, color, title, unit, axisConfig }) => {
       {/* Help text */}
       <div className="px-8 pb-4 text-center">
         <p className="text-xs text-red-400">
-          ** Use mouse wheel to zoom • Drag to pan **
+          ** Use mouse wheel to scale • Drag to pan **
         </p>
       </div>
     </div>

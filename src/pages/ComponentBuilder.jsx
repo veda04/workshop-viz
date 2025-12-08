@@ -664,10 +664,10 @@ const ComponentBuilder = () => {
                       <div className="text-right">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                           {/* Graph Title and Badge */}
-                          <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {graphData.savedGraphInfo ? graphData.savedGraphInfo.title : 'Custom Graph'}
-                            </h3>
+                          <div className="flex justify-between items-center mb-0">
+                            {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom Graph'}
+                            </h3> */}
                             {graphData.savedGraphInfo?.addedToDashboard && (
                               <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300 dark:border-green-700">
                                 <svg 
@@ -684,7 +684,7 @@ const ComponentBuilder = () => {
                           
                           <DashboardBlock
                             config={{
-                              Title: "",
+                              Title: 'Custom ' + (graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom title appears here'),
                               Series: graphData.series,
                               Units: graphData.unit,
                               YAxisDomain: [0, 'auto'],

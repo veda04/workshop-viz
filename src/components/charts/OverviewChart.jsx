@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { generateTicks } from '../../utils/timeUtils';
+import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDomain = [0, 100], unit = "", onClick, axisConfig, heightOuter="72", heightInner="56" }) => {
   // Ensure data is an array and not empty
@@ -131,11 +132,11 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
   const customTicks = generateTicks(displayData);
 
   return (
-    <div 
+    <div  //  {/* scale on hover effect:  hover:shadow-xl hover:scale-105 transition-all duration-300 */} 
       className={`
         bg-white dark:bg-gray-800 rounded-xl shadow-lg dark:shadow-gray-900/50 border border-gray-200 dark:border-gray-700 p-0 h-${heightOuter}
         backdrop-blur-sm bg-opacity-90 overflow-hidden relative transition-colors
-        ${onClick && chartData.length > 0 ? 'hover:shadow-xl hover:scale-105 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-600' : ''}
+        ${onClick && chartData.length > 0 ? 'hover:border-blue-300 dark:hover:border-blue-600' : ''}
       `}
       onClick={handleChartClick}
     >
@@ -145,17 +146,17 @@ const OverviewChart = ({ title, data, series = [], color = ["#8884d8"], yAxisDom
       {isZoomed && chartData.length > 0 && (
         <button
           onClick={handleResetZoom}
-          className="absolute top-12 right-2 z-50 bg-blue-500 hover:bg-blue-600 text-white text-xs px-2 py-1 rounded shadow-lg transition-colors"
+          className="absolute top-12 right-2 z-50 bg-purple-700 bg-opacity-75 hover:bg-purple-700 text-white text-xs px-2 py-1 rounded shadow-lg transition-colors"
           title="Reset Zoom"
         >
-          Reset
+          <ArrowPathIcon className="w-4 h-4" />
         </button>
       )}
 
       {/* Help indicator */}
       {!isZoomed && chartData.length > 0 && (
-        <div className="absolute top-12 right-2 z-40 bg-gray-700 bg-opacity-75 text-white text-xs px-2 py-1 rounded" title="Scroll to zoom, drag to pan">
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+        <div className="absolute top-12 right-2 z-40 bg-gray-700 bg-opacity-75 text-white text-xs px-2 py-1 rounded" title="Click to zoom, scroll to scale, drag to pan">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
           </svg>
         </div>
