@@ -148,7 +148,7 @@ const DashboardSummary = () => {
             Add Component
           </button>
         </div>
-        <div className="flex flex-wrap gap-4">
+        <div className="">
           {/* Loading State */}
           {loading && components.length === 0 && (
             <LoadingSpinner message="Loading components..." />
@@ -188,11 +188,12 @@ const DashboardSummary = () => {
 
           {/* Components Grid - Grouped by Position */}
           {!loading && !error && components.length > 0 && (
-            <div className="add-classes-here w-full flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4">
               {Object.keys(groupedByPosition)
                 .sort((a, b) => parseInt(a) - parseInt(b))
                 .map(position => (
-                  <div key={position} className="w-6/12">
+                  <div key={position} 
+                    className="sub-blocks w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]"> {/* Adjust width based on type in future */}
                     {groupedByPosition[position].map(component => (
                       <div
                         key={component.icomponent_id}
@@ -237,7 +238,7 @@ const DashboardSummary = () => {
                           )}
 
                         {/* Action Buttons */}
-                        <div className="flex gap-2 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                        <div className="flex gap-2 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mb-2">
                           <button
                             onClick={() => handleEdit(component)}
                             className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
