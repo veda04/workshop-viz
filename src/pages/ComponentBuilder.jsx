@@ -219,10 +219,10 @@ const ComponentBuilder = () => {
       <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Customize Graphs
+            Customize Dashboard
           </h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Select up to 2 graph types and their series to generate a custom visualization
+            Select up to 2 data types of a single machine or 1 data type each for multiple machines and their series to generate a custom visualization.
           </p>
         </div>
 
@@ -724,10 +724,10 @@ const ComponentBuilder = () => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                     </svg>
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                      No graphs selected
+                      No data types selected
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      Select one or two graph types from the left panel to get started
+                      Select one or two data types from the left panel to get started
                     </p>
                   </div>
                 )}

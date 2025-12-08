@@ -674,6 +674,8 @@ def get_available_series(request):
         machine_name = request.GET.get('machine_name')
         graph_id = request.GET.get('graph_id')
         time_range = request.GET.get('range', '3h')
+
+        print(f"*** Getting available series for machine: {machine_name}, graph_id: {graph_id}, range: {time_range}")
         
         if not graph_id:
             return JsonResponse({
@@ -721,7 +723,7 @@ def get_available_series(request):
         # Check if this data type has Predicates - if yes, use getDataSeries
         if 'Predicates' in data_type_config and 'Pivot' in data_type_config:
             available_series = getDataSeries(data_type_config)
-            # print("Available series from getDataSeries:", available_series)
+            print("****** Available series from getDataSeries:", available_series)
 
             if available_series is None:
                 available_series = None
@@ -730,6 +732,7 @@ def get_available_series(request):
             if available_series is None or available_series is False:
                 available_series = []
         else:
+            print(f"*** No Predicates found in config for graph_id: {graph_id}, data_type: {data_type_name}")
             logger.info(f"No Predicates found for {data_type_name}, returning empty or single series")
             available_series = []
         

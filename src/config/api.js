@@ -11,7 +11,9 @@ export const API_ENDPOINTS = {
 
   machinesWithConfig: '/api/machines-with-config/',
   dropdownsFromConfig: '/api/dropdowns-from-config/',
+
   createDashboard: '/api/create-dashboard/',
+  getDashboards: '/api/dashboards/',
 
   dataTypes: '/api/data-types/',
   availableSeries: '/api/available-series/',

@@ -54,26 +54,30 @@ const AddComponentForm = ({ onClose, dashboardId, saveableConfig, isEditMode = f
       const dashboardsResponse = await apiService.getDashboards();
       if (dashboardsResponse.success) {
         const dashboard = dashboardsResponse.data.find(d => d.iDashboard_id === parseInt(dbId));
-        if (dashboard) {
+        // console.log("Dashboard Response:", dashboard);
+        if (dashboard && dashboard.cCategory == "MACH") {
           // Get machine name from asset_id if available
           const machinesResponse = await apiService.getMachinesWithConfig();
+          // console.log("Machines response:", machinesResponse);  
           let machineName = '';
           if (machinesResponse.status === 'success') {
-            const machine = machinesResponse.data.find(m => m.id === dashboard.iAsset_id);
-            machineName = machine ? machine.name : '';
+            const machine = machinesResponse.data.find(m => m.iAsset_id === dashboard.iAsset_id);
+            // console.log("Matched machine:", machine);  
+            machineName = machine ? machine.vName : '';
           }
           
           // Navigate with query parameters
           navigate(`/dashboard-summary?dashboardId=${dbId}&title=${encodeURIComponent(dashboard.vTitle)}&machineName=${encodeURIComponent(machineName)}`);
         } else {
-          // Fallback: navigate with just dashboardId
-          navigate(`/dashboard-summary?dashboardId=${dbId}&title=Dashboard&machineName=`);
+          console.log("In else block");
+          // Fallback: navigate with dashboardId and title only if category is GENR
+          navigate(`/dashboard-summary?dashboardId=${dbId}&title=${encodeURIComponent(dashboard.vTitle)}`);
         }
       }
     } catch (error) {
       console.error('Error fetching dashboard details:', error);
       // Fallback: navigate with just dashboardId
-      navigate(`/dashboard-summary?dashboardId=${dbId}&title=Dashboard&machineName=`);
+      navigate(`/dashboard-summary?dashboardId=${dbId}`);
     }
   };
 

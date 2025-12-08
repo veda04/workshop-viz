@@ -19,7 +19,7 @@ const DashboardBlock = ({
   heightInner = 56      // NEW: Configurable height
 }) => {
   const [data, setData] = useState(initialData);
-  const [chartColors, setChartColors] = useState(config?.Color || getFixedColors(12));
+  const [chartColors, setChartColors] = useState(config?.Color || (getFixedColors ? getFixedColors(12) : []));
 
   // Sync local data state with parent component's data when it changes
   // This ensures the component updates when MachineSummary fetches new data based on range changes
@@ -52,7 +52,7 @@ const DashboardBlock = ({
   if (renderType === 'Graph' || renderType === 'graph') {
     return (
       <OverviewChart
-        title={config?.Title}
+        title= {config?.Title}
         series={config?.Series || []}
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
@@ -65,7 +65,7 @@ const DashboardBlock = ({
       />
     );
   }
-  if (renderType === 'Stat' || renderType === 'stats') {
+  if (renderType === 'Stats' || renderType === 'stats') {
     // For custom graphs (with selectedType), data is structured differently
     // For regular dashboards, use the original structure
     const statsValue = selectedType 
@@ -76,7 +76,7 @@ const DashboardBlock = ({
       <DataCard
         title={config?.Title}
         value={statsValue}
-        textColor={config?.TextColor || getRandomColors(1)}
+        textColor={config?.TextColor || (getRandomColors ? getRandomColors(1) : ['#4D96FF'])}
         unit={statsValue !== 'N/A' ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
         onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
       />
@@ -86,7 +86,7 @@ const DashboardBlock = ({
     return (
       <UsageChart
         title={config?.Title}
-        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || getRandomColors(5), config?.YAxisDomain || [0, 100], blockIndex)}
+        onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, config?.Color || (getRandomColors ? getRandomColors(5) : []), config?.YAxisDomain || [0, 100], blockIndex)}
       />
     );
   }

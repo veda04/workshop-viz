@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layouts/Layout';
 import Modal from '../components/Modal';
@@ -137,10 +137,7 @@ const DashboardSummary = () => {
     <Layout componentCount={components.length}> 
       <div className="dash-cover p-6 space-y-6">
         {/* Dashboard Header with Add Component Button */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            {title || 'Dashboard Components'}
-          </h1>
+        <div className="flex justify-end text-right items-center mb-6">
           <button
             onClick={handleCreateEntry}
             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md flex items-center gap-2"
@@ -151,137 +148,119 @@ const DashboardSummary = () => {
             Add Component
           </button>
         </div>
+        <div className="flex flex-wrap gap-4">
+          {/* Loading State */}
+          {loading && components.length === 0 && (
+            <LoadingSpinner message="Loading components..." />
+          )}
 
-        {/* Loading State */}
-        {loading && components.length === 0 && (
-          <LoadingSpinner message="Loading components..." />
-        )}
+          {/* Error State */}
+          {error && (
+            <ErrorMessage message={error} />
+          )}
 
-        {/* Error State */}
-        {error && (
-          <ErrorMessage message={error} />
-        )}
-
-        {/* Empty State */}
-        {!loading && !error && components.length === 0 && (
-          <div className="w-full text-center py-16">
-            <div className="inline-block p-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
-              <svg 
-                className="w-24 h-24 mx-auto mb-4 text-gray-400 dark:text-gray-600" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" 
-                />
-              </svg>
-              <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                No Components Yet
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-6">
-                Click "Add Component" to create your first dashboard component
-              </p>
+          {/* Empty State */}
+          {!loading && !error && components.length === 0 && (
+            <div className="w-full text-center py-16">
+              <div className="inline-block p-8 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                <svg 
+                  className="w-24 h-24 mx-auto mb-4 text-gray-400 dark:text-gray-600" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" 
+                  />
+                </svg>
+                <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  No Components Yet
+                </h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  Click "Add Component" to create your first dashboard component
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Components Grid - Grouped by Position */}
-        {!loading && !error && components.length > 0 && (
-          <div className="space-y-6">
-            {Object.keys(groupedByPosition)
-              .sort((a, b) => parseInt(a) - parseInt(b))
-              .map(position => (
-                <div key={position} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {groupedByPosition[position].map(component => (
-                    <div
-                      key={component.icomponent_id}
-                      className="bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
-                    >
-                      {/* Component Header */}
-                      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-                        <div className="flex-1">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                            {component.vTitle}
-                          </h3>
-                          {component.vDescription && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                              {component.vDescription}
-                            </p>
+          {/* Components Grid - Grouped by Position */}
+          {!loading && !error && components.length > 0 && (
+            <div className="add-classes-here w-full flex flex-wrap gap-4">
+              {Object.keys(groupedByPosition)
+                .sort((a, b) => parseInt(a) - parseInt(b))
+                .map(position => (
+                  <div key={position} className="w-6/12">
+                    {groupedByPosition[position].map(component => (
+                      <div
+                        key={component.icomponent_id}
+                        componentType={component.vQuery?.type}
+                        // className={`sub-blocks ${
+                        //     component.vQuery?.type === 'Graph' ? 'w-full md:w-[calc(33.333%-0.69rem)] lg:w-[calc(33.333%-0.69rem)]' : 
+                        //     component.vQuery?.type === 'Stat' ? 'w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]' : 
+                        //     'w-full md:w-[calc(33.333%-1rem)]'
+                        // } mb-4`}
+                      >
+                        {/* Chart/Stats Display */}
+                          {componentData[component.icomponent_id] ? (
+                            <DashboardBlock
+                              config={{
+                                ComponentID: component.icomponent_id,
+                                Title: component.vTitle,
+                                Description: component.vDescription,
+                                Position: component.iPosition, 
+                                Series: componentData[component.icomponent_id].series,
+                                Units: componentData[component.icomponent_id].unit || '',
+                                YAxisDomain: [0, 'auto'],
+                                Color: getFixedColors(componentData[component.icomponent_id].series)
+                              }}
+                              initialData={
+                                componentData[component.icomponent_id].type?.toLowerCase() === 'stats'
+                                  ? [componentData[component.icomponent_id]]
+                                  : [componentData[component.icomponent_id].chartData]
+                              }
+                              selectedType={componentData[component.icomponent_id].type}
+                              blockIndex={component.icomponent_id}
+                              getUnitByTitle={getUnitByTitle}
+                              handleCardClick={() => {}}
+                              handleChartClick={() => {}}
+                              getRandomColors={getRandomColors}
+                              getFixedColors={getFixedColors}
+                              isLoading={refreshingComponents[component.icomponent_id]}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <LoadingSpinner message="Loading data..." />
+                            </div>
                           )}
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                          <button
+                            onClick={() => handleEdit(component)}
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                            title="Edit Component"
+                          >
+                            <PencilSquareIcon className="w-4 h-4" />
+                            Edit
+                          </button> 
+                          <button
+                            onClick={() => handleDelete(component)}
+                            className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                            title="Delete Component"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                          </button>
                         </div>
-                        <span className="text-xs text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
-                          Pos: {component.iPosition}
-                        </span>
                       </div>
-
-                      {/* Chart/Stats Display */}
-                      <div className="p-4 min-h-[300px] bg-gray-50 dark:bg-gray-900">
-                        {componentData[component.icomponent_id] ? (
-                          <DashboardBlock
-                            config={{
-                              Title: '',
-                              Series: componentData[component.icomponent_id].series,
-                              Units: componentData[component.icomponent_id].unit || '',
-                              YAxisDomain: [0, 'auto'],
-                              Color: getFixedColors(componentData[component.icomponent_id].series)
-                            }}
-                            initialData={
-                              componentData[component.icomponent_id].type?.toLowerCase() === 'stats'
-                                ? [componentData[component.icomponent_id]]
-                                : [componentData[component.icomponent_id].chartData]
-                            }
-                            selectedType={componentData[component.icomponent_id].type}
-                            blockIndex={component.icomponent_id}
-                            getUnitByTitle={getUnitByTitle}
-                            handleCardClick={() => {}}
-                            handleChartClick={() => {}}
-                            getRandomColors={getRandomColors}
-                            getFixedColors={getFixedColors}
-                            isLoading={refreshingComponents[component.icomponent_id]}
-                          />
-                        ) : (
-                          <div className="flex items-center justify-center h-full">
-                            <LoadingSpinner message="Loading data..." />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex gap-2 p-4 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                        <button
-                          onClick={() => handleEdit(component)}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                          title="Edit Component"
-                        >
-                          <PencilSquareIcon className="w-4 h-4" />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleRefresh(component)}
-                          disabled={refreshingComponents[component.icomponent_id]}
-                          className="flex items-center justify-center px-3 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Refresh Data"
-                        >
-                          <ArrowPathIcon className={`w-4 h-4 ${refreshingComponents[component.icomponent_id] ? 'animate-spin' : ''}`} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(component)}
-                          className="flex items-center justify-center px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                          title="Delete Component"
-                        >
-                          <TrashIcon className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-          </div>
-        )}
+                    ))}
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

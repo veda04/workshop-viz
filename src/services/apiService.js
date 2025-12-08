@@ -106,7 +106,7 @@ class ApiService {
 
   // Dashboard methods
   async getDashboards() {
-    const url = `${API_BASE_URL}/dashboards/`;
+    const url = `${API_BASE_URL}${API_ENDPOINTS.getDashboards}`;
     return this.fetchWithErrorHandling(url);
   }
 

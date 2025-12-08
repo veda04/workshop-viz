@@ -16,6 +16,9 @@ const Header = ({ machineName, title, isNewDashboard = false, componentCount = 0
   // Show dashboard buttons only when dashboard has components
   const showDashboardButtons = !isNewDashboard || componentCount > 0;
 
+  // Show create custom dashboard when dashboard is new and has no components
+  const isNewDashboardWithoutComponents = isNewDashboard && componentCount === 0;
+
   //const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
   // Only fetch booking data if dashboard buttons should be shown
   const { bookingData, loading, error } = useBookingData(showDashboardButtons ? machineName : null);
@@ -299,8 +302,13 @@ const Header = ({ machineName, title, isNewDashboard = false, componentCount = 0
         </div>
       </div>
       
-      {/* Booking details section - Show only when dashboard has components */}
-      {showDashboardButtons ? (
+      {isNewDashboardWithoutComponents ? (
+        <div className="mt-4 current-booking">
+          <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">
+            Create your custom dashboard to monitor machine performance and analytics
+          </div>
+        </div>
+      ) : (showDashboardButtons && machineName) ? (
         <div className="mt-4 current-booking">
           {(!bookingData) ? (
             <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">
@@ -308,42 +316,33 @@ const Header = ({ machineName, title, isNewDashboard = false, componentCount = 0
             </div>
           ) : (
             <>
-            <div className="flex justify-between items-center px-3 py-2 yellow-gradient-bg rounded-lg shadow">
-              <div>
-                <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Booked By:</div>
-                <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
-                  {loading ? 'Loading...' : 
-                   error ? 'Error loading' :
-                   bookingData?.vbooked_by || 'No Current Booking'}
+              <div className="flex justify-between items-center px-3 py-2 yellow-gradient-bg rounded-lg shadow">
+                <div>
+                  <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Booked By:</div>
+                  <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
+                    {loading ? 'Loading...' : 
+                     error ? 'Error loading' :
+                     bookingData?.vbooked_by || 'No Current Booking'}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Duration:</div>
+                  <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
+                    {loading ? 'Loading...' : 
+                     error ? 'Error loading' :
+                     bookingData
+                       ? `${bookingData.dStart ? new Date(bookingData.dStart).toLocaleDateString() : '-'} (${bookingData.tStart ? bookingData.tStart : '-'}) - ${bookingData.dEnd ? new Date(bookingData.dEnd).toLocaleDateString() : '-'} (${bookingData.tEnd ? bookingData.tEnd : '-'})`
+                       : '-'
+                    }
+                  </div>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-600 dark:text-gray-500 uppercase transition-colors">Duration:</div>
-                <div className="text-xl font-semibold text-gray-900 dark:text-black transition-colors">
-                  {loading ? 'Loading...' : 
-                   error ? 'Error loading' :
-                   bookingData
-                     ? `${bookingData.dStart ? new Date(bookingData.dStart).toLocaleDateString() : '-'} (${bookingData.tStart ? bookingData.tStart : '-'}) - ${bookingData.dEnd ? new Date(bookingData.dEnd).toLocaleDateString() : '-'} (${bookingData.tEnd ? bookingData.tEnd : '-'})`
-                     : '-'
-                  }
-                </div>
-              </div>
-            </div>
             </>
           )}
         </div>
-      ) : (
-        <>
-        <div className="mt-4 current-booking">
-            <div className="w-full text-center py-3 text-lg text-gray-700 dark:text-black font-semibold yellow-gradient-bg rounded-lg shadow transition-colors">
-              Create your custom dashboard to monitor machine performance and analytics 
-            </div>
-        </div>
-        </>
-    
-    )}
+      ) : null}
 
-      {/* Side Menu Component */}
+     {/* Side Menu Component */}
       <SideMenu isOpen={isSideMenuOpen} onClose={() => setIsSideMenuOpen(false)} machineName={machineName} />
     </div>
   );

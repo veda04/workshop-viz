@@ -39,20 +39,15 @@ const SideMenu = ({ isOpen, onClose, machineName }) => {
                   Home
                 </a>
               </li>
-              {machineName && (
+              {/* {machineName && (
                 <>
                   <li>
                     <a href={`/machine-summary?machineName=${machineName}`} className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                       Machine Summary
                     </a>
                   </li>
-                  <li>
-                    <a href={`/customize-graphs?machineName=${machineName}`} className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                      Customize Graphs
-                    </a>
-                  </li>
                 </>
-              )}
+              )} */}
             </ul>
           </nav>
 
