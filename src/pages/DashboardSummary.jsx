@@ -4,6 +4,7 @@ import Layout from '../components/layouts/Layout';
 import Modal from '../components/Modal';
 import Sensors from '../components/dashboard/Sensors';
 import DashboardBlock from '../components/dashboard/DashboardBlock';
+import ZoomableChart from '../components/charts/ZoomableChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -26,6 +27,10 @@ const DashboardSummary = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshingComponents, setRefreshingComponents] = useState({}); // Track which components are refreshing
+  
+  // Modal state for enlarged chart view
+  const [isChartModalOpen, setIsChartModalOpen] = useState(false);
+  const [selectedChartData, setSelectedChartData] = useState(null);
   
   // Determine if this is a new dashboard (has dashboardId)
   const isNewDashboard = dashboardId !== null;
@@ -104,6 +109,22 @@ const DashboardSummary = () => {
         alert('Failed to delete component');
       }
     }
+  };
+
+  // Handle chart click to open modal with enlarged view
+  const handleChartClick = (component) => {
+    const data = componentData[component.icomponent_id];
+    if (!data || !data.chartData || data.chartData.length === 0) return;
+    
+    setSelectedChartData({
+      chartData: data.chartData,
+      series: data.series,
+      unit: data.unit,
+      title: component.vTitle,
+      color: getFixedColors(data.series.length),
+      axisConfig: data.axisConfig
+    });
+    setIsChartModalOpen(true);
   };
 
   // const handleRefresh = async (component) => {
@@ -226,7 +247,7 @@ const DashboardSummary = () => {
                               blockIndex={component.icomponent_id}
                               getUnitByTitle={getUnitByTitle}
                               handleCardClick={() => {}}
-                              handleChartClick={() => {}}
+                              handleChartClick={() => handleChartClick(component)}
                               getRandomColors={getRandomColors}
                               getFixedColors={getFixedColors}
                               isLoading={refreshingComponents[component.icomponent_id]}
@@ -262,6 +283,20 @@ const DashboardSummary = () => {
           )}
         </div>
       </div>
+
+      {/* Modal for Enlarged Chart View */}
+      <Modal isOpen={isChartModalOpen} onClose={() => setIsChartModalOpen(false)} size="full">
+        {selectedChartData && (
+          <ZoomableChart
+            data={selectedChartData.chartData}
+            series={selectedChartData.series}
+            color={selectedChartData.color}
+            title={selectedChartData.title}
+            unit={selectedChartData.unit}
+            axisConfig={selectedChartData.axisConfig}
+          />
+        )}
+      </Modal>
     </Layout>
   );
 };
