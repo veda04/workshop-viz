@@ -20,8 +20,8 @@ const Header = ({ machineName, title, isNewDashboard = false, componentCount = 0
   const isNewDashboardWithoutComponents = isNewDashboard && componentCount === 0;
 
   //const machineName = new URLSearchParams(window.location.search).get('machine_name') || 'Hurco'; 
-  // Only fetch booking data if dashboard buttons should be shown
-  const { bookingData, loading, error } = useBookingData(showDashboardButtons ? machineName : null);
+  // Only fetch booking data if dashboard buttons  are shown
+  const { bookingData, loading, error } = useBookingData(showDashboardButtons && machineName ? machineName : null);
   
   // Determine display title - use provided title or fallback to machineName or default
   const displayTitle = title || machineName || 'Dashboard';

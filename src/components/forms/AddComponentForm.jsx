@@ -162,12 +162,14 @@ const AddComponentForm = ({ onClose, dashboardId, saveableConfig, isEditMode = f
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 p-6 rounded-lg w-full max-w-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-        {isEditMode ? 'Update Component' : 'Add Component to Dashboard'}
-      </h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-md">
+      <div className="border-b border-gray-200 dark:border-gray-700 px-6 py-2 mb-0">
+        <h2 className="text-2xl my-3 text-gray-900 dark:text-white">
+           {isEditMode ? 'Update Component' : 'Add Component to Dashboard'}
+        </h2>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5 p-6">
         {/* Component Title */}
         <div>
           <label htmlFor="vTitle" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

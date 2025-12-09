@@ -8,7 +8,6 @@ import ZoomableChart from '../components/charts/ZoomableChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { useDashboardData } from '../hooks/useDashboardData';
-import { useModalManager } from '../hooks/useModalManager';
 import {getUnitByTitle} from '../utils/unitUtils';
 import { getFixedColors, getRandomColors} from '../utils/chartUtils';
 import apiService from '../services/apiService';
@@ -73,6 +72,52 @@ const DashboardSummary = () => {
       const response = await apiService.generateData(vQuery, vQuery.machine_name);
       
       if (response.status === 'success') {
+        console.log('DashboardSummary - Response from backend:', response.data);
+        console.log('DashboardSummary - vQuery:', vQuery);
+        
+        // Reconstruct axisConfig from the saved vQuery if not provided by backend
+        // This ensures proper left/right axis positioning for multiple data types
+        let axisConfig = response.data.axisConfig;
+        
+        if (!axisConfig && vQuery.graphs && vQuery.graphs.length > 0) {
+          // Fetch data type configs to get unit information
+          const dataTypeConfigs = await Promise.all(
+            vQuery.machine_names.map(async (machineName, index) => {
+              try {
+                const configResponse = await apiService.getDataTypes(machineName);
+                if (configResponse.status === 'success') {
+                  const graphId = vQuery.graphs[index];
+                  return {
+                    config: configResponse.data.find(dt => dt.id === graphId),
+                    machineName: machineName,
+                    graphId: graphId,
+                    series: vQuery.series[graphId] || []
+                  };
+                }
+                return null;
+              } catch (err) {
+                console.error(`Failed to fetch config for ${machineName}:`, err);
+                return null;
+              }
+            })
+          );
+          
+          // Build axisConfig similar to useComponentBuilderData.js
+          axisConfig = dataTypeConfigs
+            .filter(item => item !== null)
+            .map((item, index) => ({
+              graphId: item.graphId,
+              machineName: item.machineName,
+              position: index === 0 ? 'left' : 'right',
+              unit: item.config?.unit || '',
+              title: item.config?.title || '',
+              series: item.series
+            }));
+          console.log('DashboardSummary - Reconstructed axisConfig:', axisConfig);
+        } else {
+          console.log('DashboardSummary - Using backend axisConfig:', axisConfig);
+        }
+        
         setComponentData(prev => ({
           ...prev,
           [component.icomponent_id]: {
@@ -80,7 +125,8 @@ const DashboardSummary = () => {
             chartData: response.data.chartData,
             type: vQuery.type || 'graph',
             unit: response.data.unit,
-            statsValue: response.data.statsValue
+            statsValue: response.data.statsValue,
+            axisConfig: axisConfig
           }
         }));
       }
@@ -126,15 +172,6 @@ const DashboardSummary = () => {
     });
     setIsChartModalOpen(true);
   };
-
-  // const handleRefresh = async (component) => {
-  //   setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: true }));
-  //   try {
-  //     await fetchComponentData(component);
-  //   } finally {
-  //     setRefreshingComponents(prev => ({ ...prev, [component.icomponent_id]: false }));
-  //   }
-  // };
 
   // Handle create new entry button click
   const handleCreateEntry = () => {
@@ -244,6 +281,7 @@ const DashboardSummary = () => {
                                   : [componentData[component.icomponent_id].chartData]
                               }
                               selectedType={componentData[component.icomponent_id].type}
+                              axisConfig={componentData[component.icomponent_id].axisConfig}
                               blockIndex={component.icomponent_id}
                               getUnitByTitle={getUnitByTitle}
                               handleCardClick={() => {}}
@@ -292,7 +330,7 @@ const DashboardSummary = () => {
             series={selectedChartData.series}
             color={selectedChartData.color}
             title={selectedChartData.title}
-            unit={selectedChartData.unit}
+            unit={selectedChartData.unit || getUnitByTitle(selectedChartData.title || '')}
             axisConfig={selectedChartData.axisConfig}
           />
         )}

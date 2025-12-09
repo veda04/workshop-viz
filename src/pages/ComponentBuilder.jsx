@@ -3,7 +3,6 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import Layout from '../components/layouts/Layout';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
-import OverviewChart from '../components/charts/OverviewChart';
 import ZoomableChart from '../components/charts/ZoomableChart';
 import DashboardBlock from '../components/dashboard/DashboardBlock';
 import Modal from '../components/Modal';
@@ -117,7 +116,7 @@ const ComponentBuilder = () => {
   // Update saveableConfig whenever graphData changes
   useEffect(() => {
     if (graphData?.saveableConfig) {
-      console.log('Setting saveableConfig:', graphData.saveableConfig);
+      //console.log('Setting saveableConfig:', graphData.saveableConfig);
       setSaveableConfig(graphData.saveableConfig);
     }
   }, [graphData]);
@@ -218,9 +217,9 @@ const ComponentBuilder = () => {
     <Layout> 
       <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Customize Dashboard
-          </h1>
+          <h2 className="text-3xl text-gray-900 capitalize dark:text-white mb-2">
+            Customize your dashboard
+          </h2>
           <p className="text-gray-600 dark:text-gray-400">
             Select up to 2 data types of a single machine or 1 data type each for multiple machines and their series to generate a custom visualization.
           </p>
@@ -261,8 +260,8 @@ const ComponentBuilder = () => {
               {/* Collapsible Machine/Data Types Section */}
               <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {machineName ? 'Select Data Types' : 'Select Data Types'}
+                  <h2 className="text-xl capitalize font-semibold text-gray-900 dark:text-white">
+                    Select data types
                   </h2>
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     ({selectedGraphs.length}/2)
@@ -659,29 +658,10 @@ const ComponentBuilder = () => {
                       </div>
                     </div>
 
-                    {/* Graph Display */}
+                    {/* Graph Display */}           
                     {graphData && (
                       <div className="text-right">
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                          {/* Graph Title and Badge */}
-                          <div className="flex justify-between items-center mb-0">
-                            {/* <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                              {graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom Graph'}
-                            </h3> */}
-                            {graphData.savedGraphInfo?.addedToDashboard && (
-                              <span className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border border-green-300 dark:border-green-700">
-                                <svg 
-                                  className="w-3 h-3 mr-1" 
-                                  fill="currentColor" 
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                </svg>
-                                Added to Dashboard
-                              </span>
-                            )}
-                          </div>
-                          
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">                         
                           <DashboardBlock
                             config={{
                               Title: 'Custom ' + (graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom title appears here'),

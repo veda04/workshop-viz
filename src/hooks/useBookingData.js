@@ -7,13 +7,20 @@ export const useBookingData = (machineName) => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Don't fetch if machineName is null/undefined/empty
+    if (!machineName) {
+      setBookingData(null);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     const fetchCurrentBooking = async () => {
       try {
         setLoading(true);
         setError(null);
         
         const result = await apiService.getCurrentBooking(machineName);
-        //console.log('Fetched current booking data:', result);
 
         if (result.status === 'success' && result.data && result.data.length > 0) {
           setBookingData(result.data[0]);

@@ -188,7 +188,7 @@ return (
           <div className="mb-8 text-center">
             <img src="/images/logo.png" alt="Data Analytics for Smart Workshops" className="mx-auto mb-4 h-20" />
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Workshop Visualisation
+              Data Analytics for Smart Workshop
             </h1>
             <p className="text-gray-700 dark:text-gray-300 mb-6">
               Your comprehensive tool for visualizing and analyzing machine data.

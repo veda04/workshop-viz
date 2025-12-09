@@ -26,7 +26,7 @@ export const useComponentBuilderData = (machineName) => {
         setLoading(true);
         setError(null);
 
-        // If machineName is provided (MACH dashboard), load data for that machine
+        // If machineName is passed as a parameter (MACH dashboard), load data for the selected machine
         if (machineName) {
           const response = await apiService.getDataTypes(machineName);
           
@@ -45,7 +45,7 @@ export const useComponentBuilderData = (machineName) => {
             setError(response.message || 'Failed to load data types');
           }
           
-          // Fetch dropdowns for MACH dashboard
+          // Fetch all the dropdowns for MACH dashboard
           const dropdownResponse = await apiService.getDropdownsFromConfig();
           if (dropdownResponse.status === 'success') {
             setDropdowns(dropdownResponse.data);
@@ -53,7 +53,7 @@ export const useComponentBuilderData = (machineName) => {
             setError(dropdownResponse.message || 'Failed to load dropdowns');
           }
         } else {
-          // If no machineName (GENR dashboard), get all machines first
+          // If no machineName passed as parameter, its (GENR dashboard), get all machines first
           const machinesResponse = await apiService.getMachinesWithConfig();
         
           if (machinesResponse.status === 'success') {
@@ -63,6 +63,7 @@ export const useComponentBuilderData = (machineName) => {
             setError(machinesResponse.message || 'Failed to load machines');
           }
           
+          // Fetch all the dropdowns for GENR dashboard
           const dropdownResponse = await apiService.getDropdownsFromConfig();
           if (dropdownResponse.status === 'success') {
             setDropdowns(dropdownResponse.data);
@@ -240,6 +241,7 @@ export const useComponentBuilderData = (machineName) => {
       
       // Convert series object keys from unique IDs to original IDs
       const originalSeriesMapping = {};
+      // console.log('Selected Graphs:', selectedGraphs);
       selectedGraphs.forEach((uniqueGraphId, index) => {
         const originalId = originalGraphIds[index];
         originalSeriesMapping[originalId] = selectedSeries[uniqueGraphId];

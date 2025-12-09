@@ -316,7 +316,7 @@ def test_influx_connection(request):
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
+@api_view(['GET']) # TO-DO: not used now, need to take the date range logic from here
 def get_dashboard_config(request):
     try:
         machine_name = request.GET.get('machine_name')
@@ -593,7 +593,8 @@ def create_dashboard(request):
                     'dashboardId': dashboard_id,
                     'title': title,
                     'machineName': machine_name,
-                    'category': category
+                    'category': category,
+                    'createdBy': user_id
                 }
             }, status=status.HTTP_201_CREATED)
         else:
@@ -834,7 +835,7 @@ def generate_data(request):
                         'graph_id': str(graph_id),
                         'machine_name': machine_name_for_graph,
                         'data_type_name': data_type_name,
-                        'unit': data_type_config.get('Unit', ''),
+                        'units': data_type_config.get('Units', ''),
                         'series': selected_series.get(str(graph_id), [])
                     })
                 else:
@@ -850,7 +851,6 @@ def generate_data(request):
         combined_data = {
             'chartData': [],
             'series': [],
-            'unit': '',
             'machineMetadata': machine_metadata  # Include metadata for frontend
         }
         
