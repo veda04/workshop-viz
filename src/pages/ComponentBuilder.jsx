@@ -620,19 +620,28 @@ const ComponentBuilder = () => {
                                   </div>
                                 ) : series.length > 0 ? (
                                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {series.map((seriesName) => (
-                                      <button
-                                        key={seriesName}
-                                        onClick={() => handleSeriesSelection(graphId, seriesName)}
-                                        className={`px-2 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
-                                          selectedSeries[graphId]?.includes(seriesName)
-                                            ? 'border-blue-500 bg-blue-500 text-white'
-                                            : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'
-                                        }`}
-                                      >
-                                        {seriesName}
-                                      </button>
-                                    ))}
+                                    {series.map((seriesName) => {
+                                      const isSelected = selectedSeries[graphId]?.includes(seriesName);
+                                      const currentSeriesCount = selectedSeries[graphId]?.length || 0;
+                                      const isDisabled = selectedType === 'Stats' && currentSeriesCount >= 1 && !isSelected;
+                                      
+                                      return (
+                                        <button
+                                          key={seriesName}
+                                          onClick={() => handleSeriesSelection(graphId, seriesName)}
+                                          disabled={isDisabled}
+                                          className={`px-2 py-2 rounded-lg border-2 transition-all text-sm font-medium ${
+                                            isSelected
+                                              ? 'border-blue-500 bg-blue-500 text-white'
+                                              : isDisabled
+                                              ? 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+                                              : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'
+                                          }`}
+                                        >
+                                          {seriesName}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 ) : (
                                   <p className="text-gray-500 dark:text-gray-400">
@@ -675,7 +684,7 @@ const ComponentBuilder = () => {
                             config={{
                               Title: 'Custom ' + (graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom title appears here'),
                               Series: graphData.series,
-                              Units: graphData.unit,
+                              Units: graphData.units,
                               YAxisDomain: [0, 'auto'],
                               Color: chartColors
                             }}

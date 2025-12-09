@@ -21,24 +21,39 @@ export const useComponentBuilderData = (machineName) => {
 
   // Handle selectedType change - clear extra selections if switching to Stats
   useEffect(() => {
-    if (selectedType === 'Stats' && selectedGraphs.length > 1) {
-      // Keep only the first selected graph
-      const graphToKeep = selectedGraphs[0];
-      setSelectedGraphs([graphToKeep]);
-      
-      // Clear series for removed graphs
-      setSelectedSeries(current => ({
-        [graphToKeep]: current[graphToKeep]
-      }));
-      
-      setAvailableSeries(current => ({
-        [graphToKeep]: current[graphToKeep]
-      }));
-      
-      // Keep only the mapping for the kept graph
-      setGraphToMachineMap(current => ({
-        [graphToKeep]: current[graphToKeep]
-      }));
+    if (selectedType === 'Stats') {
+      // If more than 1 graph selected, keep only the first
+      if (selectedGraphs.length > 1) {
+        const graphToKeep = selectedGraphs[0];
+        setSelectedGraphs([graphToKeep]);
+        
+        // Clear series for removed graphs, and keep only first series for kept graph
+        setSelectedSeries(current => {
+          const keptGraphSeries = current[graphToKeep] || [];
+          return {
+            [graphToKeep]: keptGraphSeries.length > 0 ? [keptGraphSeries[0]] : []
+          };
+        });
+        
+        setAvailableSeries(current => ({
+          [graphToKeep]: current[graphToKeep]
+        }));
+        
+        // Keep only the mapping for the kept graph
+        setGraphToMachineMap(current => ({
+          [graphToKeep]: current[graphToKeep]
+        }));
+      } else {
+        // If only 1 graph selected, limit its series to 1
+        setSelectedSeries(current => {
+          const newSeries = {};
+          selectedGraphs.forEach(graphId => {
+            const graphSeries = current[graphId] || [];
+            newSeries[graphId] = graphSeries.length > 0 ? [graphSeries[0]] : [];
+          });
+          return newSeries;
+        });
+      }
     }
   }, [selectedType, selectedGraphs]);
 
@@ -219,16 +234,28 @@ export const useComponentBuilderData = (machineName) => {
   const handleSeriesSelection = useCallback((graphId, seriesName) => {
     setSelectedSeries((prev) => {
       const graphSeries = prev[graphId] || [];
-      const newGraphSeries = graphSeries.includes(seriesName)
-        ? graphSeries.filter(s => s !== seriesName)
-        : [...graphSeries, seriesName];
+      const isRemoving = graphSeries.includes(seriesName);
       
+      // If removing, just filter it out
+      if (isRemoving) {
+        return {
+          ...prev,
+          [graphId]: graphSeries.filter(s => s !== seriesName)
+        };
+      }
+      
+      // If adding and Stats mode, limit to 1 series
+      if (selectedType === 'Stats' && graphSeries.length >= 1) {
+        return prev; // Don't add more series in Stats mode
+      }
+      
+      // Add the series (Graph mode or first series in Stats mode)
       return {
         ...prev,
-        [graphId]: newGraphSeries
+        [graphId]: [...graphSeries, seriesName]
       };
     });
-  }, []);
+  }, [selectedType]);
 
   // Generate custom graph
   const generateGraph = useCallback(async () => {
