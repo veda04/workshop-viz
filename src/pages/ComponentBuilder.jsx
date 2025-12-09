@@ -264,7 +264,7 @@ const ComponentBuilder = () => {
                     Select data types
                   </h2>
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    ({selectedGraphs.length}/2)
+                    ({selectedGraphs.length}/{selectedType === 'Stats' ? '1' : '2'})
                   </span>
                 </div>
 
@@ -311,40 +311,43 @@ const ComponentBuilder = () => {
                             </p>
                           )}
 
-                          {!loading && graphConfigs.map((datatypes) => (
-                            <div
-                              key={datatypes.id}
-                              className={`p-3 rounded-lg border-2 transition-all ${
-                                selectedGraphs.includes(datatypes.id)
-                                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                  : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                              } ${selectedGraphs.length >= 2 && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                              onClick={() => {
-                                if (selectedGraphs.length < 2 || selectedGraphs.includes(datatypes.id)) {
-                                  handleGraphSelection(datatypes.id, machineName);
-                                }
-                              }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h3 className="font-base text-gray-900 dark:text-white">
-                                    {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
-                                  </h3>
-                                </div>
-                                <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          {!loading && graphConfigs.map((datatypes) => {
+                            const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                            return (
+                              <div
+                                key={datatypes.id}
+                                className={`p-3 rounded-lg border-2 transition-all ${
                                   selectedGraphs.includes(datatypes.id)
-                                    ? 'border-blue-500 bg-blue-500'
-                                    : 'border-gray-300 dark:border-gray-600'
-                                }`}>
-                                  {selectedGraphs.includes(datatypes.id) && (
-                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                    </svg>
-                                  )}
+                                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                } ${selectedGraphs.length >= maxSelection && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                onClick={() => {
+                                  if (selectedGraphs.length < maxSelection || selectedGraphs.includes(datatypes.id)) {
+                                    handleGraphSelection(datatypes.id, machineName);
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h3 className="font-base text-gray-900 dark:text-white">
+                                      {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
+                                    </h3>
+                                  </div>
+                                  <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                    selectedGraphs.includes(datatypes.id)
+                                      ? 'border-blue-500 bg-blue-500'
+                                      : 'border-gray-300 dark:border-gray-600'
+                                  }`}>
+                                    {selectedGraphs.includes(datatypes.id) && (
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -401,40 +404,43 @@ const ComponentBuilder = () => {
                                 </p>
                               )}
 
-                              {!isLoading && dataTypes.map((datatypes) => (
-                                <div
-                                  key={datatypes.id}
-                                  className={`p-3 rounded-lg border-2 transition-all ${
-                                    selectedGraphs.includes(datatypes.id)
-                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                  } ${selectedGraphs.length >= 2 && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                  onClick={() => {
-                                    if (selectedGraphs.length < 2 || selectedGraphs.includes(datatypes.id)) {
-                                      handleGraphSelection(datatypes.id, machineName);
-                                    }
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h3 className="font-base text-gray-900 dark:text-white">
-                                        {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
-                                      </h3>
-                                    </div>
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              {!isLoading && dataTypes.map((datatypes) => {
+                                const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                                return (
+                                  <div
+                                    key={datatypes.id}
+                                    className={`p-3 rounded-lg border-2 transition-all ${
                                       selectedGraphs.includes(datatypes.id)
-                                        ? 'border-blue-500 bg-blue-500'
-                                        : 'border-gray-300 dark:border-gray-600'
-                                    }`}>
-                                      {selectedGraphs.includes(datatypes.id) && (
-                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      )}
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    } ${selectedGraphs.length >= maxSelection && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                    onClick={() => {
+                                      if (selectedGraphs.length < maxSelection || selectedGraphs.includes(datatypes.id)) {
+                                        handleGraphSelection(datatypes.id, machineName);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-base text-gray-900 dark:text-white">
+                                          {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
+                                        </h3>
+                                      </div>
+                                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                        selectedGraphs.includes(datatypes.id)
+                                          ? 'border-blue-500 bg-blue-500'
+                                          : 'border-gray-300 dark:border-gray-600'
+                                      }`}>
+                                        {selectedGraphs.includes(datatypes.id) && (
+                                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </div>
@@ -493,40 +499,43 @@ const ComponentBuilder = () => {
                                 </p>
                               )}
 
-                              {!isLoading && dataTypes.map((datatypes) => (
-                                <div
-                                  key={datatypes.id}
-                                  className={`p-3 rounded-lg border-2 transition-all ${
-                                    selectedGraphs.includes(datatypes.id)
-                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                  } ${selectedGraphs.length >= 2 && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                  onClick={() => {
-                                    if (selectedGraphs.length < 2 || selectedGraphs.includes(datatypes.id)) {
-                                      handleGraphSelection(datatypes.id, dropdownName);
-                                    }
-                                  }}
-                                >
-                                  <div className="flex items-center justify-between">
-                                    <div>
-                                      <h3 className="font-base text-gray-900 dark:text-white">
-                                        {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
-                                      </h3>
-                                    </div>
-                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                              {!isLoading && dataTypes.map((datatypes) => {
+                                const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                                return (
+                                  <div
+                                    key={datatypes.id}
+                                    className={`p-3 rounded-lg border-2 transition-all ${
                                       selectedGraphs.includes(datatypes.id)
-                                        ? 'border-blue-500 bg-blue-500'
-                                        : 'border-gray-300 dark:border-gray-600'
-                                    }`}>
-                                      {selectedGraphs.includes(datatypes.id) && (
-                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      )}
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                        : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    } ${selectedGraphs.length >= maxSelection && !selectedGraphs.includes(datatypes.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                                    onClick={() => {
+                                      if (selectedGraphs.length < maxSelection || selectedGraphs.includes(datatypes.id)) {
+                                        handleGraphSelection(datatypes.id, dropdownName);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <h3 className="font-base text-gray-900 dark:text-white">
+                                          {datatypes.title} <span className="text-xs text-gray-500 dark:text-gray-400">({datatypes.unit})</span>
+                                        </h3>
+                                      </div>
+                                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                        selectedGraphs.includes(datatypes.id)
+                                          ? 'border-blue-500 bg-blue-500'
+                                          : 'border-gray-300 dark:border-gray-600'
+                                      }`}>
+                                        {selectedGraphs.includes(datatypes.id) && (
+                                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           </div>
                         </div>

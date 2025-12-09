@@ -19,6 +19,29 @@ export const useComponentBuilderData = (machineName) => {
   const [generatingGraph, setGeneratingGraph] = useState(false);
   const [error, setError] = useState(null);
 
+  // Handle selectedType change - clear extra selections if switching to Stats
+  useEffect(() => {
+    if (selectedType === 'Stats' && selectedGraphs.length > 1) {
+      // Keep only the first selected graph
+      const graphToKeep = selectedGraphs[0];
+      setSelectedGraphs([graphToKeep]);
+      
+      // Clear series for removed graphs
+      setSelectedSeries(current => ({
+        [graphToKeep]: current[graphToKeep]
+      }));
+      
+      setAvailableSeries(current => ({
+        [graphToKeep]: current[graphToKeep]
+      }));
+      
+      // Keep only the mapping for the kept graph
+      setGraphToMachineMap(current => ({
+        [graphToKeep]: current[graphToKeep]
+      }));
+    }
+  }, [selectedType, selectedGraphs]);
+
   // Fetch available data types 
   useEffect(() => {
     const loadDataTypeConfigs = async () => {
@@ -139,7 +162,7 @@ export const useComponentBuilderData = (machineName) => {
     }
   }, []);
 
-  // Handle graph selection (max 2 graphs)
+  // Handle graph selection (max 1 for Stats, max 2 for Graph)
   const handleGraphSelection = useCallback((graphId, machineNameForGraph = null) => {
     setSelectedGraphs((prev) => {
       // Toggle selection
@@ -169,8 +192,11 @@ export const useComponentBuilderData = (machineName) => {
         
         return newSelection;
       } else {
-        // Add graph (max 2)
-        if (prev.length < 2) {
+        // Determine max selection based on selectedType
+        const maxSelection = selectedType === 'Stats' ? 1 : 2;
+        
+        // Add graph (max 1 for Stats, max 2 for Graph)
+        if (prev.length < maxSelection) {
           // Determine which machine name to use
           const machineToUse = machineNameForGraph || machineName;
           
@@ -187,7 +213,7 @@ export const useComponentBuilderData = (machineName) => {
         return prev;
       }
     });
-  }, [fetchAvailableSeries, machineName]);
+  }, [fetchAvailableSeries, machineName, selectedType]);
 
   // Handle series selection for a graph
   const handleSeriesSelection = useCallback((graphId, seriesName) => {
