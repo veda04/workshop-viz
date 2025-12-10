@@ -9,6 +9,7 @@ export const useComponentBuilderData = (machineName) => {
   const [selectedGraphs, setSelectedGraphs] = useState([]);
   const [graphToMachineMap, setGraphToMachineMap] = useState({}); // Maps graphId to machineName
   const [availableSeries, setAvailableSeries] = useState({});
+  const [hasPivotMap, setHasPivotMap] = useState({}); // Maps graphId to has_pivot flag
   const [selectedSeries, setSelectedSeries] = useState({});
   const [selectedType, setSelectedType] = useState('Graph');
   const [graphData, setGraphData] = useState(null);
@@ -167,6 +168,12 @@ export const useComponentBuilderData = (machineName) => {
           ...prev,
           [graphId]: response.data
         }));
+        
+        // Store has_pivot flag for this graph
+        setHasPivotMap(prev => ({
+          ...prev,
+          [graphId]: response.has_pivot !== undefined ? response.has_pivot : true
+        }));
       } else {
         console.error('Failed to fetch series:', response.message);
       }
@@ -264,9 +271,19 @@ export const useComponentBuilderData = (machineName) => {
       return false;
     }
 
-    // Check if series are selected for each graph
+    // Check if series are selected for each graph (only when has_pivot is true or has available series)
     for (const graphId of selectedGraphs) {
-      if (!selectedSeries[graphId] || selectedSeries[graphId].length === 0) {
+      const hasPivot = hasPivotMap[graphId];
+      const availableSeriesForGraph = availableSeries[graphId] || [];
+      const selectedSeriesForGraph = selectedSeries[graphId] || [];
+      
+      // Only require series selection if:
+      // 1. has_pivot is true (or undefined for backward compatibility)
+      // 2. AND there are series available to select
+      // Skip validation if has_pivot is false (no pivot needed)
+      if ((hasPivot === undefined || hasPivot === true) && 
+          availableSeriesForGraph.length > 0 && 
+          selectedSeriesForGraph.length === 0) {
         const config = graphConfigs.find(g => g.id === graphId);
         setError(`Please select at least one series for ${config?.title}`);
         return false;
@@ -349,7 +366,7 @@ export const useComponentBuilderData = (machineName) => {
     } finally {
       setGeneratingGraph(false);
     }
-  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs, graphToMachineMap, machineDataTypes]);
+  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs, graphToMachineMap, machineDataTypes, hasPivotMap, availableSeries]);
 
   // Reset error
   const clearError = useCallback(() => {
@@ -365,6 +382,7 @@ export const useComponentBuilderData = (machineName) => {
     graphToMachineMap,
     selectedGraphs,
     availableSeries,
+    hasPivotMap,
     selectedSeries,
     selectedType,
     setSelectedType,

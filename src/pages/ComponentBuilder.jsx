@@ -30,6 +30,7 @@ const ComponentBuilder = () => {
     graphToMachineMap,
     selectedGraphs,
     availableSeries,
+    hasPivotMap,
     selectedSeries,
     graphData,
     timeRange,
@@ -596,6 +597,7 @@ const ComponentBuilder = () => {
                             
                             const series = availableSeries[graphId] || [];
                             const isLoading = loadingSeries[graphId];
+                            const hasPivot = hasPivotMap[graphId];
                             
                             return (
                               <div key={graphId} className="pt-4 border-t border-gray-200 dark:border-gray-700 first:border-t first:pt-4">
@@ -645,7 +647,9 @@ const ComponentBuilder = () => {
                                   </div>
                                 ) : (
                                   <p className="text-gray-500 dark:text-gray-400">
-                                    No series available for this graph
+                                    {hasPivot === false 
+                                      ? 'No series available for this Data type. Generate the data' 
+                                      : 'No series available for this Data type'}
                                   </p>
                                 )}
                               </div>
@@ -656,7 +660,18 @@ const ComponentBuilder = () => {
                           <div className="pt-0">
                             <button
                               onClick={handleGenerateGraph}
-                              disabled={generatingGraph || selectedGraphs.length === 0}
+                              disabled={
+                                generatingGraph || 
+                                selectedGraphs.length === 0 ||
+                                // Disable if any graph has pivot=true and empty series with no selection
+                                selectedGraphs.some(graphId => {
+                                  const hasPivot = hasPivotMap[graphId];
+                                  const series = availableSeries[graphId] || [];
+                                  const selected = selectedSeries[graphId] || [];
+                                  // Disable if has_pivot is true and series is empty and nothing selected
+                                  return hasPivot === true && series.length === 0 && selected.length === 0;
+                                })
+                              }
                               className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
                             >
                               {generatingGraph ? (

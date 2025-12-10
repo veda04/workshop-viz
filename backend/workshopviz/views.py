@@ -720,30 +720,33 @@ def get_available_series(request):
         data_type_name, data_type_config = data_types[graph_index]
 
         available_series = []
+        has_pivot = 'Pivot' in data_type_config
         
-        # Check if this data type has Predicates - if yes, use getDataSeries
-        if 'Predicates' in data_type_config and 'Pivot' in data_type_config:
+        # Check if this data type has Predicates AND Pivot - if yes, use getDataSeries
+        if 'Predicates' in data_type_config and has_pivot:
             available_series = getDataSeries(data_type_config)
             print("****** Available series from getDataSeries:", available_series)
 
             if available_series is None:
-                available_series = None
+                available_series = []
             
             # getDataSeries returns False if Predicates not found (shouldn't happen here)
-            if available_series is None or available_series is False:
+            if available_series is False:
                 available_series = []
         else:
-            print(f"*** No Predicates found in config for graph_id: {graph_id}, data_type: {data_type_name}")
-            logger.info(f"No Predicates found for {data_type_name}, returning empty or single series")
+            # No Pivot field means no series selection needed - will query all data
+            print(f"*** No Pivot in config for graph_id: {graph_id}, data_type: {data_type_name} - will query all data automatically")
+            logger.info(f"No Pivot for {data_type_name}, returning empty series (will auto-generate without series filtering)")
             available_series = []
         
-        logger.info(f"Available series for graph {graph_id} ({data_type_name}): {available_series}")
+        logger.info(f"Available series for graph {graph_id} ({data_type_name}): {available_series}, has_pivot: {has_pivot}")
         
         return JsonResponse({
             'status': 'success',
             'message': 'Available series retrieved successfully',
             'data_for': data_type_name,
-            'data': available_series
+            'data': available_series,
+            'has_pivot': has_pivot  # Inform frontend whether series selection is needed
         }, status=status.HTTP_200_OK)
     
     except Exception as e:
@@ -811,12 +814,25 @@ def generate_data(request):
             graph_index = int(graph_id) - 1
             if graph_index >= 0 and graph_index < len(data_types):
                 data_type_name, data_type_config = data_types[graph_index]
-                graphs_info = [{
-                    'id': int(graph_id),
-                    'name': data_type_name,
-                    'aggregation': 'max',
-                    'series': selected_series.get(str(graph_id), [])
-                }]
+                has_pivot = 'Pivot' in data_type_config
+                
+                # Build graphs_info based on whether Pivot exists
+                if has_pivot:
+                    # With Pivot: include series from selected_series
+                    graphs_info = [{
+                        'id': int(graph_id),
+                        'name': data_type_name,
+                        'aggregation': 'max',
+                        'series': selected_series.get(str(graph_id), [])
+                    }]
+                else:
+                    # No Pivot: omit 'series' key entirely - will query all data
+                    graphs_info = [{
+                        'id': int(graph_id),
+                        'name': data_type_name,
+                        'aggregation': 'max'
+                    }]
+                    logger.info(f"No Pivot for graph {graph_id} ({data_type_name}) - querying all data without series filtering")
                 
                 customised_config_data = {
                     'date_from': custom_date_from,
