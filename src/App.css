@@ -42,7 +42,11 @@
 }
 
 .dash-cover {
-  margin-top: 180px;
+  margin-top: 175px;
+}
+
+.no-machine-associated {
+  margin-top: 85px;
 }
 
 .top-6_7 {
@@ -75,4 +79,8 @@
 
 .h-72{
   height: 18rem;
+}
+
+.w-89 {
+  width: 89%;
 }

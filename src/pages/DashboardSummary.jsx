@@ -8,6 +8,7 @@ import ZoomableChart from '../components/charts/ZoomableChart';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { useDashboardData } from '../hooks/useDashboardData';
+import { useEditLayout } from '../context/EditLayoutContext';
 import {getUnitByTitle} from '../utils/unitUtils';
 import { getFixedColors, getRandomColors} from '../utils/chartUtils';
 import apiService from '../services/apiService';
@@ -19,6 +20,7 @@ const DashboardSummary = () => {
   const dashboardId = searchParams.get('dashboardId');
   const title = searchParams.get('title');
   const machineName = searchParams.get('machineName'); 
+  const { isEditMode } = useEditLayout();
   
   // State for components
   const [components, setComponents] = useState([]);
@@ -33,6 +35,9 @@ const DashboardSummary = () => {
   
   // Determine if this is a new dashboard (has dashboardId)
   const isNewDashboard = dashboardId !== null;
+
+  // rest layout logic here
+  const resetLayout = () => {};
 
   // Fetch components on mount
   useEffect(() => {
@@ -193,18 +198,38 @@ const DashboardSummary = () => {
 
   return (
     <Layout componentCount={components.length}> 
-      <div className="dash-cover p-6 space-y-6">
-        {/* Dashboard Header with Add Component Button */}
-        <div className="flex justify-end text-right items-center mb-6">
-          <button
-            onClick={handleCreateEntry}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Component
-          </button>
+      <div className={`dash-cover p-6 space-y-6 ${!machineName ? 'no-machine-associated' : ''}`}>
+        <div className={`mb-4 flex items-center ${isEditMode ? 'justify-between' : 'justify-end'}`}>
+          {isEditMode && (
+            <div className="w-89 py-1 px-2 bg-purple-100 dark:bg-purple-200 border-2 border-purple-300 dark:border-purple-300 rounded-lg">
+              <div className="flex items-center justify-between">
+                <p className="text-purple-800 dark:text-purple-800 font-semibold">
+                  Edit Layout Mode Active : Drag and resize blocks to re-arrange your dashboard components | Click "Add Component" to add more components.
+                </p>
+                <button
+                  onClick={resetLayout}
+                  className="px-4 py-2 bg-purple-500 hover:bg-purple-600 dark:bg-purple-600 dark:hover:bg-purple-700 text-white font-semibold rounded-lg transition-colors shadow-md"
+                  title="Reset to original layout"
+                >
+                  Reset Layout
+                </button>
+              </div>
+            </div>
+          )}
+          {/* Add Component Button */}
+          {(components.length === 0 || isEditMode) && (
+          <div className="">
+            <button
+              onClick={handleCreateEntry}
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors shadow-md flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Component
+            </button>
+          </div>
+          )}
         </div>
         <div className="">
           {/* Loading State */}
@@ -297,22 +322,24 @@ const DashboardSummary = () => {
                           )}
 
                         {/* Action Buttons */}
-                        <div className="flex gap-2 p-0 mb-0 absolute top-1 right-2">
-                          <button
-                            onClick={() => handleEdit(component)}
-                            className="flex items-center justify-center gap-2 px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                            title="Edit Component"
-                          >
-                            <PencilSquareIcon className="w-5 h-5" />
-                          </button> 
-                          <button
-                            onClick={() => handleDelete(component)}
-                            className="flex items-center justify-center px-1 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                            title="Delete Component"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
-                        </div>
+                        {isEditMode && (
+                           <div className="flex gap-2 p-0 mb-0 absolute top-1 right-2">
+                            <button
+                              onClick={() => handleEdit(component)}
+                              className="flex items-center justify-center gap-2 px-1 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                              title="Edit Component"
+                            >
+                              <PencilSquareIcon className="w-5 h-5" />
+                            </button> 
+                            <button
+                              onClick={() => handleDelete(component)}
+                              className="flex items-center justify-center px-1 py-1 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                              title="Delete Component"
+                            >
+                              <TrashIcon className="w-5 h-5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
