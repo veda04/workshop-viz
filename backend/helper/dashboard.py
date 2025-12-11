@@ -274,7 +274,7 @@ def _formatTime(startDate,endDate):
 
 		return startDateTime_utc,endDateTime_utc
 
-def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=False):
+def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised):
 	"""
 	Builds an InfluxDB Flux query based on the input parameters and modifies it
 	depending on the visualisaton type and minimisation flag.
@@ -308,6 +308,7 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=
 
 	if(configJSON.get("Summarised")):
 		filterString = templateMultiFilter.replace("[FILTER_KEY]","_field").replace("[FILTER_VALUE]", jsonQuery["aggregation"].capitalize())
+		# print("Filtering String for Summarised: ", filterString)
 		filtersList.append(templateFilter.replace("[FILTERS]",filterString))
 		
 
@@ -363,13 +364,14 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=
 
 	query = query.replace("v.timeRangeStart", startDateTime_utc.isoformat())
 	query = query.replace("v.timeRangeStop", endDateTime_utc.isoformat())
-
+	#print("Reached this point")
+	#print(type, maximised)
 	maxPointsToFetch  = FULL_SCREEN_POINTS
-	if(type== "Stat" and minimised == True):
+	if(type== "Stat" and maximised == False):
 		print("Stat query is minimised, get last value")
 		query = query + "|> last()"
 	else:
-		if(minimised == True):
+		if(maximised == False):
 			print("Graph query is minimised, use bigger interval")
 			maxPointsToFetch = MINIMISED_POINTS
 		getAggregationValue = calculateAggregation2(startDateTime_utc,endDateTime_utc,configJSON.get("Sample_Interval"),maxPointsToFetch)
@@ -517,14 +519,14 @@ def runJSONQuery(config, query):
 			  each corresponding to one entry in the "Queries" list.
 	"""
 	#print("Running JSON Query...")
-	#pprint.pprint(config, indent=2, width=120)
+	#print("Config Data:", query)
 	
 	pivotedData = []
 	#machine = query["machine_name"]
 	for type in query["data_types"]:
 		#pprint.pprint(type, indent=2, width=120)
 		typename = type["name"]
-		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("minimised",False)) #configJSON,jsonQuery,startDate,endDate,type,minimised=False
+		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("maximised",False)) #configJSON,jsonQuery,startDate,endDate,type,minimised=False
 		#print("Influx Query:", influxQuery)
 		data = _runQuery(influxQuery)
 		if not data:

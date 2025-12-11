@@ -12,6 +12,7 @@ export const useComponentBuilderData = (machineName) => {
   const [hasPivotMap, setHasPivotMap] = useState({}); // Maps graphId to has_pivot flag
   const [selectedSeries, setSelectedSeries] = useState({});
   const [selectedType, setSelectedType] = useState('Graph');
+  const [selectedAggregate, setSelectedAggregate] = useState('Max');
   const [graphData, setGraphData] = useState(null);
   const [timeRange, setTimeRange] = useState('3h');
   const [loading, setLoading] = useState(true);
@@ -20,9 +21,9 @@ export const useComponentBuilderData = (machineName) => {
   const [generatingGraph, setGeneratingGraph] = useState(false);
   const [error, setError] = useState(null);
 
-  // Handle selectedType change - clear extra selections if switching to Stats
+  // Handle selectedType change - clear extra selections if switching to Stat
   useEffect(() => {
-    if (selectedType === 'Stats') {
+    if (selectedType === 'Stat') {
       // If more than 1 graph selected, keep only the first
       if (selectedGraphs.length > 1) {
         const graphToKeep = selectedGraphs[0];
@@ -184,7 +185,7 @@ export const useComponentBuilderData = (machineName) => {
     }
   }, []);
 
-  // Handle graph selection (max 1 for Stats, max 2 for Graph)
+  // Handle graph selection (max 1 for Stat, max 2 for Graph)
   const handleGraphSelection = useCallback((graphId, machineNameForGraph = null) => {
     setSelectedGraphs((prev) => {
       // Toggle selection
@@ -215,9 +216,9 @@ export const useComponentBuilderData = (machineName) => {
         return newSelection;
       } else {
         // Determine max selection based on selectedType
-        const maxSelection = selectedType === 'Stats' ? 1 : 2;
+        const maxSelection = selectedType === 'Stat' ? 1 : 2;
         
-        // Add graph (max 1 for Stats, max 2 for Graph)
+        // Add graph (max 1 for Stat, max 2 for Graph)
         if (prev.length < maxSelection) {
           // Determine which machine name to use
           const machineToUse = machineNameForGraph || machineName;
@@ -251,12 +252,12 @@ export const useComponentBuilderData = (machineName) => {
         };
       }
       
-      // If adding and Stats mode, limit to 1 series
-      if (selectedType === 'Stats' && graphSeries.length >= 1) {
-        return prev; // Don't add more series in Stats mode
+      // If adding and Stat mode, limit to 1 series
+      if (selectedType === 'Stat' && graphSeries.length >= 1) {
+        return prev; // Don't add more series in Stat mode
       }
       
-      // Add the series (Graph mode or first series in Stats mode)
+      // Add the series (Graph mode or first series in Stat mode)
       return {
         ...prev,
         [graphId]: [...graphSeries, seriesName]
@@ -318,7 +319,8 @@ export const useComponentBuilderData = (machineName) => {
       });
       
       const response = await apiService.generateData({
-        type: selectedType.toLowerCase(),
+        type: selectedType,
+        aggregate: selectedAggregate.toLocaleLowerCase(),
         graphs: originalGraphIds,
         series: originalSeriesMapping,
         range: timeRange,
@@ -366,7 +368,7 @@ export const useComponentBuilderData = (machineName) => {
     } finally {
       setGeneratingGraph(false);
     }
-  }, [selectedType, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs, graphToMachineMap, machineDataTypes, hasPivotMap, availableSeries]);
+  }, [selectedType, selectedAggregate, selectedGraphs, selectedSeries, timeRange, machineName, graphConfigs, graphToMachineMap, machineDataTypes, hasPivotMap, availableSeries]);
 
   // Reset error
   const clearError = useCallback(() => {
@@ -386,6 +388,8 @@ export const useComponentBuilderData = (machineName) => {
     selectedSeries,
     selectedType,
     setSelectedType,
+    selectedAggregate,
+    setSelectedAggregate,
     graphData,
     timeRange,
     loading,

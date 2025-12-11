@@ -218,7 +218,7 @@ return (
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row sm:justify-center items-center gap-4 mb-8">
+          <div className="flex flex-col sm:flex-row sm:justify-center items-center gap-4 mb-8 mt-2">
             <button
               onClick={handleCreateNewClick}
               className="bg-blue-500 text-white font-semibold py-3 px-6 rounded-lg shadow-md hover:bg-blue-600 transition duration-200"
@@ -286,7 +286,7 @@ return (
               {componentData[selectedComponent.icomponent_id] ? (
                 <DashboardBlock
                   data={
-                    componentData[selectedComponent.icomponent_id].type?.toLowerCase() === 'stats'
+                    componentData[selectedComponent.icomponent_id].type === 'Stat'
                       ? componentData[selectedComponent.icomponent_id].data
                       : { data: componentData[selectedComponent.icomponent_id].data }
                   }

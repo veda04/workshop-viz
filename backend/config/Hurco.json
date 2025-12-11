@@ -19,7 +19,8 @@
       "Units": "g",
       "Pivot": "Axis",
       "Scale": "/10000.0",
-      "Sample_Interval": "0.1s"
+      "Sample_Interval": "0.1s",
+      "Summarised": true
     },
     "Current": {
       "Bucket": "Machines_Summary",
@@ -33,7 +34,8 @@
       "Units": "A",
       "Pivot": "Phase",
       "Scale": "/1000.0",
-      "Sample_Interval": "15s"
+      "Sample_Interval": "15s",
+      "Summarised": true
     },
     "Temperature": {
       "Bucket": "Machines",

@@ -765,6 +765,7 @@ def generate_data(request):
         machine_name = data.get('machine_name')  # For backward compatibility
         machine_names = data.get('machine_names', [])  # New: array of machine names per graph
         selected_type = data.get('type', None)
+        selected_aggregate = data.get('aggregate', 'max')
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
@@ -822,7 +823,7 @@ def generate_data(request):
                     graphs_info = [{
                         'id': int(graph_id),
                         'name': data_type_name,
-                        'aggregation': 'max',
+                        'aggregation': selected_aggregate,
                         'series': selected_series.get(str(graph_id), [])
                     }]
                 else:
@@ -830,7 +831,7 @@ def generate_data(request):
                     graphs_info = [{
                         'id': int(graph_id),
                         'name': data_type_name,
-                        'aggregation': 'max'
+                        'aggregation': selected_aggregate,
                     }]
                     logger.info(f"No Pivot for graph {graph_id} ({data_type_name}) - querying all data without series filtering")
                 
@@ -842,8 +843,11 @@ def generate_data(request):
                     "type": selected_type
                 }
                 
+                # print("*** Customised Config Data:", customised_config_data)
                 # Get data for this machine/dropdown
                 machine_data = getCustomData(customised_config_data, file_path)
+                # print("Machine Data here")
+                # print("*** Machine Data :", machine_data)
                 
                 if machine_data and len(machine_data) > 0:
                     all_machine_data.append(machine_data[0])  # Get first element as we only query one graph at a time
@@ -882,7 +886,20 @@ def generate_data(request):
             if not metadata:
                 continue
             
-            graph_series = metadata['series']
+            # check if data type does not have pivot
+            if has_pivot == False:
+                # infer available series from data_list (exclude the timestamp and index key)
+                graph_series = []
+                for entry in data_list:
+                    if isinstance(entry, dict):
+                        for key in entry.keys():
+                            if (key != 'time' and key != 'index') and key not in graph_series:
+                                graph_series.append(key)
+                # fallback to ['value'] if nothing else found 
+                if not graph_series:
+                    graph_series = ['value']
+            else:
+                graph_series = metadata['series']
             
             # Process each data entry in the list
             for entry in data_list:
@@ -920,14 +937,15 @@ def generate_data(request):
         # Add selectedType to the response data
         combined_data['type'] = selected_type
         
-        # If type is 'stats', calculate aggregate values (latest, average, max, etc.) for stats display
-        if selected_type and selected_type.lower() == 'stats':
-            # Calculate the latest value (or average of latest values) for each series
+        # If type is 'stat'
+        if selected_type and selected_type == 'Stat': # logic will change based on condition to check maximised 
             stats_values = []
             for series_name in combined_data['series']:
-                # Get the last non-null value for this series
+                print(f"Processing stats for series: {series_name}")
+                # Get the only value for this series
                 last_value = None
-                for data_point in reversed(combined_data['chartData']):
+                for data_point in combined_data['chartData']:
+                    print(f"Data point: {data_point}")
                     if data_point.get(series_name) is not None:
                         last_value = data_point[series_name]
                         break
@@ -937,23 +955,24 @@ def generate_data(request):
                         'series': series_name,
                         'value': last_value
                     })
-            
-            # For stats, we return a single aggregated value or the first series value
+            # print("Stats values calculated:", stats_values)
             if stats_values:
-                # Use the first series value or calculate average
                 combined_data['statsValue'] = stats_values[0]['value']
+                print("Final stats value:", combined_data['statsValue'])
             else:
                 combined_data['statsValue'] = 'N/A'
         
-        # Build saveable config for component storage
-        # This allows the frontend to save the exact configuration that generated this data
+        # Build saveable config for component storage, This allows the frontend to save the exact configuration that generated this data
         saveable_config = {
             'type': selected_type,
+            'aggregate': selected_aggregate,
             'graphs': selected_graphs,
             'machine_names': machine_names,
             'series': selected_series,
             'range': time_range
         }
+
+        # print("Combined Data:", combined_data)
         
         return JsonResponse({
             'status': 'success',

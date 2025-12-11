@@ -262,7 +262,7 @@ const DashboardSummary = () => {
                         //     'w-full md:w-[calc(33.333%-1rem)]'
                         // } mb-4`}
                       >
-                        {/* Chart/Stats Display */}
+                        {/* Chart/Stat Display */}
                           {componentData[component.icomponent_id] ? (
                             <DashboardBlock
                               config={{
@@ -276,7 +276,7 @@ const DashboardSummary = () => {
                                 Color: getFixedColors(componentData[component.icomponent_id].series.length)
                               }}
                               initialData={
-                                componentData[component.icomponent_id].type?.toLowerCase() === 'stats'
+                                componentData[component.icomponent_id].type?.toLowerCase() === 'stat'
                                   ? [componentData[component.icomponent_id]]
                                   : [componentData[component.icomponent_id].chartData]
                               }

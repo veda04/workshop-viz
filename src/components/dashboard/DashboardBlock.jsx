@@ -65,7 +65,7 @@ const DashboardBlock = ({
       />
     );
   }
-  if (renderType === 'Stats' || renderType === 'stats') {
+  if (renderType === 'Stat' || renderType === 'stat') {
     // For custom graphs (with selectedType), data is structured differently
     // For regular dashboards, use the original structure
     const statsValue = selectedType 

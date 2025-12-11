@@ -50,6 +50,8 @@ const ComponentBuilder = () => {
     refreshSavedGraphs,
     selectedType,
     setSelectedType,
+    selectedAggregate,
+    setSelectedAggregate,
     fetchDataTypesForMachine
   } = useComponentBuilderData(machineName);
 
@@ -63,7 +65,8 @@ const ComponentBuilder = () => {
   const [expandedMachines, setExpandedMachines] = useState([]);
   const [editGraphId, setEditGraphId] = useState(null);
   const [editGraphData, setEditGraphData] = useState(null);
-  const custom_types = ['Graph', 'Stats'];
+  const custom_types = ['Graph', 'Stat'];
+  const aggregates = ['Max', 'Min', 'Mean'];
 
   // Handle chart click to open modal with ZoomableChart
   const handleChartClick = () => {
@@ -265,7 +268,7 @@ const ComponentBuilder = () => {
                     Select data types
                   </h2>
                   <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    ({selectedGraphs.length}/{selectedType === 'Stats' ? '1' : '2'})
+                    ({selectedGraphs.length}/{selectedType === 'Stat' ? '1' : '2'})
                   </span>
                 </div>
 
@@ -313,7 +316,7 @@ const ComponentBuilder = () => {
                           )}
 
                           {!loading && graphConfigs.map((datatypes) => {
-                            const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                            const maxSelection = selectedType === 'Stat' ? 1 : 2;
                             return (
                               <div
                                 key={datatypes.id}
@@ -406,7 +409,7 @@ const ComponentBuilder = () => {
                               )}
 
                               {!isLoading && dataTypes.map((datatypes) => {
-                                const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                                const maxSelection = selectedType === 'Stat' ? 1 : 2;
                                 return (
                                   <div
                                     key={datatypes.id}
@@ -501,7 +504,7 @@ const ComponentBuilder = () => {
                               )}
 
                               {!isLoading && dataTypes.map((datatypes) => {
-                                const maxSelection = selectedType === 'Stats' ? 1 : 2;
+                                const maxSelection = selectedType === 'Stat' ? 1 : 2;
                                 return (
                                   <div
                                     key={datatypes.id}
@@ -625,7 +628,7 @@ const ComponentBuilder = () => {
                                     {series.map((seriesName) => {
                                       const isSelected = selectedSeries[graphId]?.includes(seriesName);
                                       const currentSeriesCount = selectedSeries[graphId]?.length || 0;
-                                      const isDisabled = selectedType === 'Stats' && currentSeriesCount >= 1 && !isSelected;
+                                      const isDisabled = selectedType === 'Stat' && currentSeriesCount >= 1 && !isSelected;
                                       
                                       return (
                                         <button
@@ -648,44 +651,66 @@ const ComponentBuilder = () => {
                                 ) : (
                                   <p className="text-gray-500 dark:text-gray-400">
                                     {hasPivot === false 
-                                      ? 'No series available for this Data type. Generate the data' 
+                                      ? 'No series available for this Data type. Generate the data.' 
                                       : 'No series available for this Data type'}
                                   </p>
                                 )}
                               </div>
                             );
                           })}
-
+                          {/* Aggregate Selection */}
+                          <div className="pt-4 border-t border-gray-200 dark:border-gray-700 first:border-t first:pt-4">
+                            <h4 className="text-base text-gray-900 dark:text-white mb-4 flex items-center">Select Aggregation</h4>
+                            <div className="mb-4 flex space-x-2">
+                              {aggregates.map((aggregate) => (
+                                <label
+                                className={`px-4 py-2 rounded-lg border-2 font-medium transition-all cursor-pointer ${
+                                  selectedAggregate === aggregate
+                                  ? 'border-blue-500 bg-blue-500 text-white'
+                                  : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-blue-400 dark:hover:border-blue-500'
+                                }`}
+                                >
+                                <input
+                                type="radio"
+                                checked={selectedAggregate === aggregate}
+                                onChange={() => setSelectedAggregate(aggregate)} 
+                                className="mr-2"
+                                />
+                                {aggregate}
+                              </label>
+                              ))}
+                            </div>
+                          </div>
                           {/* Generate Button */}
                           <div className="pt-0">
                             <button
                               onClick={handleGenerateGraph}
                               disabled={
-                                generatingGraph || 
-                                selectedGraphs.length === 0 ||
-                                // Disable if any graph has pivot=true and empty series with no selection
-                                selectedGraphs.some(graphId => {
-                                  const hasPivot = hasPivotMap[graphId];
-                                  const series = availableSeries[graphId] || [];
-                                  const selected = selectedSeries[graphId] || [];
-                                  // Disable if has_pivot is true and series is empty and nothing selected
-                                  return hasPivot === true && series.length === 0 && selected.length === 0;
-                                })
-                              }
-                              className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
-                            >
-                              {generatingGraph ? (
-                                <>
-                                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                  </svg>
-                                  Generating...
-                                </>
-                              ) : (
-                                'Generate'
-                              )}
-                            </button>
+                              generatingGraph || 
+                              selectedGraphs.length === 0 ||
+                                  // Disable if any graph has pivot=true and empty series with no selection
+                                  selectedGraphs.some(graphId => {
+                                    const hasPivot = hasPivotMap[graphId];
+                                    const series = availableSeries[graphId] || [];
+                                    const selected = selectedSeries[graphId] || [];
+                                    // Disable if has_pivot is true and series is empty and nothing selected
+                                    return hasPivot === true && series.length === 0 && selected.length === 0;
+                                  })
+                                }
+                                className="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-colors flex items-center justify-center"
+                              >
+                                {generatingGraph ? (
+                                  <>
+                                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Generating...
+                                  </>
+                                ) : (
+                                  'Generate'
+                                )}
+                              </button>
                           </div>
                         </div>
                       </div>
@@ -703,7 +728,7 @@ const ComponentBuilder = () => {
                               YAxisDomain: [0, 'auto'],
                               Color: chartColors
                             }}
-                            initialData={graphData.type?.toLowerCase() === 'stats' ? [graphData] : [graphData.chartData]}
+                            initialData={graphData.type === 'Stat' ? [graphData] : [graphData.chartData]}
                             selectedType={graphData.type || selectedType}
                             axisConfig={graphData.axisConfig}
                             heightOuter={96}
