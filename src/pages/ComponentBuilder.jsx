@@ -20,6 +20,7 @@ const ComponentBuilder = () => {
   const mode = searchParams.get('mode'); // 'E' for edit mode
   const componentId = searchParams.get('component_id');
   const isEditMode = mode === 'E' && componentId;
+  const hasComponents = searchParams.get('hasComponents') === 'true'; // Check if coming from dashboard with components
   
   // Use custom hook for graph data management
   const {
@@ -209,7 +210,7 @@ const ComponentBuilder = () => {
 
   if (loading) {
     return (
-      <Layout>
+      <Layout componentCount={hasComponents ? 1 : 0}>
         <div className="flex justify-center items-center min-h-screen">
           <LoadingSpinner />
         </div>
@@ -218,7 +219,7 @@ const ComponentBuilder = () => {
   }
 
   return (
-    <Layout> 
+    <Layout componentCount={hasComponents ? 1 : 0}> 
       <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
           <h2 className="text-3xl text-gray-900 capitalize dark:text-white mb-2">

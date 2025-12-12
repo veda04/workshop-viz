@@ -141,7 +141,12 @@ const DashboardSummary = () => {
   };
 
   const handleEdit = (component) => {
-    navigate(`/component-builder?dashboardId=${dashboardId}&mode=E&component_id=${component.icomponent_id}`);
+    let editUrl = `/component-builder?dashboardId=${dashboardId}&mode=E&component_id=${component.icomponent_id}`;
+    // Pass hasComponents flag to indicate dashboard has components
+    if (components.length > 0) {
+      editUrl += `&hasComponents=true`;
+    }
+    navigate(editUrl);
   };
 
   const handleDelete = async (component) => {
@@ -183,6 +188,10 @@ const DashboardSummary = () => {
     let componentBuilderUrl = `/component-builder?dashboardId=${encodeURIComponent(dashboardId)}&title=${encodeURIComponent(title)}`;
     if (machineName) {
       componentBuilderUrl += `&machineName=${encodeURIComponent(machineName)}`;
+    }
+    // Pass hasComponents flag to indicate dashboard has components
+    if (components.length > 0) {
+      componentBuilderUrl += `&hasComponents=true`;
     }
     navigate(componentBuilderUrl);
   };
