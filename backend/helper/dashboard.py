@@ -734,7 +734,7 @@ def getDataSeries(data):
 					schema.tagValues(\
 						bucket: \"{data['Bucket']}\", \
 						predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
-    					tag: \"{data["Pivot"]}\")"
+    					tag: \"{data['Pivot']}\")"
 	results = _runQuery(influxQuery)
 	
 	for table in results:
