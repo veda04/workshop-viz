@@ -14,18 +14,21 @@ from django.conf import settings
 import os
 from influxdb_client import InfluxDBClient
 from backend.settings import DB_LINK, INFLUX_TOKEN, DB_ORG, MACHINE_CONFIG_PATH
-from helper.dashboard import getInfluxData
+from helper.dashboard import getCustomData, getInfluxData, getDataSeries
 import pprint
 import pandas as pd
 
 # Debug: Check if MACHINE_CONFIG_PATH is loaded correctly
-if MACHINE_CONFIG_PATH is None:
-    print("WARNING: MACHINE_CONFIG_PATH is None. Check .env file and ensure it's in the correct location.")
-    print("Current working directory:", os.getcwd())
-    print("Looking for .env file in backend directory")
-else:
-    print("Config Path:", MACHINE_CONFIG_PATH)
+# if MACHINE_CONFIG_PATH is None:
+#     print("WARNING: MACHINE_CONFIG_PATH is None. Check .env file and ensure it's in the correct location.")
+#     print("Current working directory:", os.getcwd())
+#     print("Looking for .env file in backend directory")
+# else:
+#     print("Config Path:", MACHINE_CONFIG_PATH)
 
+# ============================================================================
+# ATMAS DB related APIs
+# ============================================================================
 @api_view(['GET'])
 def test_mysql_connection(request):
     """Test API endpoint to check MySQL connection"""
@@ -41,41 +44,6 @@ def test_mysql_connection(request):
     except Exception as e:
         logger.error(f"Error testing MySQL connection: {str(e)}")
         return JsonResponse({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}'
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(['GET'])
-def test_influx_connection(request):
-    """Test API endpoint to check InfluxDB connection"""
-    try:
-        client = InfluxDBClient(url=DB_LINK, token=INFLUX_TOKEN, org=DB_ORG, timeout=10_000)
-        health = client.health()
-
-        if health.status == "pass":
-            return Response({
-                'status': 'success',
-                'message': 'Connection Successful',
-                'data': {
-                    'influxdb_version': health.version,
-                    'server_time': datetime.now(datetime.timezone.utc).isoformat()
-                    #'server_time': datetime.now(timezone.utc).isoformat()  # uncomment incase of connection fails 
-                }
-            }, status=status.HTTP_200_OK)
-        else:
-            return Response({
-                'status': 'error',
-                'message': health.message,
-                'data': {
-                    'status': health.status,
-                    'message': health.message,
-                    'version': health.version
-                }
-            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
-    except Exception as e:
-        logger.error(f"Error testing InfluxDB connection: {str(e)}")
-        return Response({
             'status': 'error',
             'message': f'Internal server error: {str(e)}'
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -112,84 +80,13 @@ def parse_range_to_timedelta(range_str):
     else:
         raise ValueError("Unsupported time unit in range")
 
-    
-@api_view(['GET'])
-def get_dashboard_config(request):
-    try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
-        selected_range = request.GET.get('range', None)
-        custom_from = request.GET.get('from', None)
-        custom_to = request.GET.get('to', None) 
-
-        if selected_range:
-            delta = parse_range_to_timedelta (selected_range)
-            custom_date_from  = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
-            custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        else:
-            # Ensure custom_from and custom_to are in 'YYYY-MM-DDTHH:MM:SSZ' format
-            def ensure_iso8601_z(dt_str):
-                try:
-                    # Try parsing with seconds
-                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
-                except ValueError:
-                    try:
-                        # Try parsing without seconds
-                        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
-                    except ValueError:
-                        # If already has 'Z', try parsing with 'Z'
-                        try:
-                            dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
-                        except ValueError:
-                            return dt_str  # Return as is if parsing fails
-                else:
-                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-            custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
-            custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
-
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
-        #print("Machine Data:")
-        #pprint.pprint(machine_data, indent=2, width=120)
-
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Dashboard configuration loaded successfully',
-            'data': machine_data,
-        }, status=status.HTTP_200_OK)
-        
-    except FileNotFoundError as e:
-        logger.error(f"Configuration file not found: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Configuration file not found for machine "{machine_name}". Please check if the machine configuration exists.',
-            'data': {}
-        }, status=status.HTTP_404_NOT_FOUND)
-    
-    except ValueError as e:
-        logger.error(f"Invalid data format: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Invalid data format: {str(e)}',
-            'data': {}
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
-    except Exception as e:
-        logger.error(f"Error loading dashboard configuration: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Error loading dashboard configuration: {str(e)}',
-            'data': {}
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
+# ATMAS related APIs
 # get the current booking for a machine
 @api_view(['GET'])
 def get_current_booking(request):
     """Get current booking information for a machine"""
     try:
-        machine_name = request.GET.get('machine_name', 'Hurco')
+        machine_name = request.GET.get('machine_name')
 
         mysql_service = MySQLService()
         asset_id = mysql_service.get_machine_id(machine_name)
@@ -317,29 +214,29 @@ def add_notes(request):
         data = request.data
         asset_name = data.get('machine_name', '')
         
-        if not asset_name:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Machine name is required',
-                'data': {}
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
         mysql_service = MySQLService()
-        asset_data = mysql_service.get_asset_id_by_name(asset_name)
-        
-        if not asset_data:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Asset not found',
-                'data': {}
-            }, status=status.HTTP_200_OK)
-        
-        if asset_data is None:
-            asset_id = None
-        elif isinstance(asset_data, dict):
-            asset_id = asset_data.get('iAsset_id')
+
+        if asset_name:
+            asset_data = mysql_service.get_asset_id_by_name(asset_name)
+
+            if not asset_data:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Asset not found',
+                    'data': {}
+                }, status=status.HTTP_200_OK)
+            
+            if asset_data is None:
+                asset_id = None
+            elif isinstance(asset_data, dict):
+                asset_id = asset_data.get('iAsset_id')
+            else:
+                asset_id = asset_data if asset_data else None
         else:
-            asset_id = asset_data if asset_data else None
+            asset_id = 0  # For general notes not linked to a specific machine
+            asset_name = "Generic"  # Default name for general notes
+
+        dashboardId = data.get('dashboardId', '')
         description = data.get('description', '')
         category = data.get('category', '')
         startDateTime = data.get('startDate', '')
@@ -349,9 +246,10 @@ def add_notes(request):
         endDate = endDateTime.split("T")[0] if "T" in endDateTime else endDateTime
         endTime = endDateTime.split("T")[1] if "T" in endDateTime else ''
         user_id = data.get('user_id', '')
-        print("Add notes data:", asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
+        print("Add notes data:", dashboardId, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
 
-        if not all([asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id]):
+        # Check for required fields - allow 0 for asset_id and empty strings for times
+        if not dashboardId or asset_id is None or not asset_name or not description or not category or not startDate or not endDate or not user_id:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Missing required fields in the request body',
@@ -359,7 +257,7 @@ def add_notes(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         mysql_service = MySQLService()
-        success = mysql_service.add_notes(asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
+        success = mysql_service.add_notes(dashboardId, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
         print("Add notes success:", success)
         if success:
             return JsonResponse({
@@ -380,10 +278,343 @@ def add_notes(request):
             'message': f'Internal server error: {str(e)}',
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+# ============================================================================
+# Influx DB related APIs
+# ============================================================================
+@api_view(['GET'])
+def test_influx_connection(request):
+    """Test API endpoint to check InfluxDB connection"""
+    try:
+        client = InfluxDBClient(url=DB_LINK, token=INFLUX_TOKEN, org=DB_ORG, timeout=10_000)
+        health = client.health()
+
+        if health.status == "pass":
+            return Response({
+                'status': 'success',
+                'message': 'Connection Successful',
+                'data': {
+                    'influxdb_version': health.version,
+                    'server_time': datetime.now(datetime.timezone.utc).isoformat()
+                    #'server_time': datetime.now(timezone.utc).isoformat()  # uncomment incase of connection fails 
+                }
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                'status': 'error',
+                'message': health.message,
+                'data': {
+                    'status': health.status,
+                    'message': health.message,
+                    'version': health.version
+                }
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+    except Exception as e:
+        logger.error(f"Error testing InfluxDB connection: {str(e)}")
+        return Response({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['GET']) # TO-DO: not used now, need to take the date range logic from here
+def get_dashboard_config(request):
+    try:
+        machine_name = request.GET.get('machine_name')
+        selected_range = request.GET.get('range', None)
+        custom_from = request.GET.get('from', None)
+        custom_to = request.GET.get('to', None) 
+
+        if selected_range:
+            delta = parse_range_to_timedelta (selected_range)
+            custom_date_from  = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
+            custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        else:
+            # Ensure custom_from and custom_to are in 'YYYY-MM-DDTHH:MM:SSZ' format
+            def ensure_iso8601_z(dt_str):
+                try:
+                    # Try parsing with seconds
+                    dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%S")
+                except ValueError:
+                    try:
+                        # Try parsing without seconds
+                        dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M")
+                    except ValueError:
+                        # If already has 'Z', try parsing with 'Z'
+                        try:
+                            dt = datetime.strptime(dt_str, "%Y-%m-%dT%H:%M:%SZ")
+                        except ValueError:
+                            return dt_str  # Return as is if parsing fails
+                else:
+                    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+                return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+            custom_date_from = ensure_iso8601_z(custom_from) if custom_from else None
+            custom_date_to = ensure_iso8601_z(custom_to) if custom_to else None
+
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
+        #print("Machine Data:")
+        #pprint.pprint(machine_data, indent=2, width=120)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Dashboard configuration loaded successfully',
+            'data': machine_data,
+        }, status=status.HTTP_200_OK)
+        
+    except FileNotFoundError as e:
+        logger.error(f"Configuration file not found: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Configuration file not found for machine "{machine_name}". Please check if the machine configuration exists.',
+            'data': {}
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    except ValueError as e:
+        logger.error(f"Invalid data format: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Invalid data format: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    except Exception as e:
+        logger.error(f"Error loading dashboard configuration: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Error loading dashboard configuration: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    """Get list of available machines from config directory"""
+    try:
+        config_dir = MACHINE_CONFIG_PATH
+        
+        if not os.path.exists(config_dir):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Config directory not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all JSON files in config directory
+        json_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
+
+        print("JSON files in config directory:", json_files)
+        
+        # Filter out files with '-' in name and remove .json extension
+        machine_names = [
+            os.path.splitext(f)[0] 
+            for f in json_files 
+            if '-' not in f
+        ]
+
+        print("Available machines from config:", machine_names)
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Machine list retrieved successfully',
+            'data': machine_names
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving machine list: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET'])
-def get_graph_configurations(request):
-    """Get available graph configurations from config file"""
+def get_machines_with_config(request):
+    """Get machines from DB that have config files"""
+    try:
+        mysql_service = MySQLService()
+        
+        # Get all machine assets from database
+        db_machines = mysql_service.get_machine_assets()
+        
+        if db_machines is None:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to retrieve machines from database',
+                'data': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Get config directory path
+        config_dir = MACHINE_CONFIG_PATH
+        
+        if not os.path.exists(config_dir):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Config directory not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all JSON config files (excluding files with '-')
+        json_files = [f for f in os.listdir(config_dir) if f.endswith('.json') and '-' not in f]
+        config_machine_names = [os.path.splitext(f)[0] for f in json_files]
+        
+        # print("Machines from DB:", [m['vName'] for m in db_machines])
+        # print("Machines from config:", config_machine_names)
+        
+        # Filter machines: Only include if BOTH in DB AND has config file
+        machines_with_config = []
+        
+        # Add only machines that have config files AND exist in database
+        for config_name in config_machine_names:
+            # Find matching DB entry
+            db_match = next((m for m in db_machines if m['vName'] == config_name), None)
+            
+            # Only add if machine exists in database
+            if db_match:
+                machines_with_config.append({
+                    'iAsset_id': db_match['iAsset_id'],
+                    'vName': config_name,
+                    'hasConfig': True,
+                    'inDatabase': True
+                })
+        
+        #print("Machines with config (DB only):", machines_with_config)
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Machines with config retrieved successfully',
+            'data': machines_with_config
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving machines with config: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+def get_dropdowns_from_config(request):
+    """Get non-machine assets from config files"""
+    try:
+        config_dir = MACHINE_CONFIG_PATH
+        
+        if not os.path.exists(config_dir):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Config directory not found',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Get all JSON files in config directory
+        json_files = [f for f in os.listdir(config_dir) if f.endswith('.json')]
+
+        dropdown_names = []
+        
+        for file_name in json_files:
+            if 'Dropdown' in file_name:
+                dropdown_names.append(os.path.splitext(file_name)[0])
+
+        # print("Dropdowns from config:", dropdown_names)
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Dropdown list retrieved successfully',
+            'data': dropdown_names
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving dropdowns: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(['POST'])
+def create_dashboard(request):
+    """Create a new dashboard in visualisation_dashboards table"""
+    try:
+        data = request.data
+        
+        # Extract form data
+        title = data.get('title', '').strip()
+        dashboard_type = data.get('dashboardType', '')
+        machine_name = data.get('machineName', '')
+        user_id = data.get('userId', '')
+        
+        # Validate required fields
+        if not title:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Dashboard title is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not user_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'User ID is required',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Determine category based on dashboard type
+        category = 'MACH' if dashboard_type == 'machine' else 'GENR'
+        
+        # Get asset_id if machine specific
+        asset_id = None
+        if dashboard_type == 'machine':
+            if not machine_name:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Machine name is required for machine-specific dashboard',
+                    'data': {}
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            mysql_service = MySQLService()
+            asset_id = mysql_service.get_asset_id_by_name(machine_name)
+            
+            if asset_id is None:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': f'Machine "{machine_name}" not found in database',
+                    'data': {}
+                }, status=status.HTTP_404_NOT_FOUND)
+        else:
+            asset_id = 0   # For general dashboards, asset_id is 0 as there is no specific machine associated at that stage 
+        
+        # Create dashboard
+        mysql_service = MySQLService()
+        dashboard_id = mysql_service.create_dashboard(title, asset_id, user_id, category)
+        
+        if dashboard_id:
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Dashboard created successfully',
+                'data': {
+                    'dashboardId': dashboard_id,
+                    'title': title,
+                    'machineName': machine_name,
+                    'category': category,
+                    'createdBy': user_id
+                }
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Failed to create dashboard',
+                'data': {}
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    except Exception as e:
+        logger.error(f"Error creating dashboard: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': {}
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+def get_data_types(request):
+    """Get available data types from config file"""
     try:
         machine_name = request.GET.get('machine_name')
         file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
@@ -396,29 +627,35 @@ def get_graph_configurations(request):
             }, status=status.HTTP_404_NOT_FOUND)
         
         with open(file_path, 'r', encoding='utf-8') as f:
-            config_data = json.load(f)
-        # Extract only Graph type configurations
+            machine_config = json.load(f)
+        
+        # Extract graph configurations from the 'Data' section
         graph_configs = []
-        for key, value in config_data.items():
-            if isinstance(value, dict) and value.get('Type') == 'Graph':
-                # Get available series from the Pivot field in Queries
-                available_series = []
-                if 'Queries' in value:
-                    for query in value['Queries']:
-                        pivot = query.get('Pivot')
-                        if pivot and pivot != False:
-                            # For now, we'll mark this as a series group
-                            # The actual series will be fetched when data is retrieved
-                            available_series.append(pivot)
+        
+        if 'Data' in machine_config and isinstance(machine_config['Data'], dict):
+            for idx, (title, config) in enumerate(machine_config['Data'].items(), start=1):
+                # Extract unit and pivot information
+                bucket = config.get('Bucket', '')
+                measurement = config.get('Measurement', '')
+                unit = config.get('Units', '')
+                pivot = config.get('Pivot', None)
+                scale = config.get('Scale', 'linear')
+                
+            
                 graph_configs.append({
-                    'id': key,
-                    'title': value.get('Title', f'Graph {key}'),
-                    'unit': value['Queries'][0].get('Units', '') if value.get('Queries') else '',
-                    'defaultRange': value.get('DefaultRange', '3h'),
-                    'pivot': value['Queries'][0].get('Pivot') if value.get('Queries') else None,
+                    'id': str(idx),  # Use sequential IDs
+                    'title': title,  # Use the key as title (e.g., 'Acceleration', 'Air Flow', 'Air Pressure')
+                    'unit': unit,
+                    'bucket': bucket,
+                    'measurement': measurement,
+                    'pivot': pivot,
+                    'scale': scale,
+                    'timeRange': '3h',  # Default time range
                     'availableSeries': []  # Will be populated dynamically
                 })
         
+        logger.info(f"Generated {len(graph_configs)} graph configurations with titles: {[g['title'] for g in graph_configs]}")
+
         return JsonResponse({
             'status': 'success',
             'message': 'Graph configurations retrieved successfully',
@@ -432,16 +669,111 @@ def get_graph_configurations(request):
             'message': f'Internal server error: {str(e)}',
             'data': []
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+def get_available_series(request):
+    """Get available series for a specific graph"""
+    try:
+        machine_name = request.GET.get('machine_name')
+        graph_id = request.GET.get('graph_id')
+        time_range = request.GET.get('range', '3h')
 
+        print(f"*** Getting available series for machine: {machine_name}, graph_id: {graph_id}, range: {time_range}")
+        
+        if not graph_id:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Graph ID is required',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Load the configuration file
+        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        
+        if not os.path.exists(file_path):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Configuration file not found for machine: {machine_name}',
+                'data': []
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Load the JSON configuration
+        with open(file_path, 'r', encoding='utf-8') as f:
+            machine_config = json.load(f)
+        
+        if 'Data' not in machine_config or not isinstance(machine_config['Data'], dict):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Invalid configuration structure',
+                'data': []
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Get the data type configuration based on graph_id, graph_id corresponds to the index in the Data dictionary (1-indexed)
+        data_types = list(machine_config['Data'].items())
+        graph_index = int(graph_id) - 1
+        
+        if graph_index < 0 or graph_index >= len(data_types):
+            return JsonResponse({
+                'status': 'error',
+                'message': f'Invalid graph ID: {graph_id}',
+                'data': []
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        data_type_name, data_type_config = data_types[graph_index]
+
+        available_series = []
+        has_pivot = 'Pivot' in data_type_config
+        
+        # Check if this data type has Predicates AND Pivot - if yes, use getDataSeries
+        if 'Predicates' in data_type_config and has_pivot:
+            available_series = getDataSeries(data_type_config)
+            print("****** Available series from getDataSeries:", available_series)
+
+            if available_series is None:
+                available_series = []
+            
+            # getDataSeries returns False if Predicates not found (shouldn't happen here)
+            if available_series is False:
+                available_series = []
+        else:
+            # No Pivot field means no series selection needed - will query all data
+            print(f"*** No Pivot in config for graph_id: {graph_id}, data_type: {data_type_name} - will query all data automatically")
+            logger.info(f"No Pivot for {data_type_name}, returning empty series (will auto-generate without series filtering)")
+            available_series = []
+        
+        logger.info(f"Available series for graph {graph_id} ({data_type_name}): {available_series}, has_pivot: {has_pivot}")
+        
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Available series retrieved successfully',
+            'data_for': data_type_name,
+            'data': available_series,
+            'has_pivot': has_pivot  # Inform frontend whether series selection is needed
+        }, status=status.HTTP_200_OK)
+    
+    except Exception as e:
+        logger.error(f"Error retrieving available series: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': f'Internal server error: {str(e)}',
+            'data': []
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 @api_view(['POST'])
-def get_custom_graph_data(request):
+def generate_data(request):
     """Get custom graph data based on selected graphs and series"""
     try:
         data = request.data
-        machine_name = data.get('machine_name')
+        machine_name = data.get('machine_name')  # For backward compatibility
+        machine_names = data.get('machine_names', [])  # New: array of machine names per graph
+        selected_type = data.get('type', None)
+        selected_aggregate = data.get('aggregate', 'max')
         selected_graphs = data.get('graphs', [])
         selected_series = data.get('series', {})
         time_range = data.get('range', '3h')
+        
+        # Backward compatibility: if machine_names not provided, use machine_name for all graphs
+        if not machine_names:
+            machine_names = [machine_name] * len(selected_graphs)
         
         if not selected_graphs:
             return JsonResponse({
@@ -450,79 +782,204 @@ def get_custom_graph_data(request):
                 'data': {}
             }, status=status.HTTP_400_BAD_REQUEST)
         
+        if len(machine_names) != len(selected_graphs):
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Number of machine names must match number of selected graphs',
+                'data': {}
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
         # Calculate time range
         delta = parse_range_to_timedelta(time_range)
         custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
         custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        # Process each graph with its corresponding machine/dropdown
+        all_machine_data = []
+        machine_metadata = []  # Store metadata about each graph's source
         
-        if not os.path.exists(file_path):
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Configuration file not found for machine: {machine_name}',
-                'data': {}
-            }, status=status.HTTP_404_NOT_FOUND)
+        for idx, (graph_id, machine_name_for_graph) in enumerate(zip(selected_graphs, machine_names)):
+            file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name_for_graph}.json")
+            
+            if not os.path.exists(file_path):
+                logger.warning(f'Configuration file not found for: {machine_name_for_graph}')
+                all_machine_data.append(None)
+                continue
+            
+            # Load the config file to get graph names
+            with open(file_path, 'r', encoding='utf-8') as f:
+                machine_config = json.load(f)
+
+            data_types = list(machine_config.get('Data', {}).items())
+            
+            # Build graph info for this specific graph
+            graph_index = int(graph_id) - 1
+            if graph_index >= 0 and graph_index < len(data_types):
+                data_type_name, data_type_config = data_types[graph_index]
+                has_pivot = 'Pivot' in data_type_config
+                
+                # Build graphs_info based on whether Pivot exists
+                if has_pivot:
+                    # With Pivot: include series from selected_series
+                    graphs_info = [{
+                        'id': int(graph_id),
+                        'name': data_type_name,
+                        'aggregation': selected_aggregate,
+                        'series': selected_series.get(str(graph_id), [])
+                    }]
+                else:
+                    # No Pivot: omit 'series' key entirely - will query all data
+                    graphs_info = [{
+                        'id': int(graph_id),
+                        'name': data_type_name,
+                        'aggregation': selected_aggregate,
+                    }]
+                    logger.info(f"No Pivot for graph {graph_id} ({data_type_name}) - querying all data without series filtering")
+                
+                customised_config_data = {
+                    'date_from': custom_date_from,
+                    'date_to': custom_date_to,
+                    'data_types': graphs_info,
+                    'machine_name': machine_name_for_graph,
+                    "type": selected_type
+                }
+                
+                # print("*** Customised Config Data:", customised_config_data)
+                # Get data for this machine/dropdown
+                machine_data = getCustomData(customised_config_data, file_path)
+                # print("Machine Data here")
+                # print("*** Machine Data :", machine_data)
+                
+                if machine_data and len(machine_data) > 0:
+                    all_machine_data.append(machine_data[0])  # Get first element as we only query one graph at a time
+                    machine_metadata.append({
+                        'graph_id': str(graph_id),
+                        'machine_name': machine_name_for_graph,
+                        'data_type_name': data_type_name,
+                        'units': data_type_config.get('Units', ''),
+                        'series': selected_series.get(str(graph_id), [])
+                    })
+                else:
+                    all_machine_data.append(None)
+            else:
+                all_machine_data.append(None)
         
-        # Get full dashboard data
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
+        logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
+        # pprint.pprint("****** All Machine Data  ******:")
+        # pprint.pprint(all_machine_data, indent=2, width=120)
         
-        # Filter data based on selected graphs and series
+        # Merge data from multiple machines/dropdowns
         combined_data = {
             'chartData': [],
             'series': [],
-            'unit': ''
+            'machineMetadata': machine_metadata  # Include metadata for frontend
         }
         
         all_timestamps = set()
         series_data_map = {}
         
-        for graph_id in selected_graphs:
-            # machine_data is a list, find the item that matches the graph_id
-            graph_index = int(graph_id) - 1
+        # Process each machine's data
+        for idx, data_list in enumerate(all_machine_data):
+            if data_list is None or not isinstance(data_list, list):
+                continue
             
-            if graph_index >= 0 and graph_index < len(machine_data):
-                item = machine_data[graph_index]
-                graph_series = selected_series.get(str(graph_id), [])
-                
-                # Get unit from config if available
-                if not combined_data['unit'] and 'config' in item:
-                    # Extract unit from Queries if available
-                    if 'Queries' in item['config'] and len(item['config']['Queries']) > 0:
-                        combined_data['unit'] = item['config']['Queries'][0].get('Units', '')
-                
-                if 'data' in item and item['data']:
-                    # item['data'] is a list of data arrays (one per query)
-                    for df_data in item['data']:
-                        if df_data:
-                            for entry in df_data:
-                                timestamp = entry.get('time')
-                                if timestamp:
-                                    all_timestamps.add(timestamp)
-                                    
-                                    # Process each series
-                                    for series_name in graph_series:
-                                        if series_name in entry:
-                                            if series_name not in series_data_map:
-                                                series_data_map[series_name] = {}
-                                                combined_data['series'].append(series_name)
-                                            
-                                            series_data_map[series_name][timestamp] = entry[series_name]
+            metadata = machine_metadata[idx] if idx < len(machine_metadata) else None
+            if not metadata:
+                continue
+            
+            # check if data type does not have pivot
+            if has_pivot == False:
+                # infer available series from data_list (exclude the timestamp and index key)
+                graph_series = []
+                for entry in data_list:
+                    if isinstance(entry, dict):
+                        for key in entry.keys():
+                            if (key != 'time' and key != 'index') and key not in graph_series:
+                                graph_series.append(key)
+                # fallback to ['value'] if nothing else found 
+                if not graph_series:
+                    graph_series = ['value']
+            else:
+                graph_series = metadata['series']
+            
+            # Process each data entry in the list
+            for entry in data_list:
+                timestamp = entry.get('time')
+                if timestamp:
+                    all_timestamps.add(timestamp)
+                    
+                    # Process each series - look for matching series names in the entry
+                    for series_name in graph_series:
+                        if series_name in entry:
+                            if series_name not in series_data_map:
+                                series_data_map[series_name] = {}
+                                combined_data['series'].append(series_name)
+                            
+                            # Store or aggregate values for the same timestamp
+                            if timestamp not in series_data_map[series_name]:
+                                series_data_map[series_name][timestamp] = []
+                            series_data_map[series_name][timestamp].append(entry[series_name])
         
-        # Build combined chart data
+        # Build combined chart data - average values for same timestamps
         sorted_timestamps = sorted(list(all_timestamps))
         for timestamp in sorted_timestamps:
             data_point = {'time': timestamp}
             for series_name in combined_data['series']:
-                data_point[series_name] = series_data_map[series_name].get(timestamp, None)
+                if timestamp in series_data_map[series_name]:
+                    values = series_data_map[series_name][timestamp]
+                    # Average multiple values for the same timestamp
+                    data_point[series_name] = sum(values) / len(values) if values else None
+                else:
+                    data_point[series_name] = None
             combined_data['chartData'].append(data_point)
         
-        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series")
+        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series from {len(machine_metadata)} sources")
+        
+        # Add selectedType to the response data
+        combined_data['type'] = selected_type
+        
+        # If type is 'stat'
+        if selected_type and selected_type == 'Stat': # logic will change based on condition to check maximised 
+            stats_values = []
+            for series_name in combined_data['series']:
+                print(f"Processing stats for series: {series_name}")
+                # Get the only value for this series
+                last_value = None
+                for data_point in combined_data['chartData']:
+                    print(f"Data point: {data_point}")
+                    if data_point.get(series_name) is not None:
+                        last_value = data_point[series_name]
+                        break
+                
+                if last_value is not None:
+                    stats_values.append({
+                        'series': series_name,
+                        'value': last_value
+                    })
+            # print("Stats values calculated:", stats_values)
+            if stats_values:
+                combined_data['statsValue'] = stats_values[0]['value']
+                print("Final stats value:", combined_data['statsValue'])
+            else:
+                combined_data['statsValue'] = 'N/A'
+        
+        # Build saveable config for component storage, This allows the frontend to save the exact configuration that generated this data
+        saveable_config = {
+            'type': selected_type,
+            'aggregate': selected_aggregate,
+            'graphs': selected_graphs,
+            'machine_names': machine_names,
+            'series': selected_series,
+            'range': time_range
+        }
+
+        # print("Combined Data:", combined_data)
         
         return JsonResponse({
             'status': 'success',
             'message': 'Custom graph data retrieved successfully',
-            'data': combined_data
+            'data': combined_data,
+            'saveableConfig': saveable_config  # NEW: Add saveable config for component creation
         }, status=status.HTTP_200_OK)
     
     except Exception as e:
@@ -533,72 +990,382 @@ def get_custom_graph_data(request):
             'data': {}
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-@api_view(['GET'])
-def get_available_series(request):
-    """Get available series for a specific graph"""
+
+# ============================================================================
+# COMPONENT CRUD API ENDPOINTS
+# ============================================================================
+
+@api_view(['POST'])
+def create_component(request):
+    """
+    Create a new component in visualisation_component_data table
+    
+    POST /api/components/create/
+    
+    Request Body:
+    {
+        "iDashboard_id": 12,
+        "vTitle": "Cincinnati Acceleration Overview",
+        "vDescription": "3-hour view of acceleration data",
+        "iPosition": 1,
+        "vQuery": {
+            "graphIds": [{"id": "1", "machine": "Cincinnati"}],
+            "seriesSelection": {"1": ["X-Axis", "Y-Axis"]},
+            "timeRange": {"value": 3, "unit": "h"},
+            "type": "graph"
+        }
+    }
+    
+    Response: 201 Created
+    {
+        "success": true,
+        "component_id": 45,
+        "message": "Component created successfully"
+    }
+    """
     try:
-        machine_name = request.GET.get('machine_name')
-        graph_id = request.GET.get('graph_id')
-        time_range = request.GET.get('range', '1h')
+        data = request.data
         
-        if not graph_id:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Graph ID is required',
-                'data': []
+        # Validate required fields
+        if not data.get('iDashboard_id'):
+            return Response({
+                'success': False,
+                'error': 'iDashboard_id is required'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Calculate time range
-        delta = parse_range_to_timedelta(time_range)
-        custom_date_from = (datetime.now() - delta).strftime("%Y-%m-%dT%H:%M:%SZ")
-        custom_date_to = datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        if not data.get('vTitle'):
+            return Response({
+                'success': False,
+                'error': 'vTitle is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        file_path = os.path.join(MACHINE_CONFIG_PATH, f"{machine_name}.json")
+        if not data.get('iPosition'):
+            return Response({
+                'success': False,
+                'error': 'iPosition is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        if not os.path.exists(file_path):
-            return JsonResponse({
-                'status': 'error',
-                'message': f'Configuration file not found for machine: {machine_name}',
-                'data': []
+        if not data.get('vQuery'):
+            return Response({
+                'success': False,
+                'error': 'vQuery is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Create component using mysql_service
+        mysql_service = MySQLService()
+        component = mysql_service.create_component(
+            dashboard_id=data['iDashboard_id'],
+            v_title=data['vTitle'],
+            v_description=data.get('vDescription', ''),
+            i_position=data['iPosition'],
+            v_query=data['vQuery']
+        )
+        
+        if component:
+            logger.info(f"Component created successfully: ID {component['icomponent_id']}")
+            return Response({
+                'success': True,
+                'component_id': component['icomponent_id'],
+                'message': 'Component created successfully'
+            }, status=status.HTTP_201_CREATED)
+        else:
+            return Response({
+                'success': False,
+                'error': 'Failed to create component'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    except Exception as e:
+        logger.error(f"Error creating component: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def list_components(request):
+    """
+    Get all components for a specific dashboard
+    
+    GET /api/components/?dashboard_id=12
+    
+    Response:
+    {
+        "success": true,
+        "components": [
+            {
+                "icomponent_id": 45,
+                "iDashboard_id": 12,
+                "vTitle": "Cincinnati Acceleration",
+                "vDescription": "3-hour view",
+                "iPosition": 1,
+                "vQuery": {...},
+                "dtCreated": "2025-12-05T10:30:00Z",
+                "dtModified": "2025-12-05T10:30:00Z"
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        dashboard_id = request.query_params.get('dashboard_id')
+        
+        if not dashboard_id:
+            return Response({
+                'success': False,
+                'error': 'dashboard_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Fetch components using mysql_service
+        mysql_service = MySQLService()
+        components_data = mysql_service.get_components_by_dashboard(dashboard_id)
+        
+        if components_data is None:
+            return Response({
+                'success': False,
+                'error': 'Failed to fetch components'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Format datetime fields
+        for c in components_data:
+            if c.get('dtCreated'):
+                c['dtCreated'] = c['dtCreated'].isoformat() if hasattr(c['dtCreated'], 'isoformat') else str(c['dtCreated'])
+            if c.get('dtModified'):
+                c['dtModified'] = c['dtModified'].isoformat() if hasattr(c['dtModified'], 'isoformat') else str(c['dtModified'])
+        
+        logger.info(f"Retrieved {len(components_data)} components for dashboard {dashboard_id}")
+        
+        return Response({
+            'success': True,
+            'data': components_data,
+            'count': len(components_data)
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error listing components: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def get_component(request, component_id):
+    """
+    Get a single component by ID
+    
+    GET /api/components/{id}/
+    
+    Response:
+    {
+        "success": true,
+        "component": {
+            "icomponent_id": 45,
+            "iDashboard_id": 12,
+            "vTitle": "Cincinnati Acceleration",
+            "vDescription": "3-hour view",
+            "iPosition": 1,
+            "vQuery": {...},
+            "dtCreated": "2025-12-05T10:30:00Z",
+            "dtModified": "2025-12-05T10:30:00Z"
+        }
+    }
+    """
+    try:
+        # Fetch component using mysql_service
+        mysql_service = MySQLService()
+        component_data = mysql_service.get_component_by_id(component_id)
+        
+        if not component_data:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
             }, status=status.HTTP_404_NOT_FOUND)
         
-        # Get data for this specific graph
-        machine_data = getInfluxData(file_path, custom_date_from, custom_date_to)
+        # Format datetime fields
+        if component_data.get('dtCreated'):
+            component_data['dtCreated'] = component_data['dtCreated'].isoformat() if hasattr(component_data['dtCreated'], 'isoformat') else str(component_data['dtCreated'])
+        if component_data.get('dtModified'):
+            component_data['dtModified'] = component_data['dtModified'].isoformat() if hasattr(component_data['dtModified'], 'isoformat') else str(component_data['dtModified'])
         
-        available_series = []
+        logger.info(f"Retrieved component {component_id}")
         
-        # machine_data is a list, find the item that matches the graph_id
-        # The index in the list corresponds to the graph ID (index 0 = graph 1)
-        graph_index = int(graph_id) - 1
-        
-        if graph_index >= 0 and graph_index < len(machine_data):
-            item = machine_data[graph_index]
-            
-            # Check if this item has config and Series
-            if 'config' in item and 'Series' in item['config']:
-                available_series = item['config']['Series']
-            # Fallback: extract from data if Series not in config
-            elif 'data' in item and item['data']:
-                for df_data in item['data']:
-                    if df_data and len(df_data) > 0:
-                        # Get all columns except 'time'
-                        series_names = [key for key in df_data[0].keys() if key.lower() not in ['time', 'timestamp', '_time']]
-                        available_series.extend(series_names)
-                # Remove duplicates while preserving order
-                available_series = list(dict.fromkeys(available_series))
-        
-        logger.info(f"Available series for graph {graph_id}: {available_series}")
-        
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Available series retrieved successfully',
-            'data': available_series
+        return Response({
+            'success': True,
+            'data': component_data
         }, status=status.HTTP_200_OK)
-    
+        
     except Exception as e:
-        logger.error(f"Error retrieving available series: {str(e)}")
-        return JsonResponse({
-            'status': 'error',
-            'message': f'Internal server error: {str(e)}',
-            'data': []
+        logger.error(f"Error retrieving component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['PUT'])
+def update_component(request, component_id):
+    """
+    Update an existing component
+    
+    PUT /api/components/{id}/update/
+    
+    Request Body:
+    {
+        "vTitle": "Updated Title",
+        "vDescription": "Updated description",
+        "iPosition": 2,
+        "vQuery": {...}
+    }
+    
+    Response:
+    {
+        "success": true,
+        "message": "Component updated successfully"
+    }
+    """
+    try:
+        data = request.data
+        
+        # Validate required fields
+        if not data.get('vTitle'):
+            return Response({
+                'success': False,
+                'error': 'vTitle is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('iPosition'):
+            return Response({
+                'success': False,
+                'error': 'iPosition is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not data.get('vQuery'):
+            return Response({
+                'success': False,
+                'error': 'vQuery is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update component using mysql_service
+        mysql_service = MySQLService()
+        updated_component = mysql_service.update_component(
+            component_id=component_id,
+            v_title=data['vTitle'],
+            v_description=data.get('vDescription', ''),
+            i_position=data['iPosition'],
+            v_query=data['vQuery']
+        )
+        
+        if updated_component:
+            logger.info(f"Component {component_id} updated successfully")
+            return Response({
+                'success': True,
+                'message': 'Component updated successfully',
+                'data': updated_component
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+    except Exception as e:
+        logger.error(f"Error updating component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['DELETE'])
+def delete_component(request, component_id):
+    """
+    Delete a component
+    
+    DELETE /api/components/{id}/delete/
+    
+    Response:
+    {
+        "success": true,
+        "message": "Component deleted successfully"
+    }
+    """
+    try:
+        # Delete component using mysql_service
+        mysql_service = MySQLService()
+        success = mysql_service.delete_component(component_id)
+        
+        if success:
+            logger.info(f"Component {component_id} deleted successfully")
+            return Response({
+                'success': True,
+                'message': 'Component deleted successfully'
+            }, status=status.HTTP_200_OK)
+        else:
+            logger.warning(f"Component {component_id} not found")
+            return Response({
+                'success': False,
+                'error': 'Component not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+    except Exception as e:
+        logger.error(f"Error deleting component {component_id}: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+def list_dashboards(request):
+    """
+    Get all dashboards
+    
+    GET /api/dashboards/
+    
+    Response:
+    {
+        "success": true,
+        "data": [
+            {
+                "iDashboard_id": 1,
+                "vTitle": "Cincinnati Dashboard",
+                "iAsset_id": 123,
+                "dtCreated": "2024-01-15T10:30:00Z",
+                "dtModified": "2024-01-15T10:30:00Z",
+                "cCategory": "MACH"
+            }
+        ]
+    }
+    """
+    try:
+        # Fetch dashboards using mysql_service
+        mysql_service = MySQLService()
+        dashboard_list = mysql_service.get_all_dashboards()
+        
+        if dashboard_list is None:
+            return Response({
+                'success': False,
+                'error': 'Failed to fetch dashboards'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        # Format datetime fields
+        for dashboard in dashboard_list:
+            if dashboard.get('dtCreated'):
+                dashboard['dtCreated'] = dashboard['dtCreated'].isoformat() if hasattr(dashboard['dtCreated'], 'isoformat') else str(dashboard['dtCreated'])
+            if dashboard.get('dtModified'):
+                dashboard['dtModified'] = dashboard['dtModified'].isoformat() if hasattr(dashboard['dtModified'], 'isoformat') else str(dashboard['dtModified'])
+        
+        return Response({
+            'success': True,
+            'data': dashboard_list
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.error(f"Error fetching dashboards: {str(e)}")
+        return Response({
+            'success': False,
+            'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

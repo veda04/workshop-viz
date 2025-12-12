@@ -1,160 +1,119 @@
 {
-    "1": {
-        "Type": "Graph",
-        "Title": "Temperature Overview",
-        "DefaultRange": "3h",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] == \"T1-HUR\")  |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\" and r[\"Name\"] !~ /Elec/ and r[\"Name\"] !~ /Reference/)  |> drop(columns: [\"SensorID\",\"Node\"])",
-                "Units": "°C",
-                "Pivot": "Location"
-            }
-        ]
+  "Nodes": [
+    "A1-HUR",
+    "A2-HUR",
+    "A3-HUR",
+    "C1-HUR",
+    "T1-HUR"
+  ],
+  "ATMAS": true,
+  "Valve": true,
+  "Data": {
+    "Acceleration": {
+      "Bucket": "Machines",
+      "Measurement": "Acceleration",
+      "Predicates": {
+        "Node": ["/A[0-9]-HUR/"],
+        "_field": "Mean"
+      },
+      "Units": "g",
+      "Pivot": "Axis",
+      "Scale": "/10000.0",
+      "Sample_Interval": "0.1s",
+      "Summarised": true
     },
-    "2": {
-        "Type": "Graph",
-        "Title": "Acceleration Overview",
-        "DefaultRange": "3h",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines_Summary\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Acceleration\")  |> filter(fn: (r) => r[\"Node\"] =~ /A[0-9]-HUR/)  |> filter(fn: (r) => r[\"_field\"] == \"Max\")  |>drop(columns: [\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: true)  |> map(fn: (r) => ({r with _value: float(v: r._value) / 10000.0}))",
-                "Units": "g",
-                "Pivot": "Axis"
-            }
-        ]
+    "Current": {
+      "Bucket": "Machines_Summary",
+      "Measurement": "Current",
+      "Predicates": {
+        "Node": [
+          "/C[0-9]-HUR/"
+        ],
+        "_field": "Max"
+      },
+      "Units": "A",
+      "Pivot": "Phase",
+      "Scale": "/1000.0",
+      "Sample_Interval": "15s",
+      "Summarised": true
     },
-    "3": {
-        "Type": "Graph",
-        "Title": "Current Overview",
-        "DefaultRange": "10m",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines_Summary\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Current\")  |> filter(fn: (r) => r[\"Node\"] =~ /C[0-9]-HUR/)  |> filter(fn: (r) => r[\"_field\"] == \"Max\")  |>drop(columns: [\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: max, createEmpty: true)  |> map(fn: (r) => ({r with _value: float(v: r._value) / 1000.0}))",
-                "Units": "A",
-                "Pivot": "Phase"
-                
-            }
-        ]
+    "Temperature": {
+      "Bucket": "Machines",
+      "Measurement": "Temperature",
+      "Predicates": {
+        "Node": [
+          "/T[0-9]-HUR/"
+        ],
+        "_field": "value"
+      },
+      "Units": "°C",
+      "Pivot": "Name",
+      "Sample_Interval": "5s"
     },
-    "4": {
-        "Type": "Stat",
-        "Title": "Coolant Temperature",
-        "DefaultRange": "6h",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Coolant\")  |> filter(fn: (r) => r[\"Machine\"] == \"Hurco\")  |> filter(fn: (r) => r[\"_field\"] == \"Temperature\")  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> map(fn: (r) => ({r with _value: float(v: r._value) / 10.0}))",
-                "Units": "°C"
-            }
-        ]
+    "Coolant Temperature": {
+      "Bucket": "Machines",
+      "Measurement": "Coolant",
+      "Predicates": {
+        "_field": "Temperature",
+        "Machine": "Hurco"
+      },
+      "Units": "°C",
+      "Scale": "/10.0",
+      "Sample_Interval": "2s"
     },
-    "5": {
-        "Type": "Stat",
-        "Title": "Coolant Level",
-        "DefaultRange": "24h",
-        "Minimised": false,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Coolant\")  |> filter(fn: (r) => r[\"Machine\"] == \"Hurco\")  |> filter(fn: (r) => r[\"_field\"] == \"Level\")  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> map(fn: (r) => ({r with _value: float(v: r._value) / 100.0}))",
-                "Units": "mm",
-                "Pivot": false
-            }
-        ]
+    "Coolant Level": {
+      "Bucket": "Machines",
+      "Measurement": "Coolant",
+      "Predicates": {
+        "_field": "Level",
+        "Machine": "Hurco"
+      },
+      "Units": "mm",
+      "Scale": "/100.0",
+      "Sample_Interval": "2s"
     },
-    "6": {
-        "Type": "Stat",
-        "Title": "Coolant Flow",
-        "DefaultRange": "10m",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Coolant\")  |> filter(fn: (r) => r[\"Machine\"] == \"Hurco\")  |> filter(fn: (r) => r[\"_field\"] == \"Instantaneous_flow\")  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> map(fn: (r) => ({r with _value: float(v: r._value) / 100.0}))",
-                "Units": "L/mm",
-                "Pivot": false
-            }
-        ]
+    "Coolant Flow": {
+      "Bucket": "Machines",
+      "Measurement": "Instantaneous_flow",
+      "Predicates": {
+        "_field": "Level",
+        "Machine": "Hurco"
+      },
+      "Units": "L/mm",
+      "Scale": "/100.0",
+      "Sample_Interval": "2s"
     },
-    "7": {
-        "Type": "Stat",
-        "Title": "Coolant Concentration",
-        "DefaultRange": "10m",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Coolant\")  |> filter(fn: (r) => r[\"Machine\"] == \"Hurco\")  |> filter(fn: (r) => r[\"_field\"] == \"Concentration\")  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false) |> map(fn: (r) => ({r with _value: float(v: r._value) / 100.0}))",
-                "Units": "Brix(%)",
-                "Pivot": false
-            }
-        ]
+    "Coolant Concentration": {
+      "Bucket": "Machines",
+      "Measurement": "Concentration",
+      "Predicates": {
+        "_field": "Level",
+        "Machine": "Hurco"
+      },
+      "Units": "Brix(%)",
+      "Scale": "/100.0",
+      "Sample_Interval": "2s"
     },
-    "8": {
-        "Type": "Graph",
-        "Title": "Dropdown/Probing Overview",
-        "DefaultRange": "3h",
-        "Minimised": true,
-        "Maximisable": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] == \"T1-HUR\")    |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\")  |> drop(columns: [\"SensorID\",\"Node\"])  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-                "Units": "°C",
-                "Pivot": "Name",
-                "Axis": 0,
-                "Limit": 5,
-                "LimitType": "Max"
-            },
-            {
-                "Flux": "from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Temperature\")  |> filter(fn: (r) => r[\"Node\"] =~ /T[0-9]-HUR/)  |> filter(fn: (r) => r[\"Name\"] != \"Enclosure\" and r[\"Name\"] !~ /Elec/ and r[\"Name\"] !~ /Reference/)  |> drop(columns: [\"SensorID\",\"Node\"])  |> group()  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)",
-                "Units": "°C",
-                "Pivot": false,
-                "Axis": 0
-            },
-            {
-                "Flux": "from(bucket: \"Probing\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"Error\")  |> filter(fn: (r) => r[\"Machine\"] == \"Robodrill\")  |> group(columns: [\"_field\"])  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)    |> map(fn: (r) => ({r with _value: float(v: r._value) * 1000.0}))",
-                "Units": "µm",
-                "Pivot": "_field",
-                "Axis": 1
-            }
-        ]
+    "Air Flow": {
+      "Bucket": "Machines",
+      "Measurement": "AirQuality",
+      "Predicates": {
+        "_field": "inst._flow",
+        "Machine": "Hurco"
+      },
+      "Units": "L/m",
+      "Sample_Interval": "2s"
     },
-    "9": {
-        "Type": "Info",
-        "Title": "Air Flow",
-        "DefaultRange": "10m",
-        "Minimised": true,
-        "RefreshRate": "1m",
-        "Queries": [
-            {
-                "Flux": "import \"array\" realData  = from(bucket: \"Machines\")  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  |> filter(fn: (r) => r[\"_measurement\"] == \"AirQuality\")  |> filter(fn: (r) => r[\"Machine\"] == \"Cincinnati\")  |> filter(fn: (r) => r[\"_field\"] == \"valve_status\")  |>last() fallback = array.from(rows: [{  _time: now(),  _start:now(),  _stop: now(),  _value: -1.0,  _field: \"valve_status\",   Machine: \"Tool\",  _measurement: \"AirQuality\"}]) union(tables: [realData, fallback]) |>group()  |> sort(columns: [\"_time\"], desc: false)  |> limit(n: 1)  |> map(fn: (r) => ({r with _value: if r._value == 1 then \"Open\" else if r._value == 0 then \"Closed\" else \"Unknown\"}))",
-                "Units": false,
-                "Pivot": false
-            }
-        ]
-    },
-    "10":{
-        "Type": "Button",
-        "Title": "Open/Close Valve",
-        "Action": "python3 /home/ecmpg/Data/Python/toggleValve.py",
-        "Arguments": ["Hurco"],
-        "ConfirmAction": true,
-        "ConfirmMessage": "Are you sure you want to toggle the valve state?"
-    },
-    "SensorList": ["A1-HUR","A2-HUR","A3-HUR","C1-HUR","T1-HUR"]
+    "Air Pressure": {
+      "Bucket": "Machines",
+      "Measurement": "AirQuality",
+      "Predicates": {
+        "_field": "current_pressure",
+        "Machine": "Hurco"
+      },
+      "Units": "bar",
+      "Scale": "/100.0",
+      "Sample_Interval": "2s"
+    }
+  }
 }

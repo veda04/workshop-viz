@@ -1,7 +1,7 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const SideMenu = ({ isOpen, onClose }) => {
+const SideMenu = ({ isOpen, onClose, machineName }) => {
   return (
     <>
       {/* Side Menu Overlay */}
@@ -35,21 +35,19 @@ const SideMenu = ({ isOpen, onClose }) => {
           <nav className="flex-1 p-4">
             <ul className="space-y-2">
               <li>
-                <a
-                  href="/"
-                  className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Dashboard
+                <a href="/" className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                  Home
                 </a>
               </li>
-              <li>
-                <a
-                  href="/customize-graphs"
-                  className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Customize Graphs
-                </a>
-              </li>
+              {/* {machineName && (
+                <>
+                  <li>
+                    <a href={`/machine-summary?machineName=${machineName}`} className="block px-4 py-3 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                      Machine Summary
+                    </a>
+                  </li>
+                </>
+              )} */}
             </ul>
           </nav>
 

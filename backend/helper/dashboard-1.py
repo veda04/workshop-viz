@@ -18,6 +18,7 @@ import os
 import pprint
 from influxdb_client import InfluxDBClient
 import json
+from matplotlib.axis import Axis
 import pandas as pd
 from time import perf_counter
 from time import sleep
@@ -121,7 +122,6 @@ def calculateAggregation(range,maxPoints, endDatetime):
 			startDateTime = endDatetime - timedelta(days=offsetAmount*30) # Assuming 30 days in a month
 		case _:
 			raise ValueError(f"Unknown time unit in range: '{unitQuantifier}'")
-			startDateTime = endDatetime - timedelta(days=offsetAmount*30) # Assuming 30 days in a month
 	
 	print(f"Start: {startDateTime}, End: {endDatetime}")
 
@@ -274,7 +274,7 @@ def _formatTime(startDate,endDate):
 
 		return startDateTime_utc,endDateTime_utc
 
-def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised):
+def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,minimised=False):
 	"""
 	Builds an InfluxDB Flux query based on the input parameters and modifies it
 	depending on the visualisaton type and minimisation flag.
@@ -308,7 +308,6 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised)
 
 	if(configJSON.get("Summarised")):
 		filterString = templateMultiFilter.replace("[FILTER_KEY]","_field").replace("[FILTER_VALUE]", jsonQuery["aggregation"].capitalize())
-		# print("Filtering String for Summarised: ", filterString)
 		filtersList.append(templateFilter.replace("[FILTERS]",filterString))
 		
 
@@ -350,7 +349,8 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised)
 		seriesString = templateFilter.replace("[FILTERS]", " or ".join(seriesStringList))
 		filtersList.append(seriesString)
 
-
+	
+	
 	query = query.replace("[FILTERS]", "\n".join(filtersList))
 
 	try:
@@ -364,33 +364,25 @@ def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised)
 
 	query = query.replace("v.timeRangeStart", startDateTime_utc.isoformat())
 	query = query.replace("v.timeRangeStop", endDateTime_utc.isoformat())
-	#print("Reached this point")
-	#print(type, maximised)
+
 	maxPointsToFetch  = FULL_SCREEN_POINTS
-	if(type== "Stat" and maximised == False):
+	if(type== "Stat" and minimised == True):
 		print("Stat query is minimised, get last value")
 		query = query + "|> last()"
 	else:
-		if(maximised == False):
+		if(minimised == True):
 			print("Graph query is minimised, use bigger interval")
 			maxPointsToFetch = MINIMISED_POINTS
 		getAggregationValue = calculateAggregation2(startDateTime_utc,endDateTime_utc,configJSON.get("Sample_Interval"),maxPointsToFetch)
 		if(getAggregationValue):
-			# query += templateAggregation.replace("v.windowPeriod", getAggregationValue)
-
-
-			# Get aggregation function from query, config, or default to 'mean'
-			aggregationFunc = jsonQuery.get("aggregation", configJSON.get("Aggregation", "mean"))
-			aggregationQuery = templateAggregation.replace("v.windowPeriod", getAggregationValue).replace("[AGGREGATE_FUNCTION]", aggregationFunc)
-			query += aggregationQuery
+			query += templateAggregation.replace("v.windowPeriod", getAggregationValue).replace("[AGGREGATE_FUNCTION]", jsonQuery.get("aggregation","mean"))
 
 		
 	if("Scale" in configJSON):
 		scaling = configJSON.get("Scale")
 		query += "\n" + templateScaling.replace("[SCALING]", scaling)
-		
-	return query
 
+	return query
 def _runQuery(query):
 	"""
 	Connects to the InfluxDB and runs an InfluxDB Flux query 
@@ -502,7 +494,7 @@ def _reduceData(data,limitNumber,limitType):
 	
 	return reducedData
 
-def runJSONQuery(config, query):
+def runJSONQuery(config,query):
 	"""
 	Processes a JSON-formatted query request by building and executing InfluxDB queries,
 	applying optional pivoting and data reduction.
@@ -518,16 +510,15 @@ def runJSONQuery(config, query):
 		list: A list of processed DataFrames (or None for queries that return no data),
 			  each corresponding to one entry in the "Queries" list.
 	"""
-	#print("Running JSON Query...")
-	#print("Config Data:", query)
+
 	
+
 	pivotedData = []
-	#machine = query["machine_name"]
-	for type in query["data_types"]:
-		#pprint.pprint(type, indent=2, width=120)
+	machine = query["machine_name"]
+	for type in jsonQuery["data_types"]:
 		typename = type["name"]
-		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("maximised",False)) #configJSON,jsonQuery,startDate,endDate,type,minimised=False
-		#print("Influx Query:", influxQuery)
+		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("minimised",False))
+		print(influxQuery)
 		data = _runQuery(influxQuery)
 		if not data:
 			print("No data returned from query")
@@ -552,13 +543,9 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	if not os.path.exists(filePath):
 		raise FileNotFoundError(f"File not found at path: {filePath}")
 
-	with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
+	with open(filePath,'r') as f:
 		configFile = f.read()
-	
-	#  if configFile is empty
-	if not configFile:
-		raise ValueError("Configuration file is empty")
-	
+
 	jsonQuery = json.loads(configFile)
 
 	# inject custom date range into each query
@@ -576,10 +563,10 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 
 	# Check if SensorList exists in the JSON and capture its values
 	sensor_list = []
-	if 'Nodes' in jsonQuery:
-		sensor_list = jsonQuery['Nodes']
+	if 'SensorList' in jsonQuery:
+		sensor_list = jsonQuery['SensorList']
 	else:
-		print("No Nodes found in JSON configuration")
+		print("No SensorList found in JSON configuration")
 
 	for i in range(1, 10):
 		query_key = str(i)
@@ -646,6 +633,13 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	})
 	#print(results)
 	return results
+
+	# dummy json
+	# jsonQuery = {
+	#  	"Type": "Graph",
+	# 	"DefaultRange": "1h",
+	# 	"Minimised": False,
+	# }
 
 # this helper function to get the timezone adjusted time in HH:MM format
 def format_timestamp(timestamp, timezone='Europe/London'):
@@ -717,24 +711,32 @@ def getDataSeries(data):
 		If there are not predicates, it will return False (However, logic higher up the stack will likely check first and prevent from running)
 	"""
 	
-	if("Predicates" not in data):
+	if("Pivot" not in data):
 		return False
 	series = []
-	predicateStrings =[]
+	orStrings =[]
+	andStrings =[]
 
 	for predicate in data["Predicates"].keys():
-		for predicateValue in data["Predicates"][predicate]:
-			if(predicateValue[0] == "/" and predicateValue[-1] == "/"):
-				#This is a regex
-				predicateStrings.append(f"r.{predicate} =~ {predicateValue}")
+		if(isinstance(data["Predicates"][predicate],list) == True):
+			for predicateValue in data["Predicates"][predicate]:
+				if(predicateValue[0] == "/" and predicateValue[-1] == "/"):
+					orStrings.append(f"r.{predicate} =~ {predicateValue}")
+				else:
+					orStrings.append(f"r.{predicate} == \"{predicateValue}\"")
+			andStrings.append("(" + " or ".join(orStrings) + ")")
+		else:
+			if(data["Predicates"][predicate][0] == "/" and data["Predicates"][predicate][-1] == "/"):
+				andStrings.append(f"r.{predicate} =~ {data["Predicates"][predicate]}")
 			else:
-				predicateStrings.append(f"r.{predicate} == \"{predicateValue}\"")
-				predicateString = " or ".join(predicateStrings)
-				influxQuery = f"import \"influxdata/influxdb/schema\"\
+				andStrings.append(f"r.{predicate} == \"{data["Predicates"][predicate]}\"")
+	predicateString = " and ".join(andStrings)
+	influxQuery = f"import \"influxdata/influxdb/schema\"\
 					schema.tagValues(\
 						bucket: \"{data['Bucket']}\", \
-						predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
+						predicate:  (r) => r._measurement == \"{data['Measurement']}\" and {predicateString},\
     					tag: \"{data["Pivot"]}\")"
+	#print(influxQuery)
 	results = _runQuery(influxQuery)
 	
 	for table in results:
@@ -742,94 +744,9 @@ def getDataSeries(data):
 			series.append(record.values.get("_value"))
 	return series
 
-
-def getCustomData(data, filePath=None):
-	try:
-		# validate data is json and not empty
-		if not data:
-			raise ValueError("Data cannot be empty or None")
-		if not isinstance(data, dict):
-			raise TypeError("Data must be a dictionary")
-		
-		jsonQuery = data
-		
-		# jsonQuery = json.loads(queryFile)	
-		machine = jsonQuery.get("machine_name")
-		if not machine:
-			raise ValueError("machine_name is required in the data")
-		
-		if not filePath:
-			raise ValueError("File path cannot be empty or None")
-		if not isinstance(filePath, str):
-			raise TypeError("File path must be a string")
-		if not filePath.endswith('.json'):
-			raise ValueError("File path must point to a JSON file")
-		
-		# check if file exists
-		if not os.path.exists(filePath):
-			raise FileNotFoundError(f"File not found at path: {filePath}")
-
-		with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
-			configFile = f.read()
-
-		jsonConfig = json.loads(configFile)
-		time_start = perf_counter()
-
-		# Config file structure has Data at root level, not nested under machine name
-		output_result = runJSONQuery(jsonConfig["Data"], jsonQuery)		
-		#print("Output Result: ", output_result)
-
-		time_end = perf_counter()
-		print(f"Total Execution Time: {time_end - time_start} seconds")
-		
-		# preprocess the results to make them JSON serializable
-		output_results = preprocessResults(output_result)
-
-		return output_results
-		
-	except Exception as e:
-		print(f"Error in getCustomData: {e}")
-		return None
-
-
-def preprocessResults(results):
-	"""
-	Preprocesses the results from InfluxDB queries to ensure they are JSON serializable.
-
-	Parameters:
-		results (list): A list of DataFrames or None values returned from runJSONQuery.
-
-	Returns:
-		list: A list of processed results where each DataFrame is converted to a list of dictionaries.
-	"""
-	processed_results = []
-	for df in results:
-		if df is not None:
-			# Reset index to include time as a column before converting to dictionary
-			df_with_time = df.reset_index()
-			# Convert DataFrame to dictionary format
-			df_dict = df_with_time.to_dict(orient='records')
-			
-			# Format timestamps in the data to 'HH:MM' format in GMT/BST timezone
-			formatted_records = []
-			for record in df_dict:
-				formatted_record = {}
-				for key, value in record.items():
-					if key.lower() in ['time', 'timestamp', '_time'] and isinstance(value, (str, pd.Timestamp)):
-						formatted_record[key] = format_timestamp(value, 'Europe/London')
-					else:
-						formatted_record[key] = value
-				formatted_records.append(formatted_record)
-			
-			processed_results.append(formatted_records)
-		else:
-			processed_results.append(None)
-	return processed_results
-
-
 def loadJSONConfigs():
-	BASE_DIR = "D:\\projects\\workshop-viz\\backend"
-	config_folder = os.path.join(BASE_DIR, "config")
+	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+	config_folder = os.path.join(BASE_DIR, "Configs")
 	all_configs = {}
 
 	for filename in os.listdir(config_folder):
@@ -843,34 +760,19 @@ def loadJSONConfigs():
 	return all_configs
 
 if __name__ == "__main__":
-
 	jsonConfig = loadJSONConfigs()
 
 	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-	queryPath = os.path.join(BASE_DIR, "Queries","query.json")   # custom config
+	queryPath = os.path.join(BASE_DIR, "Queries","query.json")
 	f = open(queryPath,'r')
 	queryFile = f.read()
 	f.close()
-	jsonQuery = json.loads(queryFile)	   # custom config 
+	jsonQuery = json.loads(queryFile)	
 	machine = jsonQuery["machine_name"]
 	
-	#print("Loaded Config: ", jsonConfig[machine])
+	
+	
 	time_start = perf_counter()
 	print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
 	time_end = perf_counter()
 	print(f"Total Execution Time: {time_end - time_start} seconds")
-
-	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\query.json",'r')
-	# queryFile = f.read()
-	# f.close()
-	# jsonQuery = json.loads(queryFile)	
-	# machine = jsonQuery["machine_name"]
-	
-	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\NewHurcoConfig.json",'r')
-	# configFile = f.read()
-	# f.close()
-	# jsonConfig = json.loads(configFile)
-	# time_start = perf_counter()
-	# print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
-	# time_end = perf_counter()
-	# print(f"Total Execution Time: {time_end - time_start} seconds")

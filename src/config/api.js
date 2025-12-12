@@ -1,15 +1,24 @@
-export const API_BASE_URL = 'http://10.101.23.23:9000'; //process.env.REACT_APP_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = 'http://10.101.23.23:9000'; // for production server
 
 export const API_ENDPOINTS = {
-  dashboardConfig: '/api/dashboard-config/',
+  // dashboardConfig: '/api/dashboard-config/',
+  testConnection: '/api/test-connection/',
+  testMySQL: '/api/test-mysql/',
+
   currentBooking: '/api/current-booking/',
   userList: '/api/user-list/',
   addNotes: '/api/add-notes/',
-  testConnection: '/api/test-connection/',
-  testMySQL: '/api/test-mysql/',
-  graphConfigurations: '/api/graph-configurations/',
-  customGraphData: '/api/custom-graph-data/',
+
+  machinesWithConfig: '/api/machines-with-config/',
+  dropdownsFromConfig: '/api/dropdowns-from-config/',
+
+  createDashboard: '/api/create-dashboard/',
+  getDashboards: '/api/dashboards/',
+
+  dataTypes: '/api/data-types/',
   availableSeries: '/api/available-series/',
+  generateData: '/api/generate-data/',
+
 };
 
 export const buildUrl = (endpoint, params = {}) => {

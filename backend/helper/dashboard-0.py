@@ -8,8 +8,8 @@
 ## Description: Used to get data from InfluxDB for displaying on a dashboard
 ## Usage: Runs as main function, or using getInfluxData is calling from an external source
 ##################################################
-## Version: 0.2.0
-## Last Updated: 01/12/2025
+## Version: 0.0.2
+## Last Updated: 23/07/2025
 ##################################################
 
 
@@ -29,7 +29,7 @@ INFLUX_TOKEN = "pRoemIh7JfC7cn1HG2VyZcx1BSIguLN-gqhQyKl8775tpvDV4o9NNf1FuLMDKKvK
 DB_LINK = "http://10.101.23.23:8086"
 DB_ORG = "ECMPG"
 
-INTERVAL_POINTS = [1,2,5,10,20,30,45,60]
+INTERVAL_POINTS = [1,2,5,10,20,30,60]
 FULL_SCREEN_POINTS = 1500
 MINIMISED_POINTS = 500
 
@@ -48,40 +48,6 @@ def _connect_influxDB(timeout=30_000):
 		attempts+=1
 		sleep(5)
 		
-def calculateAggregation2(startDateTime, endDatetime, sampleInterval, maxPoints):
-	duration = (endDatetime-startDateTime).total_seconds()
-	try:
-		samplingInterval = float(sampleInterval[:-1])
-		
-		unitQuantifier = sampleInterval[-1]
-		print(f"Units:  {unitQuantifier}")
-	except Exception as e:
-		raise ValueError(f"Error parsing range '{sampleInterval}': {e}")
-	
-	match unitQuantifier:
-		case "f":
-			samplingInterval =samplingInterval /1000 #Convert milliseconds to seconds
-		case "m":
-			samplingInterval =samplingInterval*60 #Convert minutes to seconds
-	estimatedPoints = duration/samplingInterval
-	print(f"Estimated Points: {estimatedPoints}")
-
-	if(estimatedPoints < maxPoints):
-		return False
-	
-	decimationFactor = estimatedPoints/maxPoints
-	rough_interval = decimationFactor*samplingInterval
-	intervalUnits ="s"
-	if(rough_interval >60):
-		rough_interval /= 60
-		intervalUnits = "m"
-	chosen_interval = 1
-	for interval in INTERVAL_POINTS:
-		if(rough_interval < interval):
-			chosen_interval = interval
-			break
-	print(f"Rough Interval: {rough_interval} seconds\nChosen Interval: {chosen_interval} seconds")
-	return f"{chosen_interval}{intervalUnits}"
 
 def calculateAggregation(range,maxPoints, endDatetime):
 	"""
@@ -240,157 +206,6 @@ def _buildQuery(queryDict,range,type,minimised,requestedRange):
 
 	return query
 
-def _formatTime(startDate,endDate):
-	# Try multiple datetime formats to handle different input formats
-		formats = ["%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S"]
-		
-		startDateTime = None
-		endDateTime = None
-		
-		for fmt in formats:
-			try:
-				startDateTime = datetime.strptime(startDate, fmt)
-				endDateTime = datetime.strptime(endDate, fmt)
-				break
-			except ValueError:
-				continue
-		
-		if startDateTime is None or endDateTime is None:
-			raise ValueError(f"Unable to parse dates with formats: {formats}")
-		
-		# **FIX: Assume input times are in BST/GMT and convert to UTC**
-		local_tz = pytz.timezone('Europe/London')
-		
-		# Localize the naive datetime to BST/GMT depending on the current timezone
-		startDateTime = local_tz.localize(startDateTime)
-		endDateTime = local_tz.localize(endDateTime)
-		
-		# Convert to UTC for InfluxDB query as InfluxDB stores times in UTC
-		startDateTime_utc = startDateTime.astimezone(pytz.UTC)
-		endDateTime_utc = endDateTime.astimezone(pytz.UTC)
-		
-		#print(f"User requested: {startDateTime} to {endDateTime}")
-		#print(f"Querying InfluxDB (UTC): {startDateTime_utc} to {endDateTime_utc}")
-
-		return startDateTime_utc,endDateTime_utc
-
-def _buildQueryFromConfig(configJSON,jsonQuery,startDate,endDate,type,maximised):
-	"""
-	Builds an InfluxDB Flux query based on the input parameters and modifies it
-	depending on the visualisaton type and minimisation flag.
-
-	Parameters:
-		flux (str): The base Flux query template with placeholders.
-		range (str): The time range string (e.g., '1h', '7d') to replace in the query.
-		type (str): The type of query, either "Stat" or "Graph".
-		minimised (bool): Whether the query should be optimised for minimal display (e.g., in small UI components).
-
-	Returns:
-		str: The constructed Flux query with appropriate replacements and adjustments.
-	"""
-
-	templateQuery = 'from(bucket: "[BUCKET_NAME]")\
-  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\
-  |> filter(fn: (r) => r["_measurement"] == "[MEASUREMENT]")\
-  [FILTERS]'
-	
-	templateFilter = '  |> filter(fn: (r) => [FILTERS])'
-	templateMultiFilter = 'r["[FILTER_KEY]"] =="[FILTER_VALUE]"'
-	templateRegexFilter = 'r["[FILTER_KEY]"] =~ [FILTER_VALUE]'
-	templateScaling = '|> map(fn: (r) => ({r with _value: float(v: r._value) [SCALING]}))'
-	templateAggregation = '  |> aggregateWindow(every: v.windowPeriod, fn: [AGGREGATE_FUNCTION], createEmpty: false)'
-
-	query = templateQuery
-	query = query.replace("[BUCKET_NAME]", configJSON.get("Bucket"))
-	query = query.replace("[MEASUREMENT]", configJSON.get("Measurement"))
-
-	filtersList = []
-
-	if(configJSON.get("Summarised")):
-		filterString = templateMultiFilter.replace("[FILTER_KEY]","_field").replace("[FILTER_VALUE]", jsonQuery["aggregation"].capitalize())
-		# print("Filtering String for Summarised: ", filterString)
-		filtersList.append(templateFilter.replace("[FILTERS]",filterString))
-		
-
-	if("Predicates" in configJSON):
-		print("Query Predicates Found")
-		for key,value in configJSON.get("Predicates").items():
-			if(isinstance(value,list)):
-				filterStringList = []
-				for listValue in value:
-					if listValue[0] == "/" and listValue[-1] == "/":
-						filterString = templateRegexFilter
-						filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", listValue)
-						
-					else:
-						filterString = templateMultiFilter
-						filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", listValue)
-					filterStringList.append(filterString)
-				completeFilterString = templateFilter
-				completeFilterString = completeFilterString.replace("[FILTERS]"," or ".join(filterStringList))
-				filtersList.append(completeFilterString)
-			else:
-				if value[0] == "/" and value[-1] == "/":
-					filterString = templateRegexFilter
-					filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
-					
-				else:
-					filterString = templateMultiFilter
-					filterString = filterString.replace("[FILTER_KEY]", key).replace("[FILTER_VALUE]", value)
-				completeFilterString = templateFilter
-				completeFilterString = completeFilterString.replace("[FILTERS]",filterString)
-				filtersList.append(completeFilterString)
-
-	if("series" in jsonQuery):
-		seriesStringList = []
-		for series in jsonQuery["series"]:
-			seriesStringList.append(templateMultiFilter.replace("[FILTER_KEY]", configJSON["Pivot"]).replace("[FILTER_VALUE]", series))
-		
-
-		seriesString = templateFilter.replace("[FILTERS]", " or ".join(seriesStringList))
-		filtersList.append(seriesString)
-
-
-	query = query.replace("[FILTERS]", "\n".join(filtersList))
-
-	try:
-		startDateTime_utc,endDateTime_utc = _formatTime(startDate,endDate)		
-	
-	except (KeyError, ValueError, TypeError) as e:
-		# Fallback to default range behavior
-		print(f"Error parsing requested range: {e}")
-		endDateTime_utc = datetime.now().astimezone(pytz.UTC)
-		startDateTime_utc = endDateTime_utc - timedelta(hours=1)
-
-	query = query.replace("v.timeRangeStart", startDateTime_utc.isoformat())
-	query = query.replace("v.timeRangeStop", endDateTime_utc.isoformat())
-	#print("Reached this point")
-	#print(type, maximised)
-	maxPointsToFetch  = FULL_SCREEN_POINTS
-	if(type== "Stat" and maximised == False):
-		print("Stat query is minimised, get last value")
-		query = query + "|> last()"
-	else:
-		if(maximised == False):
-			print("Graph query is minimised, use bigger interval")
-			maxPointsToFetch = MINIMISED_POINTS
-		getAggregationValue = calculateAggregation2(startDateTime_utc,endDateTime_utc,configJSON.get("Sample_Interval"),maxPointsToFetch)
-		if(getAggregationValue):
-			# query += templateAggregation.replace("v.windowPeriod", getAggregationValue)
-
-
-			# Get aggregation function from query, config, or default to 'mean'
-			aggregationFunc = jsonQuery.get("aggregation", configJSON.get("Aggregation", "mean"))
-			aggregationQuery = templateAggregation.replace("v.windowPeriod", getAggregationValue).replace("[AGGREGATE_FUNCTION]", aggregationFunc)
-			query += aggregationQuery
-
-		
-	if("Scale" in configJSON):
-		scaling = configJSON.get("Scale")
-		query += "\n" + templateScaling.replace("[SCALING]", scaling)
-		
-	return query
-
 def _runQuery(query):
 	"""
 	Connects to the InfluxDB and runs an InfluxDB Flux query 
@@ -434,6 +249,8 @@ def _parseJSONQuery(jsonQuery):
 	# print("Requested Range: ", requestedRange)
 	
 	return Queries,defaultRange,type,minimised,requestedRange
+	
+
 
 def _pivotData(data, pivotKey):
 	"""
@@ -502,7 +319,7 @@ def _reduceData(data,limitNumber,limitType):
 	
 	return reducedData
 
-def runJSONQuery(config, query):
+def runJSONQuery(jsonQuery):
 	"""
 	Processes a JSON-formatted query request by building and executing InfluxDB queries,
 	applying optional pivoting and data reduction.
@@ -518,25 +335,20 @@ def runJSONQuery(config, query):
 		list: A list of processed DataFrames (or None for queries that return no data),
 			  each corresponding to one entry in the "Queries" list.
 	"""
-	#print("Running JSON Query...")
-	#print("Config Data:", query)
-	
+	Queries,Range,Type,minimised,requestedRange = _parseJSONQuery(jsonQuery)
 	pivotedData = []
-	#machine = query["machine_name"]
-	for type in query["data_types"]:
-		#pprint.pprint(type, indent=2, width=120)
-		typename = type["name"]
-		influxQuery = _buildQueryFromConfig(config[typename],type,query["date_from"],query["date_to"],query["type"],query.get("maximised",False)) #configJSON,jsonQuery,startDate,endDate,type,minimised=False
-		#print("Influx Query:", influxQuery)
+	times = []
+	for i in range(len(Queries)):
+		influxQuery = _buildQuery(Queries[i],Range,Type,minimised,requestedRange)
 		data = _runQuery(influxQuery)
 		if not data:
 			print("No data returned from query")
 			pivotedData.append(None)
 			continue
-		data = _pivotData(data, config[typename].get("Pivot",False))
-		#checkLimit = Queries[i].get("Limit")
-		#if(checkLimit is not None):
-			#data = _reduceData(data,checkLimit,Queries[i].get("LimitType"))
+		data = _pivotData(data, Queries[i].get("Pivot",False))
+		checkLimit = Queries[i].get("Limit")
+		if(checkLimit is not None):
+			data = _reduceData(data,checkLimit,Queries[i].get("LimitType"))
 		pivotedData.append(data)
 	return pivotedData
 
@@ -558,8 +370,10 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	#  if configFile is empty
 	if not configFile:
 		raise ValueError("Configuration file is empty")
-	
+
 	jsonQuery = json.loads(configFile)
+
+	print("Loaded JSON Query Configuration:", jsonQuery)
 
 	# inject custom date range into each query
 	if custom_date_from or custom_date_to:
@@ -576,10 +390,10 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 
 	# Check if SensorList exists in the JSON and capture its values
 	sensor_list = []
-	if 'Nodes' in jsonQuery:
-		sensor_list = jsonQuery['Nodes']
+	if 'SensorList' in jsonQuery:
+		sensor_list = jsonQuery['SensorList']
 	else:
-		print("No Nodes found in JSON configuration")
+		print("No SensorList found in JSON configuration")
 
 	for i in range(1, 10):
 		query_key = str(i)
@@ -621,6 +435,12 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 			# add new key to config_without_queries which exclues # the Queries key from the jsonQuery
 			config_without_queries = {k: v for k, v in jsonQuery[str(i)].items() if k != "Queries"}
 
+			# Extract unit from the first query if available
+			if 'Queries' in jsonQuery[str(i)] and len(jsonQuery[str(i)]['Queries']) > 0:
+				config_without_queries['Units'] = jsonQuery[str(i)]['Queries'][0].get('Units', '')
+			else:
+				config_without_queries['Units'] = ''
+
 			#seriesExtracted = ["A-Axis_Motor", "C-Axis_Motor", "Spindle", "X-Axis_Motor_Bearing", "Y-Axis_Motor_Bearing", "Z-Axis_Motor_Bearing"]
 
 			# Extract series names from the data
@@ -644,8 +464,15 @@ def getInfluxData(filePath, custom_date_from=None, custom_date_to=None, timezone
 	results.append({
 		'sensor_list': sensor_list,
 	})
-	#print(results)
+	# print('*******Results:', results)
 	return results
+
+	# dummy json
+	# jsonQuery = {
+	#  	"Type": "Graph",
+	# 	"DefaultRange": "1h",
+	# 	"Minimised": False,
+	# }
 
 # this helper function to get the timezone adjusted time in HH:MM format
 def format_timestamp(timestamp, timezone='Europe/London'):
@@ -705,172 +532,94 @@ def generate_random_data(num_records: int, start_time: str = "2025-07-28T11:15:0
 
     return data
 
-def getDataSeries(data):
-	"""
-	Processes a JSON-formatted data type (eg. Hurco -> Data -> Temperature) to extract series names.
-
-	Parameters:
-		data (dict): A dictionary containing the data type specification
-			
-	Returns:
-		If there are predicates in the data dict, it will return all the series for that measurement with the predicates applied.
-		If there are not predicates, it will return False (However, logic higher up the stack will likely check first and prevent from running)
-	"""
-	
-	if("Predicates" not in data):
-		return False
-	series = []
-	predicateStrings =[]
-
-	for predicate in data["Predicates"].keys():
-		for predicateValue in data["Predicates"][predicate]:
-			if(predicateValue[0] == "/" and predicateValue[-1] == "/"):
-				#This is a regex
-				predicateStrings.append(f"r.{predicate} =~ {predicateValue}")
-			else:
-				predicateStrings.append(f"r.{predicate} == \"{predicateValue}\"")
-				predicateString = " or ".join(predicateStrings)
-				influxQuery = f"import \"influxdata/influxdb/schema\"\
-					schema.tagValues(\
-						bucket: \"{data['Bucket']}\", \
-						predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
-    					tag: \"{data["Pivot"]}\")"
-	results = _runQuery(influxQuery)
-	
-	for table in results:
-		for record in table.records:
-			series.append(record.values.get("_value"))
-	return series
-
-
-def getCustomData(data, filePath=None):
-	try:
-		# validate data is json and not empty
-		if not data:
-			raise ValueError("Data cannot be empty or None")
-		if not isinstance(data, dict):
-			raise TypeError("Data must be a dictionary")
-		
-		jsonQuery = data
-		
-		# jsonQuery = json.loads(queryFile)	
-		machine = jsonQuery.get("machine_name")
-		if not machine:
-			raise ValueError("machine_name is required in the data")
-		
-		if not filePath:
-			raise ValueError("File path cannot be empty or None")
-		if not isinstance(filePath, str):
-			raise TypeError("File path must be a string")
-		if not filePath.endswith('.json'):
-			raise ValueError("File path must point to a JSON file")
-		
-		# check if file exists
-		if not os.path.exists(filePath):
-			raise FileNotFoundError(f"File not found at path: {filePath}")
-
-		with open(filePath, 'r', encoding='utf-8') as f:  #utf-8 encoding for python to correctly interpret utf-8 byte sequences or other special characters
-			configFile = f.read()
-
-		jsonConfig = json.loads(configFile)
-		time_start = perf_counter()
-
-		# Config file structure has Data at root level, not nested under machine name
-		output_result = runJSONQuery(jsonConfig["Data"], jsonQuery)		
-		#print("Output Result: ", output_result)
-
-		time_end = perf_counter()
-		print(f"Total Execution Time: {time_end - time_start} seconds")
-		
-		# preprocess the results to make them JSON serializable
-		output_results = preprocessResults(output_result)
-
-		return output_results
-		
-	except Exception as e:
-		print(f"Error in getCustomData: {e}")
-		return None
-
-
-def preprocessResults(results):
-	"""
-	Preprocesses the results from InfluxDB queries to ensure they are JSON serializable.
-
-	Parameters:
-		results (list): A list of DataFrames or None values returned from runJSONQuery.
-
-	Returns:
-		list: A list of processed results where each DataFrame is converted to a list of dictionaries.
-	"""
-	processed_results = []
-	for df in results:
-		if df is not None:
-			# Reset index to include time as a column before converting to dictionary
-			df_with_time = df.reset_index()
-			# Convert DataFrame to dictionary format
-			df_dict = df_with_time.to_dict(orient='records')
-			
-			# Format timestamps in the data to 'HH:MM' format in GMT/BST timezone
-			formatted_records = []
-			for record in df_dict:
-				formatted_record = {}
-				for key, value in record.items():
-					if key.lower() in ['time', 'timestamp', '_time'] and isinstance(value, (str, pd.Timestamp)):
-						formatted_record[key] = format_timestamp(value, 'Europe/London')
-					else:
-						formatted_record[key] = value
-				formatted_records.append(formatted_record)
-			
-			processed_results.append(formatted_records)
-		else:
-			processed_results.append(None)
-	return processed_results
-
-
-def loadJSONConfigs():
-	BASE_DIR = "D:\\projects\\workshop-viz\\backend"
-	config_folder = os.path.join(BASE_DIR, "config")
-	all_configs = {}
-
-	for filename in os.listdir(config_folder):
-		if filename.lower().endswith(".json"):
-			path = os.path.join(config_folder, filename)
-			with open(path, "r", encoding="utf-8") as f:
-				data = json.load(f)
-			
-			key = os.path.splitext(filename)[0]  # filename without extension
-			all_configs[key] = data
-	return all_configs
-
+"""
 if __name__ == "__main__":
-
-	jsonConfig = loadJSONConfigs()
-
-	BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-	queryPath = os.path.join(BASE_DIR, "Queries","query.json")   # custom config
-	f = open(queryPath,'r')
-	queryFile = f.read()
+	f = open("E:\\ECPMG\\workshop-viz\\backend\\config\\HurcoDashboard2.json",'r')
+	configFile = f.read()
 	f.close()
-	jsonQuery = json.loads(queryFile)	   # custom config 
-	machine = jsonQuery["machine_name"]
+	jsonQuery = json.loads(configFile)
+	for i in range(1,9):
+		start = perf_counter()
+		data = runJSONQuery(jsonQuery[str(i)])
+		end = perf_counter()
+		print(f"{i} = {end-start}")
 	
-	#print("Loaded Config: ", jsonConfig[machine])
-	time_start = perf_counter()
-	print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
-	time_end = perf_counter()
-	print(f"Total Execution Time: {time_end - time_start} seconds")
+	#print(data)
+"""
 
-	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\query.json",'r')
-	# queryFile = f.read()
-	# f.close()
-	# jsonQuery = json.loads(queryFile)	
-	# machine = jsonQuery["machine_name"]
+""" This function is not currently in use
+def _getPivotKey(data,specifiedTags):
 	
-	# f = open("D:\\Github\\Workshop-Data\\Capture\\API\\NewHurcoConfig.json",'r')
-	# configFile = f.read()
-	# f.close()
-	# jsonConfig = json.loads(configFile)
-	# time_start = perf_counter()
-	# print(runJSONQuery(jsonConfig[machine]["Data"],jsonQuery))
-	# time_end = perf_counter()
-	# print(f"Total Execution Time: {time_end - time_start} seconds")
+	pivot_keys = [k for k in data[0].records[0].values.keys()
+				if k not in ["_time", "_value", "_field", "_measurement","table","result",] and k not in specifiedTags.keys()]
+	if(len(pivot_keys) ==1):
+		pivotKey = pivot_keys[0]
+		print("Pivot key:", pivotKey)
+		return pivotKey
+	print("Potential pivot keys:", pivot_keys)
+	countPivotKeyOccurance = {}
+	for k in pivot_keys:
+		countPivotKeyOccurance[k] = set()
+	for table in data:
+		for record in table.records:
+			for k in pivot_keys:
+					tagValue = record.values.get(k)
+					countPivotKeyOccurance[k].add(tagValue)
+	longest_key = max(countPivotKeyOccurance, key=lambda k: len(countPivotKeyOccurance[k]))
+	pivotKey = longest_key
+	print("Pivot key:", pivotKey)
+	return pivotKey
+"""
+
+def getDataSeries(data):
+ """
+ Processes a JSON-formatted data type (eg. Hurco -> Data -> Temperature) to extract series names.
+
+ Parameters:
+  data (dict): A dictionary containing the data type specification
+   
+ Returns:
+  If there are predicates in the data dict, it will return all the series for that measurement with the predicates applied.
+  If there are not predicates, it will return False (However, logic higher up the stack will likely check first and prevent from running)
+ """
+# print("Getting data series for data:", data)
+ if("Predicates" not in data):
+  return False
+ series = []
+ predicateStrings =[]
+
+ for predicate in data["Predicates"].keys():
+  for predicateValue in data["Predicates"][predicate]:
+   if(predicateValue[0] == "/" and predicateValue[-1] == "/"):
+    #This is a regex
+    predicateStrings.append(f"r.{predicate} =~ {predicateValue}")
+   else:
+    predicateStrings.append(f"r.{predicate} == \"{predicateValue}\"")
+ predicateString = " or ".join(predicateStrings)
+ influxQuery = f"import \"influxdata/influxdb/schema\"\
+     schema.tagValues(\
+      bucket: \"{data['Bucket']}\", \
+      predicate:  (r) => r._measurement == \"{data['Measurement']}\" and ({predicateString}),\
+         tag: \"{data["Pivot"]}\")"
+ results = _runQuery(influxQuery)
+
+ pprint.pprint(results)
+ 
+ for table in results:
+  for record in table.records:
+   series.append(record.values.get("_value"))
+ return series
+
+
+def getCustomGraphData(data):
+	"""
+	Retrieves custom graph data based on the provided request data and machine name.
+
+	Parameters:
+		requestData (dict): The request data containing graph configuration.
+		machine_name (str): The name of the machine for which to retrieve data.
+
+	Returns:
+		list: A list of data points for the custom graph.
+	"""
+	pprint.pprint(data, indent=2, width=120)

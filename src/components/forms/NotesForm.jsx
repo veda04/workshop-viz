@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import apiService from '../../services/apiService';
 
-const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
+const NotesForm = ({ onClose, machineName, dashboardId }) => {
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
+    dashboardId: dashboardId,
     machine_name: machineName,
     user_id: '',
     category: '',
@@ -91,17 +92,28 @@ const NotesForm = ({ onClose, machineName = 'Hurco' }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Machine Name (Read-only) */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
-            Machine Name
-          </label>
-          <input
-            type="text"
-            name="machine_name"
-            value={formData.machine_name}
-            readOnly
-            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-900 dark:text-white cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-gray-500"
-          />
-        </div>
+            <input
+              type="text"
+              name="dashboardId"
+              value={dashboardId}
+              hidden
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-900 dark:text-white cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-gray-500"
+            />
+          </div>
+        {machineName &&(
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-white mb-1">
+              Machine Name
+            </label>
+            <input
+              type="text"
+              name="machine_name"
+              value={formData.machine_name}
+              readOnly
+              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 dark:bg-gray-900 dark:text-white cursor-not-allowed focus:outline-none focus:ring-1 focus:ring-gray-500"
+            />
+          </div>
+        )}
 
         {/* User Selection */}
         <div>

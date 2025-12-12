@@ -1,22 +1,27 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import MachineSummary from './components/dashboard/MachineSummary';
-import CustomGraphs from './pages/CustomGraphs';
+import DashboardSummary from './pages/DashboardSummary';
+import ComponentBuilder from './pages/ComponentBuilder';
+import Home from './pages/home';
 import { DarkModeProvider } from './context/DarkModeContext';
+import { EditLayoutProvider } from './context/EditLayoutContext';
 import './App.css';
 
 function App() {
   return (
     <DarkModeProvider>
-      <Router>
-        <div className="App">
-          <Routes>
-            <Route path="/" element={<MachineSummary replace />} />
-            <Route path="/machine-summary" element={<MachineSummary />} />
-            <Route path="/customize-graphs" element={<CustomGraphs />} />
-          </Routes>
-        </div>
-      </Router>
+       <EditLayoutProvider>
+        <Router>
+          <div className="App">
+            <Routes>
+              <Route path="/" element={<Home replace />} />
+              <Route path="/home" element={<Home />} />
+              <Route path="/dashboard-summary" element={<DashboardSummary />} />
+              <Route path="/component-builder" element={<ComponentBuilder />} />
+            </Routes>
+          </div>
+        </Router>
+       </EditLayoutProvider>
     </DarkModeProvider>
   );
 }
