@@ -78,7 +78,8 @@ const DashboardBlock = ({
         value={statsValue}
         textColor={config?.TextColor || (getRandomColors ? getRandomColors(1) : ['#4D96FF'])}
         unit={statsValue !== 'N/A' ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
-        onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}
+        // onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}  // TO DO: maximisable cards
+        onClick={handleCardClick ? handleCardClick : undefined}
       />
     );
   }

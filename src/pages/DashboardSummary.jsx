@@ -5,6 +5,7 @@ import Modal from '../components/Modal';
 import Sensors from '../components/dashboard/Sensors';
 import DashboardBlock from '../components/dashboard/DashboardBlock';
 import ZoomableChart from '../components/charts/ZoomableChart';
+import ZoomableCard from '../components/cards/ZoomableCard';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import ErrorMessage from '../components/common/ErrorMessage';
 import { useDashboardData } from '../hooks/useDashboardData';
@@ -32,6 +33,10 @@ const DashboardSummary = () => {
   // Modal state for enlarged chart view
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
   const [selectedChartData, setSelectedChartData] = useState(null);
+  
+  // Modal state for enlarged stat card view
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
+  const [selectedCardData, setSelectedCardData] = useState(null);
   
   // Determine if this is a new dashboard (has dashboardId)
   const isNewDashboard = dashboardId !== null;
@@ -187,6 +192,20 @@ const DashboardSummary = () => {
     setIsChartModalOpen(true);
   };
 
+  // Handle card click to open modal with enlarged stat view
+  const handleCardClick = (component) => {
+    const data = componentData[component.icomponent_id];
+    if (!data) return;
+    
+    setSelectedCardData({
+      title: component.vTitle,
+      value: data.statsValue,
+      unit: data.unit,
+      description: component.vDescription
+    });
+    setIsCardModalOpen(true);
+  };
+
   // Handle create new entry button click
   const handleCreateEntry = () => {
     let componentBuilderUrl = `/component-builder?dashboardId=${encodeURIComponent(dashboardId)}&title=${encodeURIComponent(title)}`;
@@ -321,7 +340,7 @@ const DashboardSummary = () => {
                           axisConfig={componentData[component.icomponent_id]?.axisConfig}
                           blockIndex={component.icomponent_id}
                           getUnitByTitle={getUnitByTitle}
-                          handleCardClick={() => {}}
+                          handleCardClick={() => handleCardClick(component)}
                           handleChartClick={() => handleChartClick(component)}
                           getRandomColors={getRandomColors}
                           getFixedColors={getFixedColors}
@@ -369,6 +388,20 @@ const DashboardSummary = () => {
           />
         )}
       </Modal>
+
+      {/* Modal for Enlarged Stat Card View */}
+      <Modal isOpen={isCardModalOpen} onClose={() => setIsCardModalOpen(false)}>
+        {selectedCardData && (
+          <ZoomableCard
+            title={selectedCardData.title}
+            value={selectedCardData.value}
+            unit={selectedCardData.unit || getUnitByTitle(selectedCardData.title || '')}
+            description={selectedCardData.description}
+          />          
+        )}
+      </Modal>
+
+      
     </Layout>
   );
 };
