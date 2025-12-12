@@ -866,7 +866,7 @@ const ComponentBuilder = () => {
                       </div>
                     </div>
 
-                    {/* Graph Display */}           
+                    {/* Graph Display */}     
                     {graphData && (
                       <div className="text-right">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">                         
@@ -876,7 +876,8 @@ const ComponentBuilder = () => {
                               Series: graphData.series,
                               Units: graphData.units,
                               YAxisDomain: [0, 'auto'],
-                              Color: chartColors
+                              Color: chartColors,
+                              unitTitle: graphData.machineMetadata?.[0]?.data_type_name || '',
                             }}
                             initialData={graphData.type === 'Stat' ? [graphData] : [graphData.chartData]}
                             selectedType={graphData.type || selectedType}

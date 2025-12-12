@@ -230,7 +230,7 @@ const DashboardSummary = () => {
 
   return (
     <Layout componentCount={components.length}> 
-      <div className={`dash-cover p-6 space-y-6 ${!machineName ? 'no-machine-associated' : ''}`}>
+      <div className={`dash-cover p-6 space-y-6 ${!machineName && components.length !== 0 ? 'no-machine-associated' : ''}`}>
         <div className={`mb-4 flex items-center ${isEditMode ? 'justify-between' : 'justify-end'}`}>
           {isEditMode && (
             <div className="w-89 py-1 px-2 bg-purple-100 dark:bg-purple-200 border-2 border-purple-300 dark:border-purple-300 rounded-lg">

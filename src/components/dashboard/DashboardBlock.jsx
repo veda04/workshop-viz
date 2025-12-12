@@ -57,7 +57,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        unit={config?.Units || getUnitByTitle(config?.Title || '')}
+        unit={config?.Units || getUnitByTitle(config?.unitTitle || '')}
         heightOuter={heightOuter}
         heightInner={heightInner}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
