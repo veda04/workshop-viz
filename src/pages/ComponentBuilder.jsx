@@ -220,7 +220,7 @@ const ComponentBuilder = () => {
 
   return (
     <Layout componentCount={hasComponents ? 1 : 0}> 
-      <div className="dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8"> {/* max-w-7xl */}
+      <div className={`dash-cover mx-auto px-4 sm:px-6 lg:px-8 py-8 ${!machineName ? 'no-machine-associated' : ''}`}> {/* max-w-7xl */}
         <div className="mt-0 mb-8">
           <h2 className="text-3xl text-gray-900 capitalize dark:text-white mb-2">
             Customize your dashboard

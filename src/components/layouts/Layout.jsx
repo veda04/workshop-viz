@@ -31,7 +31,7 @@ const Layout = ({ children, showHeader = true, componentCount = 0 }) => {
   }, []);
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen transition-colors duration-200">
+    <div className="bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 min-h-screen overflow-hidden transition-colors duration-200">
       {showHeader && <Header machineName={machineName} title={title} isNewDashboard={isNewDashboard} componentCount={componentCount} />}
       <main>
         {children}
