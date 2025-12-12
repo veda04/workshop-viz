@@ -53,7 +53,11 @@ const ComponentBuilder = () => {
     setSelectedType,
     selectedAggregate,
     setSelectedAggregate,
-    fetchDataTypesForMachine
+    fetchDataTypesForMachine,
+    fetchAvailableSeries,
+    setSelectedGraphs,
+    setSelectedSeries,
+    setGraphToMachineMap,
   } = useComponentBuilderData(machineName);
 
   const [isChartModalOpen, setIsChartModalOpen] = useState(false);
@@ -66,6 +70,7 @@ const ComponentBuilder = () => {
   const [expandedMachines, setExpandedMachines] = useState([]);
   const [editGraphId, setEditGraphId] = useState(null);
   const [editGraphData, setEditGraphData] = useState(null);
+  const [loadedComponentData, setLoadedComponentData] = useState(null); // Store loaded component for generating graph
   const custom_types = ['Graph', 'Stat'];
   const aggregates = ['Max', 'Min', 'Mean'];
 
@@ -91,6 +96,43 @@ const ComponentBuilder = () => {
     }
   }, [isEditMode, componentId]);
 
+  // Auto-generate graph after component is loaded in edit mode
+  useEffect(() => {
+    if (loadedComponentData && selectedGraphs.length > 0) {
+      // Check if we have all the necessary data loaded
+      const hasAllData = selectedGraphs.every(graphId => {
+        // Check if series are available (or not needed)
+        const seriesAvailable = availableSeries[graphId];
+        const selectedSeriesForGraph = selectedSeries[graphId];
+        
+        // If series are available and none selected, we need to wait
+        if (seriesAvailable && seriesAvailable.length > 0 && (!selectedSeriesForGraph || selectedSeriesForGraph.length === 0)) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      if (hasAllData) {
+        console.log('Auto-generating graph with loaded data:', {
+          selectedGraphs,
+          selectedSeries,
+          selectedType,
+          selectedAggregate,
+          availableSeries
+        });
+        
+        // Clear the loaded component data flag and generate
+        setLoadedComponentData(null);
+        
+        // Use setTimeout to ensure all state updates are complete
+        setTimeout(() => {
+          generateGraph();
+        }, 200);
+      }
+    }
+  }, [loadedComponentData, selectedGraphs, selectedSeries, availableSeries, selectedType, selectedAggregate, generateGraph]);
+
   const loadComponentForEdit = async (compId) => {
     try {
       const response = await apiService.getComponent(compId);
@@ -99,10 +141,117 @@ const ComponentBuilder = () => {
         setComponentToEdit(component);
         const vQuery = component.vQuery;
         
-        // TODO: Pre-populate form fields from vQuery
-        // This would involve setting machines, data types, series selections, etc.
-        // For now, just store the component data
         console.log('Component loaded for edit:', component);
+        console.log('vQuery:', vQuery);
+        console.log('Current machineName prop:', machineName);
+        
+        // Pre-populate form fields from vQuery
+        if (vQuery) {
+          // Set type and aggregate
+          if (vQuery.type) {
+            setSelectedType(vQuery.type);
+            console.log('Set type to:', vQuery.type);
+          }
+          if (vQuery.aggregate) {
+            // Capitalize first letter to match dropdown values
+            const capitalizedAggregate = vQuery.aggregate.charAt(0).toUpperCase() + vQuery.aggregate.slice(1);
+            setSelectedAggregate(capitalizedAggregate);
+            console.log('Set aggregate to:', capitalizedAggregate);
+          }
+          
+          // Set time range
+          if (vQuery.range) {
+            setTimeRange(vQuery.range);
+            console.log('Set time range to:', vQuery.range);
+          }
+          
+          // Pre-populate selected graphs and machine mappings
+          if (vQuery.graphs && vQuery.machine_names) {
+            const graphsArray = vQuery.graphs;
+            const machineNamesArray = vQuery.machine_names;
+            
+            console.log('Loading data for machines:', machineNamesArray);
+            
+            // For GENR dashboard, need to load data types for each machine first
+            if (!machineName) {
+              // Load data types for all machines in the component
+              console.log('GENR Dashboard - loading data types for all machines');
+              await Promise.all(
+                machineNamesArray.map(machine => {
+                  console.log('Fetching data types for:', machine);
+                  return fetchDataTypesForMachine(machine);
+                })
+              );
+              console.log('Data types loaded for all machines');
+            }
+            
+            // Create unique graph IDs (MachineName_GraphId)
+            const uniqueGraphIds = graphsArray.map((graphId, index) => {
+              const machineName = machineNamesArray[index];
+              return `${machineName}_${graphId}`;
+            });
+            
+            console.log('Unique graph IDs:', uniqueGraphIds);
+            
+            // Set selected graphs
+            setSelectedGraphs(uniqueGraphIds);
+            
+            // Build graph to machine map
+            const graphMap = {};
+            uniqueGraphIds.forEach((uniqueId, index) => {
+              graphMap[uniqueId] = machineNamesArray[index];
+            });
+            setGraphToMachineMap(graphMap);
+            console.log('Graph to machine map:', graphMap);
+            
+            // Expand all machines that are being used
+            const uniqueMachines = [...new Set(machineNamesArray)];
+            setExpandedMachines(uniqueMachines);
+            console.log('Expanded machines:', uniqueMachines);
+            
+            // Fetch available series for each graph and pre-populate selections
+            // Use Promise.all to wait for all series to be fetched
+            console.log('Fetching series for all graphs...');
+            const seriesPromises = uniqueGraphIds.map(async (uniqueGraphId, index) => {
+              const originalGraphId = graphsArray[index];
+              const machineNameForGraph = machineNamesArray[index];
+              
+              console.log(`Fetching series for graph ${uniqueGraphId} (machine: ${machineNameForGraph})`);
+              // Fetch available series
+              await fetchAvailableSeries(uniqueGraphId, machineNameForGraph);
+              
+              // Return the series data to set
+              const seriesToSet = vQuery.series && vQuery.series[originalGraphId] ? vQuery.series[originalGraphId] : [];
+              console.log(`Series for ${uniqueGraphId}:`, seriesToSet);
+              return {
+                graphId: uniqueGraphId,
+                originalGraphId: originalGraphId,
+                series: seriesToSet
+              };
+            });
+            
+            const seriesData = await Promise.all(seriesPromises);
+            console.log('All series data loaded:', seriesData);
+            
+            // Set all series at once
+            const newSelectedSeries = {};
+            seriesData.forEach(item => {
+              if (item.series.length > 0) {
+                newSelectedSeries[item.graphId] = item.series;
+              }
+            });
+            setSelectedSeries(newSelectedSeries);
+            console.log('Selected series set to:', newSelectedSeries);
+            
+            // Store the loaded component data to trigger graph generation after state updates
+            setLoadedComponentData({
+              uniqueGraphIds,
+              seriesData: newSelectedSeries,
+              vQuery
+            });
+            console.log('Loaded component data set - will trigger auto-generation');
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to load component:', error);

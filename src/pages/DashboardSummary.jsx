@@ -141,7 +141,10 @@ const DashboardSummary = () => {
   };
 
   const handleEdit = (component) => {
-    let editUrl = `/component-builder?dashboardId=${dashboardId}&mode=E&component_id=${component.icomponent_id}`;
+    let editUrl = `/component-builder?dashboardId=${dashboardId}&title=${encodeURIComponent(title)}&mode=E&component_id=${component.icomponent_id}`;
+    if (machineName) {
+      editUrl += `&machineName=${encodeURIComponent(machineName)}`;
+    }
     // Pass hasComponents flag to indicate dashboard has components
     if (components.length > 0) {
       editUrl += `&hasComponents=true`;

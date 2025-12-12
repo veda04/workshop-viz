@@ -405,5 +405,11 @@ export const useComponentBuilderData = (machineName) => {
     generateGraph,
     clearError,
     fetchDataTypesForMachine,
+    fetchAvailableSeries,
+    
+    // State setters for edit mode
+    setSelectedGraphs,
+    setSelectedSeries,
+    setGraphToMachineMap,
   };
 };
