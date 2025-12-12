@@ -52,18 +52,19 @@ const DashboardSummary = () => {
       const response = await apiService.getComponents(dashboardId);
       
       if (response.success) {
-        setComponents(response.data || response.components || []);
-        // Fetch data for each component
         const componentsList = response.data || response.components || [];
-        componentsList.forEach(comp => {
-          fetchComponentData(comp);
-        });
+        setComponents(componentsList);
+        
+        // Fetch data for all components and wait for all to complete
+        await Promise.all(
+          componentsList.map(comp => fetchComponentData(comp))
+        );
       } else {
         setError(response.error || 'Failed to fetch components');
       }
     } catch (err) {
       console.error('Failed to fetch components:', err);
-      setError('Failed to load components');
+      setError('Failed to load components, please try again later.');
     } finally {
       setLoading(false);
     }
@@ -245,8 +246,8 @@ const DashboardSummary = () => {
         </div>
         <div className="">
           {/* Loading State */}
-          {loading && components.length === 0 && (
-            <LoadingSpinner message="Loading components..." />
+          {loading && (
+            <LoadingSpinner message="Loading dashboard components..." />
           )}
 
           {/* Error State */}
@@ -300,38 +301,32 @@ const DashboardSummary = () => {
                         // } mb-4`}
                       >
                         {/* Chart/Stat Display */}
-                          {componentData[component.icomponent_id] ? (
-                            <DashboardBlock
-                              config={{
-                                ComponentID: component.icomponent_id,
-                                Title: component.vTitle,
-                                Description: component.vDescription,
-                                Position: component.iPosition, 
-                                Series: componentData[component.icomponent_id].series,
-                                Units: componentData[component.icomponent_id].unit || '',
-                                YAxisDomain: [0, 'auto'],
-                                Color: getFixedColors(componentData[component.icomponent_id].series.length)
-                              }}
-                              initialData={
-                                componentData[component.icomponent_id].type?.toLowerCase() === 'stat'
-                                  ? [componentData[component.icomponent_id]]
-                                  : [componentData[component.icomponent_id].chartData]
-                              }
-                              selectedType={componentData[component.icomponent_id].type}
-                              axisConfig={componentData[component.icomponent_id].axisConfig}
-                              blockIndex={component.icomponent_id}
-                              getUnitByTitle={getUnitByTitle}
-                              handleCardClick={() => {}}
-                              handleChartClick={() => handleChartClick(component)}
-                              getRandomColors={getRandomColors}
-                              getFixedColors={getFixedColors}
-                              isLoading={refreshingComponents[component.icomponent_id]}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <LoadingSpinner message="Loading data..." />
-                            </div>
-                          )}
+                        <DashboardBlock
+                          config={{
+                            ComponentID: component.icomponent_id,
+                            Title: component.vTitle,
+                            Description: component.vDescription,
+                            Position: component.iPosition, 
+                            Series: componentData[component.icomponent_id]?.series || [],
+                            Units: componentData[component.icomponent_id]?.unit || '',
+                            YAxisDomain: [0, 'auto'],
+                            Color: getFixedColors(componentData[component.icomponent_id]?.series?.length || 0)
+                          }}
+                          initialData={
+                            componentData[component.icomponent_id]?.type?.toLowerCase() === 'stat'
+                              ? [componentData[component.icomponent_id]]
+                              : [componentData[component.icomponent_id]?.chartData || []]
+                          }
+                          selectedType={componentData[component.icomponent_id]?.type}
+                          axisConfig={componentData[component.icomponent_id]?.axisConfig}
+                          blockIndex={component.icomponent_id}
+                          getUnitByTitle={getUnitByTitle}
+                          handleCardClick={() => {}}
+                          handleChartClick={() => handleChartClick(component)}
+                          getRandomColors={getRandomColors}
+                          getFixedColors={getFixedColors}
+                          isLoading={refreshingComponents[component.icomponent_id]}
+                        />
 
                         {/* Action Buttons */}
                         {isEditMode && (
