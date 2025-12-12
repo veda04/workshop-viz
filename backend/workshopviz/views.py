@@ -214,29 +214,29 @@ def add_notes(request):
         data = request.data
         asset_name = data.get('machine_name', '')
         
-        if not asset_name:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Machine name is required',
-                'data': {}
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
         mysql_service = MySQLService()
-        asset_data = mysql_service.get_asset_id_by_name(asset_name)
-        
-        if not asset_data:
-            return JsonResponse({
-                'status': 'error',
-                'message': 'Asset not found',
-                'data': {}
-            }, status=status.HTTP_200_OK)
-        
-        if asset_data is None:
-            asset_id = None
-        elif isinstance(asset_data, dict):
-            asset_id = asset_data.get('iAsset_id')
+
+        if asset_name:
+            asset_data = mysql_service.get_asset_id_by_name(asset_name)
+
+            if not asset_data:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Asset not found',
+                    'data': {}
+                }, status=status.HTTP_200_OK)
+            
+            if asset_data is None:
+                asset_id = None
+            elif isinstance(asset_data, dict):
+                asset_id = asset_data.get('iAsset_id')
+            else:
+                asset_id = asset_data if asset_data else None
         else:
-            asset_id = asset_data if asset_data else None
+            asset_id = 0  # For general notes not linked to a specific machine
+            asset_name = "Generic"  # Default name for general notes
+
+        dashboardId = data.get('dashboardId', '')
         description = data.get('description', '')
         category = data.get('category', '')
         startDateTime = data.get('startDate', '')
@@ -246,9 +246,10 @@ def add_notes(request):
         endDate = endDateTime.split("T")[0] if "T" in endDateTime else endDateTime
         endTime = endDateTime.split("T")[1] if "T" in endDateTime else ''
         user_id = data.get('user_id', '')
-        print("Add notes data:", asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
+        print("Add notes data:", dashboardId, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
 
-        if not all([asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id]):
+        # Check for required fields - allow 0 for asset_id and empty strings for times
+        if not dashboardId or asset_id is None or not asset_name or not description or not category or not startDate or not endDate or not user_id:
             return JsonResponse({
                 'status': 'error',
                 'message': 'Missing required fields in the request body',
@@ -256,7 +257,7 @@ def add_notes(request):
             }, status=status.HTTP_400_BAD_REQUEST)
         
         mysql_service = MySQLService()
-        success = mysql_service.add_notes(asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
+        success = mysql_service.add_notes(dashboardId, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id)
         print("Add notes success:", success)
         if success:
             return JsonResponse({

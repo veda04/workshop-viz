@@ -39,7 +39,7 @@ const Layout = ({ children, showHeader = true, componentCount = 0 }) => {
 
       {/* Global Notes Modal - accessible from all pages via Header button */}
       <Modal isOpen={isNotesModalOpen} onClose={() => setIsNotesModalOpen(false)} size="large">
-        <NotesForm onClose={() => setIsNotesModalOpen(false)} machineName={machineName} />
+        <NotesForm onClose={() => setIsNotesModalOpen(false)} dashboardId={dashboardId} machineName={machineName} />
       </Modal>
     </div>
   );

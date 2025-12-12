@@ -167,14 +167,14 @@ class MySQLService:
         finally:
             self.close()
 
-    def add_notes(self, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id ):
+    def add_notes(self, dashboardId, asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id ):
         """Add note to a booking"""
         try:
             if not self.connect():
                 return False
             cursor = self.connection.cursor()
-            query = "INSERT INTO machine_notes (iAsset_id, vAsset_name, vDesc, vCategory, dStart, tStart, dEnd, tEnd, iUser_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (asset_id, asset_name, description, category, startDate, startTime, endDate, endTime, user_id))
+            query = "INSERT INTO visualisation_notes (iAsset_id, iDashboard_id, vAsset_name, vDesc, vCategory, dStart, tStart, dEnd, tEnd, iUser_id) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (asset_id, dashboardId, asset_name, description, category, startDate, startTime, endDate, endTime, user_id))
             self.connection.commit()
             cursor.close()
             return True
