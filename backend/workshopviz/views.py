@@ -817,7 +817,11 @@ def generate_data(request):
             if graph_index >= 0 and graph_index < len(data_types):
                 data_type_name, data_type_config = data_types[graph_index]
                 has_pivot = 'Pivot' in data_type_config
-                
+                # Extract series for this graph using index instead of graph_id
+                series_for_graph = []
+                if str(idx) in selected_series:
+                    series_for_graph = selected_series[str(idx)].get('series', [])
+
                 # Build graphs_info based on whether Pivot exists
                 if has_pivot:
                     # With Pivot: include series from selected_series
@@ -825,7 +829,7 @@ def generate_data(request):
                         'id': int(graph_id),
                         'name': data_type_name,
                         'aggregation': selected_aggregate,
-                        'series': selected_series.get(str(graph_id), [])
+                        'series': series_for_graph
                     }]
                 else:
                     # No Pivot: omit 'series' key entirely - will query all data
@@ -843,30 +847,30 @@ def generate_data(request):
                     'machine_name': machine_name_for_graph,
                     "type": selected_type
                 }
-                
                 # print("*** Customised Config Data:", customised_config_data)
                 # Get data for this machine/dropdown
                 machine_data = getCustomData(customised_config_data, file_path)
                 # print("Machine Data here")
-                # print("*** Machine Data :", machine_data)
-                
+                #print("*** Machine Data :", machine_data)
+
                 if machine_data and len(machine_data) > 0:
+                    # print("machine data for graph_id", graph_id, ":", machine_data[0])
                     all_machine_data.append(machine_data[0])  # Get first element as we only query one graph at a time
                     machine_metadata.append({
                         'graph_id': str(graph_id),
                         'machine_name': machine_name_for_graph,
                         'data_type_name': data_type_name,
                         'units': data_type_config.get('Units', ''),
-                        'series': selected_series.get(str(graph_id), [])
+                        'original_id': selected_series.get(idx, {}).get('originalId', ''),
+                        'series': graphs_info[0].get('series', [])  # Store series used for this graph
                     })
                 else:
                     all_machine_data.append(None)
             else:
                 all_machine_data.append(None)
-        
         logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
-        # pprint.pprint("****** All Machine Data  ******:")
-        # pprint.pprint(all_machine_data, indent=2, width=120)
+        #pprint.pprint("****** All Machine Data  ******:")
+        #pprint.pprint(all_machine_data, indent=2, width=120)
         
         # Merge data from multiple machines/dropdowns
         combined_data = {
@@ -901,13 +905,13 @@ def generate_data(request):
                     graph_series = ['value']
             else:
                 graph_series = metadata['series']
-            
+
             # Process each data entry in the list
             for entry in data_list:
                 timestamp = entry.get('time')
                 if timestamp:
                     all_timestamps.add(timestamp)
-                    
+
                     # Process each series - look for matching series names in the entry
                     for series_name in graph_series:
                         if series_name in entry:

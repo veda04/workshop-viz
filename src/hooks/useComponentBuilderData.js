@@ -309,13 +309,16 @@ export const useComponentBuilderData = (machineName) => {
         // Extract original ID from unique ID (format: MachineName_OriginalId)
         return graphId.includes('_') ? graphId.split('_')[1] : graphId;
       });
-      
+
       // Convert series object keys from unique IDs to original IDs
       const originalSeriesMapping = {};
-      // console.log('Selected Graphs:', selectedGraphs);
       selectedGraphs.forEach((uniqueGraphId, index) => {
         const originalId = originalGraphIds[index];
-        originalSeriesMapping[originalId] = selectedSeries[uniqueGraphId];
+        originalSeriesMapping[index] = {
+            originalId,
+            series: selectedSeries[uniqueGraphId]
+        };
+        //originalSeriesMapping[originalId] = selectedSeries[uniqueGraphId];  // old code
       });
       
       const response = await apiService.generateData({
