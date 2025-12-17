@@ -102,10 +102,12 @@ const DashboardSummary = () => {
                     config: configResponse.data.find(dt => dt.id === graphId),
                     machineName: machineName,
                     graphId: graphId,
-                    series: vQuery.series[graphId] || []
+                    series: vQuery.series[index].series || []
                   };
                 }
-                return null;
+                else {
+                  return null;
+                }
               } catch (err) {
                 console.error(`Failed to fetch config for ${machineName}:`, err);
                 return null;
@@ -114,9 +116,7 @@ const DashboardSummary = () => {
           );
           
           // Build axisConfig similar to useComponentBuilderData.js
-          axisConfig = dataTypeConfigs
-            .filter(item => item !== null)
-            .map((item, index) => ({
+          axisConfig = dataTypeConfigs.filter(item => item !== null).map((item, index) => ({
               graphId: item.graphId,
               machineName: item.machineName,
               position: index === 0 ? 'left' : 'right',
@@ -124,11 +124,9 @@ const DashboardSummary = () => {
               title: item.config?.title || '',
               series: item.series
             }));
-          console.log('DashboardSummary - Reconstructed axisConfig:', axisConfig);
-        } else {
-          console.log('DashboardSummary - Using backend axisConfig:', axisConfig);
+          // console.log('DashboardSummary - Reconstructed axisConfig:', axisConfig);
         }
-        
+
         setComponentData(prev => ({
           ...prev,
           [component.icomponent_id]: {
@@ -312,14 +310,13 @@ const DashboardSummary = () => {
                     {groupedByPosition[position].map(component => (
                       <div
                         key={component.icomponent_id}
-                        componentType={component.vQuery?.type}
+                        componenttype={component.vQuery?.type}
                         // className={`sub-blocks ${
                         //     component.vQuery?.type === 'Graph' ? 'w-full md:w-[calc(33.333%-0.69rem)] lg:w-[calc(33.333%-0.69rem)]' : 
                         //     component.vQuery?.type === 'Stat' ? 'w-[calc(50%-0.5rem)] md:w-[calc(25%-0.75rem)] lg:w-[calc(25%-0.75rem)]' : 
                         //     'w-full md:w-[calc(33.333%-1rem)]'
                         // } mb-4`}
-                      >
-                        {/* Chart/Stat Display */}
+                      > 
                         <DashboardBlock
                           config={{
                             ComponentID: component.icomponent_id,
