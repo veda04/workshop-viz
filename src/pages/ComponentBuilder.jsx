@@ -866,7 +866,7 @@ const ComponentBuilder = () => {
                       </div>
                     </div>
 
-                    {/* Graph Display */}     
+                    {/* Graph Display */}
                     {graphData && (
                       <div className="text-right">
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">                         
@@ -874,10 +874,10 @@ const ComponentBuilder = () => {
                             config={{
                               Title: 'Custom ' + (graphData.saveableConfig ? graphData.saveableConfig.type : 'Custom title appears here'),
                               Series: graphData.series,
-                              Units: graphData.units,
+                              Unit: graphData.axisConfig.map(axis => axis.unit),
                               YAxisDomain: [0, 'auto'],
                               Color: chartColors,
-                              unitTitle: graphData.machineMetadata?.[0]?.data_type_name || '',
+                              // unitTitle: graphData.machineMetadata?.[0]?.data_type_name || '',
                             }}
                             initialData={graphData.type === 'Stat' ? [graphData] : [graphData.chartData]}
                             selectedType={graphData.type || selectedType}
@@ -944,7 +944,7 @@ const ComponentBuilder = () => {
           series={graphData?.series}
           color={chartColors}
           title="Custom Graph"
-          unit={graphData?.unit}
+          unit={graphData?.axisConfig.map(axis => axis.unit)}
           axisConfig={graphData?.axisConfig}
         />
       </Modal>

@@ -348,6 +348,7 @@ export const useComponentBuilderData = (machineName) => {
               config = machineTypes.find(g => g.id === graphId);
             }
             
+            // generated for axis config
             return {
               graphId,
               machineName: machineForGraph,  // NEW: Include machine/dropdown name

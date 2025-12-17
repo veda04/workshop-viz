@@ -57,7 +57,7 @@ const DashboardBlock = ({
         data={data && data.length > 0 ? data[0] : []}
         color={chartColors}
         yAxisDomain={config?.YAxisDomain || [0, 100]}
-        unit={config?.Units || getUnitByTitle(config?.unitTitle || '')}
+        unit={config?.Unit || getUnitByTitle(config?.unitTitle || '')}
         heightOuter={heightOuter}
         heightInner={heightInner}
         onClick={() => handleChartClick(config?.Title, data[0] || data, config?.Series, chartColors, config?.YAxisDomain || [0, 100], blockIndex)}
@@ -71,13 +71,13 @@ const DashboardBlock = ({
     const statsValue = selectedType 
       ? (data?.[0]?.statsValue !== undefined ? data[0].statsValue : 'N/A')
       : (data?.[0]?.[0]?.value || 'N/A');
-    
     return (
       <DataCard
         title={config?.Title}
         value={statsValue}
         textColor={config?.TextColor || (getRandomColors ? getRandomColors(1) : ['#4D96FF'])}
-        unit={statsValue !== 'N/A' ? config?.Units || getUnitByTitle(config?.Title || '') : ''}
+        unit={config?.Unit || getUnitByTitle(config?.unitTitle || '')}
+        //unit={statsValue !== 'N/A' ? config?.Unit || getUnitByTitle(config?.Title || '') : ''}
         // onClick={config?.Maximisable ? () => handleCardClick({ config, data }, blockIndex) : undefined}  // TO DO: maximisable cards
         onClick={handleCardClick ? handleCardClick : undefined}
       />

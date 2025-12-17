@@ -83,8 +83,8 @@ const DashboardSummary = () => {
       const response = await apiService.generateData(vQuery, vQuery.machine_name);
       
       if (response.status === 'success') {
-        console.log('DashboardSummary - Response from backend:', response.data);
-        console.log('DashboardSummary - vQuery:', vQuery);
+        //console.log('DashboardSummary - Response from backend:', response.data);
+        //console.log('DashboardSummary - vQuery:', vQuery);
         
         // Reconstruct axisConfig from the saved vQuery if not provided by backend
         // This ensures proper left/right axis positioning for multiple data types
@@ -182,7 +182,7 @@ const DashboardSummary = () => {
     setSelectedChartData({
       chartData: data.chartData,
       series: data.series,
-      unit: data.unit,
+      unit: data.axisConfig.map(axis => axis.unit),
       title: component.vTitle,
       color: getFixedColors(data.series.length),
       axisConfig: data.axisConfig
@@ -198,7 +198,7 @@ const DashboardSummary = () => {
     setSelectedCardData({
       title: component.vTitle,
       value: data.statsValue,
-      unit: data.unit,
+      unit: data.axisConfig.map(axis => axis.unit),
       description: component.vDescription
     });
     setIsCardModalOpen(true);
@@ -324,7 +324,7 @@ const DashboardSummary = () => {
                             Description: component.vDescription,
                             Position: component.iPosition, 
                             Series: componentData[component.icomponent_id]?.series || [],
-                            Units: componentData[component.icomponent_id]?.unit || '',
+                            Unit: componentData[component.icomponent_id]?.axisConfig?.[0]?.unit || '',
                             YAxisDomain: [0, 'auto'],
                             Color: getFixedColors(componentData[component.icomponent_id]?.series?.length || 0)
                           }}
