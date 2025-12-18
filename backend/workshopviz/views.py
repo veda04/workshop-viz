@@ -804,6 +804,7 @@ def generate_data(request):
             if not os.path.exists(file_path):
                 logger.warning(f'Configuration file not found for: {machine_name_for_graph}')
                 all_machine_data.append(None)
+                machine_metadata.append(None)
                 continue
             
             # Load the config file to get graph names
@@ -861,13 +862,16 @@ def generate_data(request):
                         'machine_name': machine_name_for_graph,
                         'data_type_name': data_type_name,
                         'units': data_type_config.get('Units', ''),
-                        'original_id': selected_series.get(idx, {}).get('originalId', ''),
-                        'series': graphs_info[0].get('series', [])  # Store series used for this graph
+                        'original_id': selected_series.get(str(idx), {}).get('originalId', ''),
+                        'series': graphs_info[0].get('series', []),  # Store series used for this graph
+                        'has_pivot': has_pivot  # Store per-graph
                     })
                 else:
                     all_machine_data.append(None)
+                    machine_metadata.append(None)
             else:
                 all_machine_data.append(None)
+                machine_metadata.append(None)
 
         logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
         # pprint.pprint("****** All Machine Data  ******:")
@@ -875,11 +879,10 @@ def generate_data(request):
 
         # Check if all_machine_data is empty or ANY entry is None
         if not all_machine_data or any(data is None for data in all_machine_data):
-            print("**** YES ****"),
             # Check for individual None entries and collect which series failed
             failed_series = []
             for idx, data in enumerate(all_machine_data):
-                if data is None and idx < len(machine_metadata):
+                if data is None and idx < len(machine_metadata) and machine_metadata[idx] is not None:
                     metadata = machine_metadata[idx]
                     failed_series.append({
                         'graph_id': metadata.get('graph_id'),
@@ -887,17 +890,13 @@ def generate_data(request):
                         'data_type': metadata.get('data_type_name'),
                         'series_name': metadata.get('series', [])
                     })
-            
-            # If some series failed, log warning but continue with available data
-            if failed_series:
-                print(f"Failed to generate data for {len(failed_series)} series: {failed_series}")
 
             # return this info to frontend
             error_messages = []
             for failed in failed_series:
                 data_type = failed.get('data_type', 'Unknown')
                 series_names = failed.get('series_name', [])
-                series_str = ', '.join(series_names) if series_names else 'No series selected'
+                series_str = ', '.join(series_names) if series_names else 'None'
                 error_messages.append(f"Graph: {data_type} and its Series: {series_str}")
             
             combined_message = "No data could be generated for " + "; ".join(error_messages)
@@ -928,8 +927,10 @@ def generate_data(request):
                 if not metadata:
                     continue
                 
+                has_pivot = metadata.get('has_pivot', False)
+
                 # check if data type does not have pivot
-                if has_pivot == False:
+                if not has_pivot:
                     # infer available series from data_list (exclude the timestamp and index key)
                     graph_series = []
                     for entry in data_list:
@@ -941,7 +942,19 @@ def generate_data(request):
                     if not graph_series:
                         graph_series = ['value']
                 else:
-                    graph_series = metadata['series']
+                    # Use series from metadata, with fallback
+                    graph_series = metadata.get('series', [])
+                    # If series is empty even with pivot, try to infer from data
+                    if not graph_series:
+                        logger.warning(f"Graph {metadata.get('graph_id')} has pivot but no series selected, inferring from data")
+                        graph_series = []
+                        for entry in data_list:
+                            if isinstance(entry, dict):
+                                for key in entry.keys():
+                                    if (key != 'time' and key != 'index') and key not in graph_series:
+                                        graph_series.append(key)
+                        if not graph_series:
+                            graph_series = ['value']
 
                 # Process each data entry in the list
                 for entry in data_list:
