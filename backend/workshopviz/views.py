@@ -851,7 +851,7 @@ def generate_data(request):
                 # Get data for this machine/dropdown
                 machine_data = getCustomData(customised_config_data, file_path)
                 # print("Machine Data here")
-                #print("*** Machine Data :", machine_data)
+                # print("*** Machine Data :", machine_data)
 
                 if machine_data and len(machine_data) > 0:
                     # print("machine data for graph_id", graph_id, ":", machine_data[0])
@@ -868,123 +868,160 @@ def generate_data(request):
                     all_machine_data.append(None)
             else:
                 all_machine_data.append(None)
+
         logger.info(f"Processed {len(all_machine_data)} machines/dropdowns")
-        #pprint.pprint("****** All Machine Data  ******:")
-        #pprint.pprint(all_machine_data, indent=2, width=120)
-        
-        # Merge data from multiple machines/dropdowns
-        combined_data = {
-            'chartData': [],
-            'series': [],
-            'machineMetadata': machine_metadata  # Include metadata for frontend
-        }
-        
-        all_timestamps = set()
-        series_data_map = {}
-        
-        # Process each machine's data
-        for idx, data_list in enumerate(all_machine_data):
-            if data_list is None or not isinstance(data_list, list):
-                continue
-            
-            metadata = machine_metadata[idx] if idx < len(machine_metadata) else None
-            if not metadata:
-                continue
-            
-            # check if data type does not have pivot
-            if has_pivot == False:
-                # infer available series from data_list (exclude the timestamp and index key)
-                graph_series = []
-                for entry in data_list:
-                    if isinstance(entry, dict):
-                        for key in entry.keys():
-                            if (key != 'time' and key != 'index') and key not in graph_series:
-                                graph_series.append(key)
-                # fallback to ['value'] if nothing else found 
-                if not graph_series:
-                    graph_series = ['value']
-            else:
-                graph_series = metadata['series']
+        # pprint.pprint("****** All Machine Data  ******:")
+        # pprint.pprint(all_machine_data, indent=2, width=120)
 
-            # Process each data entry in the list
-            for entry in data_list:
-                timestamp = entry.get('time')
-                if timestamp:
-                    all_timestamps.add(timestamp)
-
-                    # Process each series - look for matching series names in the entry
-                    for series_name in graph_series:
-                        if series_name in entry:
-                            if series_name not in series_data_map:
-                                series_data_map[series_name] = {}
-                                combined_data['series'].append(series_name)
-                            
-                            # Store or aggregate values for the same timestamp
-                            if timestamp not in series_data_map[series_name]:
-                                series_data_map[series_name][timestamp] = []
-                            series_data_map[series_name][timestamp].append(entry[series_name])
-        
-        # Build combined chart data - average values for same timestamps
-        sorted_timestamps = sorted(list(all_timestamps))
-        for timestamp in sorted_timestamps:
-            data_point = {'time': timestamp}
-            for series_name in combined_data['series']:
-                if timestamp in series_data_map[series_name]:
-                    values = series_data_map[series_name][timestamp]
-                    # Average multiple values for the same timestamp
-                    data_point[series_name] = sum(values) / len(values) if values else None
-                else:
-                    data_point[series_name] = None
-            combined_data['chartData'].append(data_point)
-        
-        logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series from {len(machine_metadata)} sources")
-        
-        # Add selectedType to the response data
-        combined_data['type'] = selected_type
-        
-        # If type is 'stat'
-        if selected_type and selected_type == 'Stat': # logic will change based on condition to check maximised 
-            stats_values = []
-            for series_name in combined_data['series']:
-                print(f"Processing stats for series: {series_name}")
-                # Get the only value for this series
-                last_value = None
-                for data_point in combined_data['chartData']:
-                    print(f"Data point: {data_point}")
-                    if data_point.get(series_name) is not None:
-                        last_value = data_point[series_name]
-                        break
-                
-                if last_value is not None:
-                    stats_values.append({
-                        'series': series_name,
-                        'value': last_value
+        # Check if all_machine_data is empty or ANY entry is None
+        if not all_machine_data or any(data is None for data in all_machine_data):
+            print("**** YES ****"),
+            # Check for individual None entries and collect which series failed
+            failed_series = []
+            for idx, data in enumerate(all_machine_data):
+                if data is None and idx < len(machine_metadata):
+                    metadata = machine_metadata[idx]
+                    failed_series.append({
+                        'graph_id': metadata.get('graph_id'),
+                        'machine_name': metadata.get('machine_name'),
+                        'data_type': metadata.get('data_type_name'),
+                        'series_name': metadata.get('series', [])
                     })
-            # print("Stats values calculated:", stats_values)
-            if stats_values:
-                combined_data['statsValue'] = stats_values[0]['value']
-                print("Final stats value:", combined_data['statsValue'])
-            else:
-                combined_data['statsValue'] = 'N/A'
-        
-        # Build saveable config for component storage, This allows the frontend to save the exact configuration that generated this data
-        saveable_config = {
-            'type': selected_type,
-            'aggregate': selected_aggregate,
-            'graphs': selected_graphs,
-            'machine_names': machine_names,
-            'series': selected_series,
-            'range': time_range
-        }
+            
+            # If some series failed, log warning but continue with available data
+            if failed_series:
+                print(f"Failed to generate data for {len(failed_series)} series: {failed_series}")
 
-        # print("Combined Data:", combined_data)
+            # return this info to frontend
+            error_messages = []
+            for failed in failed_series:
+                data_type = failed.get('data_type', 'Unknown')
+                series_names = failed.get('series_name', [])
+                series_str = ', '.join(series_names) if series_names else 'No series selected'
+                error_messages.append(f"Graph: {data_type} and its Series: {series_str}")
+            
+            combined_message = "No data could be generated for " + "; ".join(error_messages)
+            
+            return JsonResponse({
+                'status': 'error',
+                'message': combined_message,
+                'data': {}
+            }, status=status.HTTP_404_NOT_FOUND)
         
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Custom graph data retrieved successfully',
-            'data': combined_data,
-            'saveableConfig': saveable_config  # NEW: Add saveable config for component creation
-        }, status=status.HTTP_200_OK)
+        else:
+            # Merge data from multiple machines/dropdowns
+            combined_data = {
+                'chartData': [],
+                'series': [],
+                'machineMetadata': machine_metadata  # Include metadata for frontend
+            }
+            
+            all_timestamps = set()
+            series_data_map = {}
+            
+            # Process each machine's data
+            for idx, data_list in enumerate(all_machine_data):
+                if data_list is None or not isinstance(data_list, list):
+                    continue
+                
+                metadata = machine_metadata[idx] if idx < len(machine_metadata) else None
+                if not metadata:
+                    continue
+                
+                # check if data type does not have pivot
+                if has_pivot == False:
+                    # infer available series from data_list (exclude the timestamp and index key)
+                    graph_series = []
+                    for entry in data_list:
+                        if isinstance(entry, dict):
+                            for key in entry.keys():
+                                if (key != 'time' and key != 'index') and key not in graph_series:
+                                    graph_series.append(key)
+                    # fallback to ['value'] if nothing else found 
+                    if not graph_series:
+                        graph_series = ['value']
+                else:
+                    graph_series = metadata['series']
+
+                # Process each data entry in the list
+                for entry in data_list:
+                    timestamp = entry.get('time')
+                    if timestamp:
+                        all_timestamps.add(timestamp)
+
+                        # Process each series - look for matching series names in the entry
+                        for series_name in graph_series:
+                            if series_name in entry:
+                                if series_name not in series_data_map:
+                                    series_data_map[series_name] = {}
+                                    combined_data['series'].append(series_name)
+                                
+                                # Store or aggregate values for the same timestamp
+                                if timestamp not in series_data_map[series_name]:
+                                    series_data_map[series_name][timestamp] = []
+                                series_data_map[series_name][timestamp].append(entry[series_name])
+            
+            # Build combined chart data - average values for same timestamps
+            sorted_timestamps = sorted(list(all_timestamps))
+            for timestamp in sorted_timestamps:
+                data_point = {'time': timestamp}
+                for series_name in combined_data['series']:
+                    if timestamp in series_data_map[series_name]:
+                        values = series_data_map[series_name][timestamp]
+                        # Average multiple values for the same timestamp
+                        data_point[series_name] = sum(values) / len(values) if values else None
+                    else:
+                        data_point[series_name] = None
+                combined_data['chartData'].append(data_point)
+            
+            logger.info(f"Generated custom graph data with {len(combined_data['chartData'])} points and {len(combined_data['series'])} series from {len(machine_metadata)} sources")
+            
+            # Add selectedType to the response data
+            combined_data['type'] = selected_type
+            
+            # If type is 'stat'
+            if selected_type and selected_type == 'Stat': # logic will change based on condition to check maximised 
+                stats_values = []
+                for series_name in combined_data['series']:
+                    print(f"Processing stats for series: {series_name}")
+                    # Get the only value for this series
+                    last_value = None
+                    for data_point in combined_data['chartData']:
+                        print(f"Data point: {data_point}")
+                        if data_point.get(series_name) is not None:
+                            last_value = data_point[series_name]
+                            break
+                    
+                    if last_value is not None:
+                        stats_values.append({
+                            'series': series_name,
+                            'value': last_value
+                        })
+                # print("Stats values calculated:", stats_values)
+                if stats_values:
+                    combined_data['statsValue'] = stats_values[0]['value']
+                    print("Final stats value:", combined_data['statsValue'])
+                else:
+                    combined_data['statsValue'] = 'N/A'
+            
+            # Build saveable config for component storage, This allows the frontend to save the exact configuration that generated this data
+            saveable_config = {
+                'type': selected_type,
+                'aggregate': selected_aggregate,
+                'graphs': selected_graphs,
+                'machine_names': machine_names,
+                'series': selected_series,
+                'range': time_range
+            }
+
+            # print("Combined Data:", combined_data)
+            
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Custom graph data retrieved successfully',
+                'data': combined_data,
+                'saveableConfig': saveable_config  # NEW: Add saveable config for component creation
+            }, status=status.HTTP_200_OK)
     
     except Exception as e:
         logger.error(f"Error retrieving custom graph data: {str(e)}")
