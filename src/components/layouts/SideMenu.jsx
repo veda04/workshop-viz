@@ -52,9 +52,10 @@ const SideMenu = ({ isOpen, onClose, machineName }) => {
           </nav>
 
           {/* Menu Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              Workshop Viz v1.0
+          <div className="px-4 pb-4 border-t border-gray-200 dark:border-gray-700">
+            <img src="/images/logo.png" alt="Data Analytics for Smart Workshops logo" className="mx-auto mb-0 h-40 relative top-5" />
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center italic">
+              Data Analytics for Smart Workshop
             </p>
           </div>
         </div>

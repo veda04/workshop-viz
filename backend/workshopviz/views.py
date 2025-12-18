@@ -897,7 +897,7 @@ def generate_data(request):
                 data_type = failed.get('data_type', 'Unknown')
                 series_names = failed.get('series_name', [])
                 series_str = ', '.join(series_names) if series_names else 'None'
-                error_messages.append(f"Graph: {data_type} and its Series: {series_str}")
+                error_messages.append(f"selected Graph: {data_type} and its Series: {series_str}")
             
             combined_message = "No data could be generated for " + "; ".join(error_messages)
             
@@ -941,20 +941,11 @@ def generate_data(request):
                     # fallback to ['value'] if nothing else found 
                     if not graph_series:
                         graph_series = ['value']
+                    machine_metadata[idx]['series'] = graph_series  # Update metadata with inferred series
+                    selected_series[str(idx)]['series'] = graph_series # Update selected_series with inferred series (convert idx to string)
                 else:
                     # Use series from metadata, with fallback
                     graph_series = metadata.get('series', [])
-                    # If series is empty even with pivot, try to infer from data
-                    if not graph_series:
-                        logger.warning(f"Graph {metadata.get('graph_id')} has pivot but no series selected, inferring from data")
-                        graph_series = []
-                        for entry in data_list:
-                            if isinstance(entry, dict):
-                                for key in entry.keys():
-                                    if (key != 'time' and key != 'index') and key not in graph_series:
-                                        graph_series.append(key)
-                        if not graph_series:
-                            graph_series = ['value']
 
                 # Process each data entry in the list
                 for entry in data_list:

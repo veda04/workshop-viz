@@ -347,7 +347,12 @@ export const useComponentBuilderData = (machineName) => {
               const machineTypes = machineDataTypes[machineForGraph] || [];
               config = machineTypes.find(g => g.id === graphId);
             }
-            
+
+            // check if selectedSeries[graphId] is empty, if so assign saveableConfig series values
+            const seriesForGraph = response.saveableConfig?.series?.[index]?.series || [];
+            if (!selectedSeries[graphId]) {
+              selectedSeries[graphId] = seriesForGraph;
+            }
             // generated for axis config
             return {
               graphId,
