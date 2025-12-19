@@ -820,8 +820,25 @@ def generate_data(request):
                 has_pivot = 'Pivot' in data_type_config
                 # Extract series for this graph using index instead of graph_id
                 series_for_graph = []
-                if str(idx) in selected_series:
-                    series_for_graph = selected_series[str(idx)].get('series', [])
+                
+                # Handle both dict and list formats for selected_series
+                if isinstance(selected_series, dict):
+                    # Dictionary format: {"0": {"series": [...], "originalId": "..."}} or {"0": [...]}
+                    if str(idx) in selected_series:
+                        series_entry = selected_series[str(idx)]
+                        if isinstance(series_entry, dict):
+                            series_for_graph = series_entry.get('series', [])
+                        elif isinstance(series_entry, list):
+                            # Direct list of series names
+                            series_for_graph = series_entry
+                elif isinstance(selected_series, list):
+                    # List format: [{"series": [...], "originalId": "..."}, ...] or [[...], ...]
+                    if idx < len(selected_series):
+                        series_entry = selected_series[idx]
+                        if isinstance(series_entry, dict):
+                            series_for_graph = series_entry.get('series', [])
+                        elif isinstance(series_entry, list):
+                            series_for_graph = series_entry
 
                 # Build graphs_info based on whether Pivot exists
                 if has_pivot:
@@ -857,12 +874,22 @@ def generate_data(request):
                 if machine_data and len(machine_data) > 0:
                     # print("machine data for graph_id", graph_id, ":", machine_data[0])
                     all_machine_data.append(machine_data[0])  # Get first element as we only query one graph at a time
+                    
+                    # Extract originalId based on selected_series format
+                    original_id = ''
+                    if isinstance(selected_series, dict):
+                        original_id = selected_series.get(str(idx), {}).get('originalId', '')
+                    elif isinstance(selected_series, list) and idx < len(selected_series):
+                        series_entry = selected_series[idx]
+                        if isinstance(series_entry, dict):
+                            original_id = series_entry.get('originalId', '')
+                    
                     machine_metadata.append({
                         'graph_id': str(graph_id),
                         'machine_name': machine_name_for_graph,
                         'data_type_name': data_type_name,
                         'units': data_type_config.get('Units', ''),
-                        'original_id': selected_series.get(str(idx), {}).get('originalId', ''),
+                        'original_id': original_id,
                         'series': graphs_info[0].get('series', []),  # Store series used for this graph
                         'has_pivot': has_pivot  # Store per-graph
                     })
@@ -942,7 +969,18 @@ def generate_data(request):
                     if not graph_series:
                         graph_series = ['value']
                     machine_metadata[idx]['series'] = graph_series  # Update metadata with inferred series
-                    selected_series[str(idx)]['series'] = graph_series # Update selected_series with inferred series (convert idx to string)
+                    
+                    # Update selected_series with inferred series based on format
+                    if isinstance(selected_series, dict):
+                        if str(idx) not in selected_series:
+                            selected_series[str(idx)] = {}
+                        selected_series[str(idx)]['series'] = graph_series
+                    elif isinstance(selected_series, list):
+                        if idx < len(selected_series):
+                            if isinstance(selected_series[idx], dict):
+                                selected_series[idx]['series'] = graph_series
+                            else:
+                                selected_series[idx] = {'series': graph_series}
                 else:
                     # Use series from metadata, with fallback
                     graph_series = metadata.get('series', [])
