@@ -221,7 +221,20 @@ const ComponentBuilder = () => {
               await fetchAvailableSeries(uniqueGraphId, machineNameForGraph);
               
               // Return the series data to set
-              const seriesToSet = vQuery.series && vQuery.series[originalGraphId] ? vQuery.series[originalGraphId] : [];
+              // Handle both old structure { "2": ["L1", "L2"] } and new structure { "0": { "originalId": "2", "series": ["L1", "L2"] } }
+              let seriesToSet = [];
+              if (vQuery.series) {
+                // Try new structure first (index-based with originalId and series)
+                if (vQuery.series[index] && vQuery.series[index].series) {
+                  seriesToSet = vQuery.series[index].series;
+                  console.log(`Using new series structure for index ${index}:`, seriesToSet);
+                } 
+                // Fall back to old structure (originalGraphId as key)
+                else if (vQuery.series[originalGraphId]) {
+                  seriesToSet = vQuery.series[originalGraphId];
+                  console.log(`Using old series structure for graphId ${originalGraphId}:`, seriesToSet);
+                }
+              }
               console.log(`Series for ${uniqueGraphId}:`, seriesToSet);
               return {
                 graphId: uniqueGraphId,

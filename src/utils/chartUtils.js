@@ -1,16 +1,16 @@
 export const CHART_COLORS = [
-    '#FF0000', // Red
-    '#4ECDC4', // Teal
-    '#FFD93D', // Yellow
-    '#6BCB77', // Green
-    '#4D96FF', // Blue
-    '#FF8E53', // Orange
-    '#A78BFA', // Purple
-    '#F472B6', // Pink
-    '#34D399', // Emerald
-    '#FBBF24', // Amber
-    '#A3E635', // Lime
-    '#ffb387ff'  // Peach
+  '#FF8E53', // Orange
+  '#4ECDC4', // Teal
+  '#FFD93D', // Yellow
+  '#6BCB77', // Green
+  '#4D96FF', // Blue
+  '#8B5CF6', // Violet
+  '#A78BFA', // Purple
+  '#F472B6', // Pink
+  '#34D399', // Emerald
+  '#FBBF24', // Amber
+  '#A3E635', // Lime
+  '#ffb387ff'  // Peach
 ];
 
 export const getChartColor = (index) => {
